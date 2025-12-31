@@ -1,0 +1,243 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --primary-color: #3F51B5;
+  --primary-light: #7986CB;
+  --primary-dark: #303F9F;
+  --text-main: #212121;
+  --text-sub: #757575;
+  --bg-light: #F5F7FA;
+  --bg-white: #FFFFFF;
+  --border-color: #E0E0E0;
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --header-height: 80px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+ul {
+  list-style: none;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header Styles */
+.header {
+  height: var(--header-height);
+  background-color: var(--bg-white);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+
+.header__inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.nav__list {
+  display: flex;
+  gap: 40px;
+}
+
+.nav__item {
+  font-weight: 500;
+  font-size: 1.1rem;
+  color: var(--text-main);
+  transition: color 0.3s ease;
+  cursor: pointer;
+}
+
+.nav__item:hover {
+  color: var(--primary-color);
+}
+
+.top-bar {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 8px 0;
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.top-bar__links {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+/* Hero Section */
+.hero {
+  padding: 80px 0;
+  background: linear-gradient(to bottom, #E8EAF6 0%, var(--bg-light) 100%);
+  text-align: center;
+}
+
+.hero__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-top: 50px;
+}
+
+.card {
+  background-color: var(--bg-white);
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 10px 30px rgba(63, 81, 181, 0.15);
+}
+
+.card__icon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 20px;
+  object-fit: contain;
+}
+
+.card__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Status Section */
+.status-section {
+  padding: 60px 0;
+  background-color: var(--bg-white);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.status__title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text-sub);
+}
+
+.status__grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.status__item {
+  padding: 25px;
+  border-right: 1px solid var(--border-color);
+}
+
+.status__item:last-child {
+  border-right: none;
+}
+
+.status__label {
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.status__unit {
+  font-size: 1rem;
+  font-weight: 400;
+  margin-left: 5px;
+}
+
+.progress-bar {
+  height: 8px;
+  background-color: #EEE;
+  border-radius: 4px;
+  margin-top: 15px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #4CAF50;
+}
+
+/* Feed Section */
+.feed-section {
+  padding: 60px 0;
+}
+
+.feed__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.feed-box {
+  background-color: var(--bg-white);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.feed-box__header {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 15px 25px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.feed-box__content {
+  height: 300px;
+  padding: 20px;
+}
+
+/* Footer Styles */
+.footer {
+  background-color: var(--primary-dark);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 40px 0;
+  text-align: center;
+  font-weight: 500;
+}
