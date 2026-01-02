@@ -36,11 +36,19 @@ services:
     networks:
       - safeguard-network
 
-  ai:
-    build: ./ai
-    container_name: safeguard-ai
+  ai-yolo:
+    build: ./ai/yolo
+    container_name: safeguard-ai-yolo
     ports:
       - "5000:5000"
+    networks:
+      - safeguard-network
+
+  ai-stt:
+    build: ./ai/stt
+    container_name: safeguard-ai-stt
+    ports:
+      - "8000:8000"
     networks:
       - safeguard-network
 
@@ -51,7 +59,7 @@ services:
       - "80:80"
     depends_on:
       - backend
-      - ai
+      - ai-yolo
     networks:
       - safeguard-network
 
