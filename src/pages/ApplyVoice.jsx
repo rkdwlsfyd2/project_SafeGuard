@@ -10,45 +10,27 @@ function ApplyVoice() {
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState(null);
     const [realtimeText, setRealtimeText] = React.useState("");
+    const [attachedFile, setAttachedFile] = React.useState(null);
+    const [videoPreviewUrl, setVideoPreviewUrl] = React.useState(null);
     const recognitionRef = React.useRef(null);
     const fileInputRef = React.useRef(null);
 
-    const handleFileUpload = async (event) => {
+    const handleFileUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
-        setLoading(true);
-        setError(null);
-        setRealtimeText("동영상 파일 분석 중..."); // Show status in text area
+        setAttachedFile(file);
+        // Create a preview URL for the file
+        const url = URL.createObjectURL(file);
+        setVideoPreviewUrl(url);
 
-        const formData = new FormData();
-        formData.append('file', file);
+        // Clear existing states
+        setRealtimeText("");
+        setAnalysisResult(null);
 
-        try {
-            const response = await fetch('http://127.0.0.1:8000/upload_voice', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Server error: ${response.status} - ${errorText}`);
-            }
-
-            const data = await response.json();
-            setAnalysisResult(data);
-            if (data.original_text) {
-                setRealtimeText(data.original_text);
-            }
-        } catch (err) {
-            console.error("Upload failed", err);
-            setError(`파일 분석 실패: ${err.message}`);
-        } finally {
-            setLoading(false);
-            // Reset file input
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
     };
 
@@ -60,8 +42,10 @@ function ApplyVoice() {
             return;
         }
 
-        // Reset real-time text
+        // Reset real-time text and previous video attachment
         setRealtimeText("");
+        setVideoPreviewUrl(null);
+        setAttachedFile(null);
 
         try {
             console.log("Requesting microphone access...");
@@ -227,6 +211,36 @@ function ApplyVoice() {
                             `}
                         </style>
 
+                        {/* File Preview (Image or Video) */}
+                        {videoPreviewUrl && (
+                            <div style={{ width: '100%', maxWidth: '500px', marginBottom: '25px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.1)', border: '1px solid #E0E0E0' }}>
+                                {attachedFile && attachedFile.type.startsWith('video/') ? (
+                                    <video
+                                        src={videoPreviewUrl}
+                                        controls
+                                        style={{ width: '100%', display: 'block', backgroundColor: '#000' }}
+                                    />
+                                ) : (
+                                    <img
+                                        src={videoPreviewUrl}
+                                        alt="Preview"
+                                        style={{ width: '100%', display: 'block', objectFit: 'contain', maxHeight: '400px', backgroundColor: '#F9F9F9' }}
+                                    />
+                                )}
+                                <div style={{ padding: '8px', backgroundColor: '#F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                                        {attachedFile && attachedFile.type.startsWith('video/') ? "동영상 첨부됨" : "이미지 첨부됨"}
+                                    </span>
+                                    <button
+                                        onClick={() => { setVideoPreviewUrl(null); setAttachedFile(null); }}
+                                        style={{ backgroundColor: '#EF4444', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
+                                    >
+                                        첨부 취소
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         <div
                             onClick={toggleRecording}
                             style={{
@@ -250,10 +264,10 @@ function ApplyVoice() {
                             </svg>
                         </div>
 
-                        {/* MP4 Upload Button */}
+                        {/* File Upload Button (Image, MP4, MOV supported) */}
                         <input
                             type="file"
-                            accept="video/mp4"
+                            accept="image/*,video/mp4,video/quicktime,.mov"
                             style={{ display: 'none' }}
                             ref={fileInputRef}
                             onChange={handleFileUpload}
@@ -273,7 +287,7 @@ function ApplyVoice() {
                                 opacity: (isRecording || loading) ? 0.7 : 1
                             }}
                         >
-                            MP4 동영상 첨부
+                            파일 첨부
                         </button>
 
                         {isRecording && (
