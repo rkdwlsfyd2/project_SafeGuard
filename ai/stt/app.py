@@ -138,7 +138,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # React 앱 주소
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost", "*"],  # React 앱 주소 및 Docker 환경 허용
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
