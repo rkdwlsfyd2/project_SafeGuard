@@ -14,6 +14,8 @@ import torch
 import subprocess
 import imageio_ffmpeg
 import traceback
+import requests
+
 
 # --- ** FFMPEG 및 Whisper 모델 환경설정 ** ---
 try:
@@ -101,33 +103,51 @@ class UnifiedComplaintManager:
         """텍스트에서 공백을 정리하는 텍스트 전처리"""
         return re.sub(r'\s+', ' ', text.strip())
 
-    def _classify_agency(self, text: str) -> int:
-        """텍스트에 포함된 키워드를 분석하여 기관 ID(0-20) 반환"""
+    def _classify_via_rag(self, text: str) -> str:
+        """RAG 서버에 분류 요청을 보내 기관명을 받아옴"""
+        try:
+            # Docker 네트워크 내의 RAG 서버 주소
+            rag_url = "http://ai-rag:8001/classify"
+            response = requests.post(rag_url, json={"text": text}, timeout=10)
+            if response.status_code == 200:
+                result = response.json()
+                return result.get("agency", "기타")
+        except Exception as e:
+            print(f"RAG 서버 연동 실패 (기본 키워드 분류 시도): {e}")
+        
+        # RAG 실패 시 기본 키워드 매칭(fallback)
+        agency_id = self._classify_agency_keyword(text)
+        return self.AGENCIES.get(agency_id, "기타")
+
+    def _classify_agency_keyword(self, text: str) -> int:
+        """기존 키워드 기반 분류 (Fallback용)"""
         for agency_id, keywords in self.AGENCY_KEYWORDS.items():
             if any(kw in text for kw in keywords):
                 return agency_id
-        return 20 # 매칭되는 키워드 없을 시 '기타' 분류
-
-    def _generate_title(self, text: str, agency_id: int) -> str:
-        """기관명과 텍스트 초반부를 결합하여 민원 제목 생성"""
-        agency_name = self.AGENCIES.get(agency_id, "기타")
-        clean_text = text.strip()
-        summary = (clean_text[:15] + "...") if len(clean_text) > 15 else clean_text
-        return f"[{agency_name}] {summary}"
+        return 20
 
     def process_complaint(self, text: str) -> dict:
-        """최종 민원 분석 실행 함수"""
+        """최종 민원 분석 실행 함수 (RAG 연동)"""
         if not text or not text.strip():
             raise ValueError("입력 텍스트가 유효하지 않습니다.")
 
         cleaned_text = self._preprocess(text)
-        agency_id = self._classify_agency(cleaned_text)
+        
+        # 1. RAG 서버를 통한 기관 분류
+        agency_name = self._classify_via_rag(cleaned_text)
+        
+        # 2. 결과 역매핑 (필요시 ID 매칭)
+        agency_id = 20
+        for aid, name in self.AGENCIES.items():
+            if name in agency_name:
+                agency_id = aid
+                break
 
         title = self._generate_title(cleaned_text, agency_id)
 
         return {
             "agency_id": agency_id,
-            "agency": self.AGENCIES[agency_id],
+            "agency": agency_name,
             "category": self.AGENCY_CATEGORIES.get(agency_id, "기타"),
             "title": title,
             "original_text": text
