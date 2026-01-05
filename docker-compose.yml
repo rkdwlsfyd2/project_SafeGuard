@@ -44,7 +44,7 @@ services:
     networks:
       - safeguard-network
 
-  ai-stt:
+  safeguard-ai-stt:
     build: ./ai/stt
     container_name: safeguard-ai-stt
     ports:

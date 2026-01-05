@@ -32,15 +32,42 @@
             "systemControls": []
         },
         {
-            "name": "safeguard-ai",
-            "image": "274799453401.dkr.ecr.ap-northeast-2.amazonaws.com/safeguard-ai:latest",
+            "name": "safeguard-ai-yolo",
+            "image": "274799453401.dkr.ecr.ap-northeast-2.amazonaws.com/safeguard-ai-yolo:latest",
             "cpu": 0,
             "portMappings": [
                 {
                     "containerPort": 5000,
                     "hostPort": 5000,
                     "protocol": "tcp",
-                    "name": "safeguard-ai-5000-tcp"
+                    "name": "safeguard-ai-yolo-5000-tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/safeguard-task",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "ap-northeast-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "systemControls": []
+        },
+        {
+            "name": "safeguard-ai-stt",
+            "image": "274799453401.dkr.ecr.ap-northeast-2.amazonaws.com/safeguard-ai-stt:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 8000,
+                    "hostPort": 8000,
+                    "protocol": "tcp",
+                    "name": "safeguard-ai-stt-8000-tcp"
                 }
             ],
             "essential": true,

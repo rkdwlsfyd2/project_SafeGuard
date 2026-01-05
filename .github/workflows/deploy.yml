@@ -8,13 +8,15 @@ on:
 env:
   AWS_REGION: ap-northeast-2
   ECR_REPOSITORY_BACKEND: safeguard-backend
-  ECR_REPOSITORY_AI: safeguard-ai
+  ECR_REPOSITORY_AI_YOLO: safeguard-ai-yolo
+  ECR_REPOSITORY_AI_STT: safeguard-ai-stt
   ECR_REPOSITORY_FRONTEND: safeguard-frontend
   ECS_SERVICE: safeguard-service
   ECS_CLUSTER: safeguard-cluster
   ECS_TASK_DEFINITION: safeguard-task
   CONTAINER_NAME_BACKEND: safeguard-backend
-  CONTAINER_NAME_AI: safeguard-ai
+  CONTAINER_NAME_AI_YOLO: safeguard-ai-yolo
+
   CONTAINER_NAME_FRONTEND: safeguard-frontend
 
 jobs:
@@ -61,18 +63,35 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:latest
 
-      - name: Build, tag, and push AI image to Amazon ECR
-        id: build-ai
+      - name: Build, tag, and push AI YOLO image to Amazon ECR
+        id: build-ai-yolo
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           # Build AI (YOLO)
           cd ai/yolo
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_AI:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY_AI:latest .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_AI:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_AI:latest
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_AI_YOLO:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY_AI_YOLO:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_AI_YOLO:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_AI_YOLO:latest
+
+      - name: Build, tag, and push AI STT image to Amazon ECR
+        id: build-ai-stt
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build AI (STT)
+          cd ai/stt
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_AI_STT:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY_AI_STT:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_AI_STT:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_AI_STT:latest
+
+      - name: Register Task Definition
+        id: register-task
+        run: |
+          aws ecs register-task-definition --cli-input-json file://task_definition_update_v3.json
 
       - name: Force ECS Deployment
         run: |
-          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --task-definition $ECS_TASK_DEFINITION --force-new-deployment
