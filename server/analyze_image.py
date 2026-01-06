@@ -25,7 +25,7 @@ def analyze_image(image_path):
     model = YOLO(MODEL_PATH)
     
     # 추론 (conf=0.4 이상만)
-    results = model(image_path, conf=0.4)
+    results = model(image_path, conf=0.05)
     
     detected_objects = []
     
