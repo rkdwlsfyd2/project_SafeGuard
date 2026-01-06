@@ -147,7 +147,8 @@ class UnifiedComplaintManager:
         # 1. 아예 무시할 고정 멘트들
         hallucination_keywords = [
             "시청해주셔서 감사합니다", "구독과 좋아요", "90초", "MBC", "SBS", "YTN",
-            "자막 제작", "저작권", "배경음악", "fitting", "Deadler", "separates"
+            "자막 제작", "저작권", "배경음악", "fitting", "Deadler", "separates",
+            "hijim", "Jazz", "Basically", "State Jail", "fed"
         ]
         
         for hk in hallucination_keywords:
@@ -214,7 +215,11 @@ class UnifiedComplaintManager:
         text = ""
         
         # 1. 텍스트 확보 (입력 우선 or STT)
-        if provided_text and provided_text.strip():
+        if provided_text is not None:
+             # 클라이언트가 텍스트 필드를 보냈는데 내용이 비어있으면 -> "음성 인식 실패" 처리
+             if provided_text.strip() == "":
+                 raise ValueError("음성 인식이 되지 않았습니다.")
+             
              logging.info(f"Using client-provided text: {provided_text}")
              text = provided_text
         elif file_path:
