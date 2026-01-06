@@ -118,6 +118,13 @@ function ApplyVoice() {
                 chunksRef.current = [];
                 console.log("Blob created, size:", blob.size);
 
+                // --- [Validation] Check if text is empty ---
+                const recordedText = realtimeTextRef.current;
+                if (!recordedText || recordedText.trim() === "") {
+                    alert("음성 인식이 되지 않았습니다.\n녹음을 다시 해주세요.");
+                    return; // Stop here, do not upload
+                }
+
                 // Upload to backend
                 const formData = new FormData();
                 formData.append('file', blob, 'recording.webm');
