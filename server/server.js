@@ -3,14 +3,21 @@ import multer from 'multer';
 import cors from 'cors';
 import { spawn } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
+
+// Routes
+import authRoutes from './routes/auth.js';
+import complaintsRoutes from './routes/complaints.js';
+import agenciesRoutes from './routes/agencies.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
@@ -23,11 +30,9 @@ const storage = multer.diskStorage({
         cb(null, `${Date.now()}-${file.originalname}`);
     }
 });
-
 const upload = multer({ storage });
 
-// uploads 폴더 생성 (없을 경우)
-import fs from 'fs';
+// uploads 폴더 생성
 if (!fs.existsSync('uploads')) {
     fs.mkdirSync('uploads');
 }
@@ -39,9 +44,16 @@ app.get('/api/reports', (req, res) => {
         { id: 2, title: '불법 주차 차량', region: '경기도 성남시', date: '2025-12-31', interested: 3 }
     ]);
 });
+// 정적 파일 서빙 (업로드된 이미지)
+app.use('/uploads', express.static('uploads'));
 
-// 이미지 분석 API
-app.post('/api/analyze-image', upload.single('image'), (req, res) => {
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/complaints', complaintsRoutes);
+app.use('/api/agencies', agenciesRoutes);
+
+// 이미지 분석 API (기존 유지)
+app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: '이미지가 업로드되지 않았습니다.' });
     }
@@ -68,7 +80,7 @@ app.post('/api/analyze-image', upload.single('image'), (req, res) => {
         process.stdout.write(output);
     });
 
-    pythonProcess.on('close', (code) => {
+    pythonProcess.on('close', async (code) => {
         console.log(`[서버 로그] AI 분석 프로세스 종료 (코드: ${code})`);
 
         if (code !== 0) {
@@ -83,17 +95,45 @@ app.post('/api/analyze-image', upload.single('image'), (req, res) => {
                 throw new Error('결과 데이터에서 JSON 형식을 찾을 수 없습니다.');
             }
             const jsonString = jsonMatch[0];
-            console.log(`[서버 로그] 추출된 JSON 데이터: ${jsonString}`);
-            const finalResult = JSON.parse(jsonString);
-            res.json(finalResult);
+            const resultJson = JSON.parse(jsonString);
+
+            console.log(`[서버 로그] 분석 성공: ${jsonString}`);
+
+            res.json({
+                ...resultJson,
+                imagePath: `/uploads/${path.basename(imagePath)}`,
+                message: '분석 완료'
+            });
+
         } catch (e) {
-            console.error(`[서버 로그] 결과 해석 오류: ${e.message}. 전체 수신 데이터: ${resultData}`);
-            res.status(500).json({ error: 'AI 분석 결과를 해석하는 중 오류가 발생했습니다.' });
+            console.error(`[서버 로그] 결과 처리 중 오류: ${e.message}`);
+            res.status(500).json({ error: '결과 처리 중 오류가 발생했습니다.' });
         }
     });
 });
 
+// 헬스 체크
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// 에러 핸들링 미들웨어
+app.use((err, req, res, next) => {
+    console.error('[서버 에러]', err);
+    res.status(500).json({ error: '서버 내부 오류가 발생했습니다.' });
+});
+
+// 서버 시작
 app.listen(PORT, () => {
     console.log(`[서버 로그] 백엔드 서버가 포트 ${PORT}에서 실행 중입니다.`);
     console.log(`[서버 로그] http://localhost:${PORT}`);
+    console.log(`[서버 로그] API 엔드포인트:`);
+    console.log(`  - POST /api/auth/register`);
+    console.log(`  - POST /api/auth/login`);
+    console.log(`  - GET  /api/auth/me`);
+    console.log(`  - GET  /api/complaints`);
+    console.log(`  - POST /api/complaints`);
+    console.log(`  - GET  /api/complaints/:id`);
+    console.log(`  - GET  /api/agencies`);
+    console.log(`  - POST /api/analyze-image`);
 });

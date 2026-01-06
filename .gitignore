@@ -1,3 +1,17 @@
+# Gradle
+.gradle/
+build/
+
+# Maven
+target/
+
+# IntelliJ
+.idea/
+*.iml
+
+# OS
+.DS_Store
+
 # Logs
 logs
 *.log
@@ -28,3 +42,6 @@ milvus-data/
 milvus-etcd-data/
 milvus-minio-data/
 
+/src/generated/prisma
+# Env
+.env

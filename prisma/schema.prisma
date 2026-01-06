@@ -1,0 +1,38 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("USER") // USER or ADMIN
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  complaints Complaint[]
+}
+
+model Complaint {
+  id            Int      @id @default(autoincrement())
+  imagePath     String   // Uploaded image path
+  description   String?  // User description
+  analysisResult Json?   // YOLO analysis result (detected objects, counts, etc.)
+  status        String   @default("PENDING") // PENDING, COMPLETED, ERROR
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+}

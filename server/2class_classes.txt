@@ -1,0 +1,5 @@
+--- MODEL: 2class_best.pt ---
+{
+  "0": "banner",
+  "1": "illegal_parking"
+}
