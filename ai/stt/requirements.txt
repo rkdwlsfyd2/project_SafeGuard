@@ -4,4 +4,6 @@ openai-whisper
 imageio-ffmpeg
 python-multipart
 ffmpeg-normalize
+requests
+
 
