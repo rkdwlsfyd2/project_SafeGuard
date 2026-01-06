@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, File, UploadFile
+from fastapi import FastAPI, Request, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,9 +12,25 @@ import tempfile
 import whisper
 import torch
 import subprocess
+import requests
+import sys
+import logging
 import imageio_ffmpeg
 import traceback
-import requests
+import os
+import shutil
+import tempfile
+
+# 기본 로깅 설정 (INFO 레벨 이상 출력, stdout으로 전송)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger(__name__)
+
+# 강제로 stdout 버퍼링 끄기 (실시간 로그 출력을 위해)
+sys.stdout.reconfigure(line_buffering=True)
 
 
 # --- ** FFMPEG 및 Whisper 모델 환경설정 ** ---
@@ -55,6 +71,9 @@ class UnifiedComplaintManager:
     """
 
     def __init__(self):
+        # Global Whisper model reference
+        self.model = model
+            
         # 0~20번까지의 대한민국 주요 기관 매핑
         self.AGENCIES = {
             0: "경찰청", 1: "국토교통부", 2: "고용노동부", 3: "국방부",
@@ -102,7 +121,7 @@ class UnifiedComplaintManager:
     def _preprocess(self, text: str) -> str:
         """텍스트에서 공백을 정리하는 텍스트 전처리"""
         return re.sub(r'\s+', ' ', text.strip())
-
+    
     def _classify_via_rag(self, text: str) -> str:
         """RAG 서버에 분류 요청을 보내 기관명을 받아옴"""
         try:
@@ -111,9 +130,23 @@ class UnifiedComplaintManager:
             response = requests.post(rag_url, json={"text": text}, timeout=10)
             if response.status_code == 200:
                 result = response.json()
-                return result.get("agency", "기타")
+                agency = result.get("agency", "기타")
+                
+                # RAG 분석 결과 로그 출력 (사용자 요청 사항)
+                reasoning = result.get("reasoning", "No reasoning provided")
+                sources = result.get("sources", [])
+                
+                logging.info(f"\n[RAG Analysis Result]")
+                logging.info(f"Agency: {agency}")
+                logging.info(f"Reasoning: {reasoning}")
+                logging.info(f"Sources:")
+                for src in sources:
+                    logging.info(f" - {src}")
+                logging.info("-" * 50 + "\n")
+                
+                return agency
         except Exception as e:
-            print(f"RAG 서버 연동 실패 (기본 키워드 분류 시도): {e}")
+            logging.error(f"RAG 서버 연동 실패 (기본 키워드 분류 시도): {e}")
         
         # RAG 실패 시 기본 키워드 매칭(fallback)
         agency_id = self._classify_agency_keyword(text)
@@ -126,17 +159,71 @@ class UnifiedComplaintManager:
                 return agency_id
         return 20
 
-    def process_complaint(self, text: str) -> dict:
-        """최종 민원 분석 실행 함수 (RAG 연동)"""
+    def _generate_title(self, text: str, agency_id: int) -> str:
+        """민원 내용 요약 (제목 생성) - 간단히 앞부분 20자 + 기관명"""
+        agency_name = self.AGENCIES.get(agency_id, "기타")
+        summary = text[:20] + "..." if len(text) > 20 else text
+        return f"[{agency_name}] {summary}"
+
+    def process_complaint(self, file_path: str = None, provided_text: str = None) -> dict:
+        """
+        최종 민원 분석 실행 함수
+        - provided_text가 있으면 우선 사용
+        - 없으면 file_path의 오디오를 Whisper로 STT 변환
+        - 이후 RAG 분류 및 결과 반환
+        """
+        text = ""
+        
+        # 1. 텍스트 확보 (입력 우선 or STT)
+        if provided_text and provided_text.strip():
+             logging.info(f"Using client-provided text: {provided_text}")
+             text = provided_text
+        elif file_path:
+             logging.info("No client text provided, running Whisper STT...")
+             try:
+                # Whisper 모델로 STT 수행 (환각 방지 옵션 추가)
+                result = self.model.transcribe(
+                    file_path,
+                    language="ko",
+                    fp16=torch.cuda.is_available(),
+                    initial_prompt="행정 민원 신고 내용입니다. 불법 주정차, 도로 파손, 쓰레기 투기, 노점상 단속 등 민원 키워드를 중심으로 인식해 주세요.",
+                    beam_size=5,
+                    condition_on_previous_text=False, # 이전 텍스트 맥락 차단 (반복/환각 방지)
+                    no_speech_threshold=0.6,          # 비음성 구간 임계값 상향
+                    logprob_threshold=-1.0            # 로그 확률 임계값 설정
+                )
+                text = result["text"]
+                logging.info(f"raw_stt_output: {text}") # 원본 텍스트 로깅
+             except Exception as e:
+                logging.error(f"Whisper STT 실패: {e}")
+                logging.error(traceback.format_exc())
+                raise RuntimeError(f"음성 인식 처리 중 오류가 발생했습니다: {e}")
+             finally:
+                # 임시 파일 정리 (STT 내에서 처리하지 않고 호출자가 하거나 여기서 처리)
+                # 여기서는 호출자(upload_voice)가 temp file을 관리하므로 삭제하지 않음?
+                # 아니면 안전하게 삭제 시도. 
+                # upload_voice에서 processed_path를 넘겨주므로, 이 함수 내에서 삭제할 책임은 애매함.
+                # 하지만 기존 로직상 여기서 삭제하던 부분이 있었으므로 유지 여부 결정 필요.
+                # 이번엔 단순히 변환만 함.
+                pass
+        else:
+             raise ValueError("음성인식을 다시해주세요.")
+
         if not text or not text.strip():
-            raise ValueError("입력 텍스트가 유효하지 않습니다.")
+            raise ValueError("음성인식을 다시해주세요.")
 
         cleaned_text = self._preprocess(text)
         
-        # 1. RAG 서버를 통한 기관 분류
+        # 환각 텍스트 필터링
+        cleaned_text = self._filter_hallucination(cleaned_text)
+        
+        if not cleaned_text:
+             raise ValueError("음성인식을 다시해주세요. (소음 또는 환각 필터링됨)")
+        
+        # 2. RAG 서버를 통한 기관 분류
         agency_name = self._classify_via_rag(cleaned_text)
         
-        # 2. 결과 역매핑 (필요시 ID 매칭)
+        # 3. 결과 역매핑 (필요시 ID 매칭)
         agency_id = 20
         for aid, name in self.AGENCIES.items():
             if name in agency_name:
@@ -166,7 +253,6 @@ app.add_middleware(
 )
 
 manager = UnifiedComplaintManager()
-
 # 정적 파일(static) 및 템플릿(templates) 디렉토리 연결
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -186,86 +272,75 @@ async def process_voice(data: VoiceInput):
     if not text:
         raise HTTPException(status_code=400, detail="텍스트가 없습니다.")
     try:
-        result = manager.process_complaint(text)
+        result = manager.process_complaint(provided_text=text)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/upload_voice")
-async def upload_voice(file: UploadFile = File(...)):
+async def upload_voice(
+    file: UploadFile = File(None), 
+    text: str = Form(None)
+):
     """
     음성 파일 업로드 -> 오디오 전처리 -> Whisper STT -> 민원 분석 API
+    또는 텍스트 직접 입력 -> 민원 분석 API
     """
-    print(f"--- 파일 업로드 시작: {file.filename} ({file.content_type}) ---")
-    
-    # 1. 업로드된 파일을 임시 저장
-    suffix = os.path.splitext(file.filename)[1]
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = tmp.name
-    
-    print(f"임시 파일 저장 완료: {tmp_path}")
+    if not file and not text:
+        raise HTTPException(status_code=400, detail="음성 파일 또는 텍스트 입력이 필요합니다.")
+
+    tmp_path = None
+    noise_reduced_path = None
+    processed_path = None
 
     try:
-        # --- 오디오 고도화 전처리 (Noise Reduction & Normalization) ---
-        processed_path = tempfile.mktemp(suffix=".wav")
-        
-        # 2-1. 배경 소음 제거 (FFmpeg afftdn 필터 사용)
-        print("배경 소음 제거 중 (-af afftdn)...")
-        noise_reduced_path = tempfile.mktemp(suffix=".wav")
-        ffmpeg_cmd = [
-            imageio_ffmpeg.get_ffmpeg_exe(),
-            "-i", tmp_path,
-            "-af", "afftdn",
-            "-y", noise_reduced_path
-        ]
-        subprocess.run(ffmpeg_cmd, check=True, capture_output=True)
-        
-        # 2-2. 음성 볼륨 평탄화 및 리샘플링 (ffmpeg-normalize 사용)
-        print("음성 볼륨 평탄화 중 (ffmpeg-normalize)...")
-        normalize_cmd = [
-            "ffmpeg-normalize",
-            noise_reduced_path,
-            "-o", processed_path,
-            "-ar", "16000", # Whisper 최적화를 위해 16kHz로 샘플링
-            "-f"
-        ]
-        subprocess.run(normalize_cmd, check=True, capture_output=True)
+        if file:
+            logging.info(f"--- 파일 업로드 시작: {file.filename} ({file.content_type}) ---")
+            # 1. 업로드된 파일을 임시 저장
+            suffix = os.path.splitext(file.filename)[1]
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                shutil.copyfileobj(file.file, tmp)
+                tmp_path = tmp.name
+            
+            logging.info(f"임시 파일 저장 완료: {tmp_path}")
 
-        # 3. Whisper 엔진으로 음성 인식(STT) 수행
-        print("Whisper 변환 시작 (전처리 완료 및 Phase 3 최적화 적용)...")
-        '''
-        Whisper 모델의 성능 및 정확도 향상을 위해 Phase 3 최적화 설정을 적용했습니다:
-        - language="ko": 한국어 전용 인식
-        - fp16=torch.cuda.is_available(): GPU 가속 사용 여부
-        - initial_prompt: 민원 관련 키워드를 미리 제시하여 전문 용어(불법 주정차, 도로 파손 등) 인식률 향상
-        - beam_size=5: 빔 서치 크기를 조절하여 단어 선택의 정확도 보강
-        - condition_on_previous_text=False: 문장 간 독립성을 부여하여 환각(Hallucination) 현상 방지
-        '''
-        result_stt = model.transcribe(
-            processed_path, 
-            language="ko", 
-            fp16=torch.cuda.is_available(),
-            initial_prompt="행정 민원 신고 내용입니다. 불법 주정차, 도로 파손, 쓰레기 투기, 노점상 단속 등 민원 키워드를 중심으로 인식해 주세요.",
-            beam_size=5,
-            condition_on_previous_text=False
-        )
-        text = result_stt["text"]
-        print(f"인식 성공: {text}")
-        
-        # 4. 변환된 텍스트를 민원 관리 엔진에 전달하여 분석
-        result = manager.process_complaint(text)
-        
-        # 사용 완료된 중간 단계 임시 파일 삭제
-        if os.path.exists(noise_reduced_path): os.remove(noise_reduced_path)
-        if os.path.exists(processed_path): os.remove(processed_path)
+            # --- 오디오 고도화 전처리 (Noise Reduction & Normalization) ---
+            processed_path = tempfile.mktemp(suffix=".wav")
+            
+            # 2-1. 배경 소음 제거 (FFmpeg afftdn 필터 사용)
+            logging.info("배경 소음 제거 중 (-af afftdn)...")
+            noise_reduced_path = tempfile.mktemp(suffix=".wav")
+            ffmpeg_cmd = [
+                imageio_ffmpeg.get_ffmpeg_exe(),
+                "-i", tmp_path,
+                "-af", "afftdn",
+                "-y", noise_reduced_path
+            ]
+            subprocess.run(ffmpeg_cmd, check=True, capture_output=True)
+            
+            # 2-2. 음성 볼륨 평탄화 및 리샘플링 (ffmpeg-normalize 사용)
+            logging.info("음성 볼륨 평탄화 중 (ffmpeg-normalize)...")
+            normalize_cmd = [
+                "ffmpeg-normalize",
+                noise_reduced_path,
+                "-o", processed_path,
+                "-ar", "16000", # Whisper 최적화를 위해 16kHz로 샘플링
+                "-f"
+            ]
+            subprocess.run(normalize_cmd, check=True, capture_output=True)
+            
+            # 3. 변환된 텍스트를 민원 관리 엔진에 전달하여 분석
+            result = manager.process_complaint(file_path=processed_path, provided_text=text)
+        else: # Only text is provided
+            logging.info(f"--- 텍스트 입력 처리 시작 ---")
+            result = manager.process_complaint(provided_text=text)
         
         return result
         
     except Exception as e:
         # 에러 발생 시 상세 로그 출력
         error_msg = traceback.format_exc()
-        print(f"분석 실패 상세 로그:\n{error_msg}")
+        logging.error(f"분석 실패 상세 로그:\n{error_msg}")
         
         hint = ""
         if "ffmpeg" in str(e).lower() or "file not found" in str(e).lower():
@@ -274,9 +349,9 @@ async def upload_voice(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"음성 분석 중 오류 발생: {str(e)}{hint}")
     finally:
         # 원본 임시 파일 삭제
-        if os.path.exists(tmp_path):
+        if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
-            print("원본 임시 파일 삭제 완료")
+            logging.info("원본 임시 파일 삭제 완료")
 
 if __name__ == '__main__':
     # 서버 실행 (uvicorn)

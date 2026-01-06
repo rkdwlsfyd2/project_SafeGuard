@@ -1,4 +1,4 @@
-from test_classification import classify_complaint
+from classification_service import classify_complaint
 import sys
 
 def run_cli():
@@ -27,10 +27,11 @@ def run_cli():
             if not user_input:
                 continue
 
-            print("\n⏳ 분석 중...", end="", flush=True)
+            print("\n 분석 중...", end="", flush=True)
             
-            # 분류 함수 실행 (test_classification.py 활용)
-            result = classify_complaint(user_input)
+            # 분류 함수 실행 (classification_service.py 활용)
+            result_data = classify_complaint(user_input)
+            result = result_data.get("agency", "알 수 없음")
             
             # 결과는 이미 classify_complaint 내부에서 print되지만,
             # 반환값(기관명)도 명확히 한 번 더 표시

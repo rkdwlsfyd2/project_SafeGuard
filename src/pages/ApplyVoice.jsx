@@ -14,6 +14,14 @@ function ApplyVoice() {
     const [videoPreviewUrl, setVideoPreviewUrl] = React.useState(null);
     const recognitionRef = React.useRef(null);
     const fileInputRef = React.useRef(null);
+    const chunksRef = React.useRef([]);
+
+    // Ref for realtime text to avoid stale closure in onstop
+    const realtimeTextRef = React.useRef("");
+
+    React.useEffect(() => {
+        realtimeTextRef.current = realtimeText;
+    }, [realtimeText]);
 
     const handleFileUpload = (event) => {
         const file = event.target.files[0];
@@ -104,6 +112,7 @@ function ApplyVoice() {
             };
 
             recorder.onstop = async () => {
+                alert("DEBUG: 녹음 종료 이벤트 발생 (onstop)"); // Debug Alert 3
                 console.log("Recording stopped, processing chunks...");
                 const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
                 chunksRef.current = [];
@@ -112,11 +121,13 @@ function ApplyVoice() {
                 // Upload to backend
                 const formData = new FormData();
                 formData.append('file', blob, 'recording.webm');
+                formData.append('text', realtimeTextRef.current); // Use Ref to get latest text
 
                 setLoading(true);
                 setError(null);
 
                 try {
+                    alert("DEBUG: 서버로 업로드 시작"); // Debug Alert 4
                     console.log("Uploading to backend...");
                     // Use relative path via Nginx proxy (/api/stt/ -> localhost:8000/)
                     const response = await fetch('/api/stt/upload_voice', {
@@ -127,21 +138,30 @@ function ApplyVoice() {
                     if (!response.ok) {
                         const errorText = await response.text();
                         console.error("Server error response:", errorText);
+                        alert(`서버 전송 실패: ${response.status}`);
                         throw new Error(`Server error: ${response.status} - ${errorText}`);
                     }
 
                     const data = await response.json();
                     console.log("Analysis result:", data);
+                    alert(`서버 분석 완료! Agency: ${data.agency}`);
                     setAnalysisResult(data);
                 } catch (err) {
                     console.error("Upload failed", err);
-                    setError(`분석 중 오류가 발생했습니다: ${err.message}`);
+                    if (err.message.includes("음성인식을 다시해주세요")) {
+                        setError("음소거가 감지되었습니다. 음성인식을 다시해주세요.");
+                        alert("음성인식을 다시해주세요.");
+                    } else {
+                        setError(`분석 중 오류가 발생했습니다: ${err.message}`);
+                        alert(`오류 발생: ${err.message}`);
+                    }
                 } finally {
                     setLoading(false);
                 }
             };
 
             recorder.start();
+            alert("DEBUG: 녹음 시작됨 (recorder.start)"); // Debug Alert 1
             console.log("Recorder started", recorder.state);
             setMediaRecorder(recorder);
             setIsRecording(true);
@@ -149,14 +169,18 @@ function ApplyVoice() {
         } catch (err) {
             console.error("Error accessing microphone", err);
             setError(`마이크 접근 실패: ${err.message}. 권한을 허용했는지 확인하세요.`);
+            alert(`마이크 에러: ${err.message}`);
         }
     };
 
     const stopRecording = () => {
+        alert("DEBUG: 정지 버튼 클릭됨"); // Debug Alert 2
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
             setIsRecording(false);
             mediaRecorder.stream.getTracks().forEach(track => track.stop()); // Stop stream
+        } else {
+            alert("DEBUG: mediaRecorder가 없거나 이미 정지 상태임");
         }
 
         // Stop Speech Recognition
@@ -384,10 +408,6 @@ function ApplyVoice() {
                         <div style={{ padding: '15px', backgroundColor: '#EEF2FF', borderRadius: '8px' }}>
                             <div style={{ fontSize: '0.8rem', color: '#6366F1', marginBottom: '5px' }}>음성 인식 결과</div>
                             <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '0.85rem', color: '#312E81', marginBottom: '5px' }}>발생지점</div>
-                                <div style={{ fontSize: '0.8rem', marginBottom: '10px' }}>
-                                    {analysisResult ? analysisResult.location : "-"}
-                                </div>
                                 <div style={{ fontSize: '0.85rem', color: '#312E81', marginBottom: '5px' }}>민원 내용</div>
                                 <div style={{ fontSize: '0.8rem' }}>
                                     {analysisResult ? analysisResult.original_text : "-"}

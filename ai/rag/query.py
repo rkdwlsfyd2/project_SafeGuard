@@ -62,11 +62,11 @@ if os.path.exists(BM25_PATH):
     try:
         with open(BM25_PATH, "rb") as f:
             bm25_data = pickle.load(f)
-        print(f"✅ BM25 index loaded from {BM25_PATH}")
+        print(f"[INFO] BM25 index loaded from {BM25_PATH}")
     except Exception as e:
-        print(f"❌ Failed to load BM25 index: {e}")
+        print(f"[ERROR] Failed to load BM25 index: {e}")
 else:
-    print(f"⚠️ BM25 index file not found at {BM25_PATH}")
+    print(f"[WARNING] BM25 index file not found at {BM25_PATH}")
 
 def perform_bm25_search(query, top_k=5):
     """
@@ -203,7 +203,7 @@ def ask(question, top_k=5):
 if __name__ == "__main__":
     results = ask("불법주정차 신고는 어디에 해야 하나요?")
     for res in results:
-        print(f"📄 출처: {res['source']} (유사도: {res['distance']:.4f})")
+        print(f"[SOURCE] 출처: {res['source']} (유사도: {res['distance']:.4f})")
         print(res['text'][:100] + "...")
         print("-" * 50)
 

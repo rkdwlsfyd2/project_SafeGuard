@@ -4,7 +4,7 @@ rag/app.py
 
 [역할]
 - 외부 서비스(STT 등)에서 HTTP 요청을 받아 민원 분류 기능을 제공
-- RAG 로직(test_classification.py)을 래핑하여 FastAPI로 서빙
+- RAG 로직(classification_service.py)을 래핑하여 FastAPI로 서빙
 - Docker 환경에서 'ai-rag' 컨테이너로 실행됨
 
 [주요 기능]
@@ -17,7 +17,7 @@ rag/app.py
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from test_classification import classify_complaint
+from classification_service import classify_complaint
 from milvus_client import connect_milvus
 import uvicorn
 import os
@@ -29,6 +29,8 @@ class ComplaintInput(BaseModel):
 
 class ComplaintResponse(BaseModel):
     agency: str
+    reasoning: str = ""
+    sources: list = []
     message: str = "Success"
 
 @app.on_event("startup")
@@ -40,9 +42,9 @@ async def startup_event():
     print("Startup: Connecting to Milvus...")
     try:
         connect_milvus()
-        print("✅ Milvus Connected")
+        print("Milvus Connected")
     except Exception as e:
-        print(f"❌ Failed to connect to Milvus: {e}")
+        print(f"Failed to connect to Milvus: {e}")
         # Milvus가 나중에 실행되거나 특정 요청에만 필요할 수 있으므로 여기서 종료하지 않음
 
 @app.get("/health")
@@ -63,15 +65,20 @@ async def classify_text(input_data: ComplaintInput):
     Returns:
         ComplaintResponse: 분류된 담당 기관명 및 상태 메시지
     """
-    print(f"📩 Classification Request: {input_data.text}")
+    print(f"Classification Request: {input_data.text}")
     try:
         # classify_complaint 로직:
         # 1. Milvus에 질문 조회
         # 2. 문서 출처별 기관 카운팅
         # 3. 최적의 기관명 반환
-        result_agency = classify_complaint(input_data.text)
+        result_data = classify_complaint(input_data.text)
         
-        return ComplaintResponse(agency=result_agency)
+        # result_data는 dict {agency, reasoning, sources} 형태
+        return ComplaintResponse(
+            agency=result_data["agency"],
+            reasoning=result_data.get("reasoning", ""),
+            sources=result_data.get("sources", [])
+        )
     except Exception as e:
         print(f"Classification Error: {e}")
         # 에러 발생 시, "기타"를 반환하거나 500 에러를 발생시킬 수 있음
