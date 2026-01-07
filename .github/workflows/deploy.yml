@@ -10,6 +10,7 @@ env:
   ECR_REPOSITORY_BACKEND: safeguard-backend
   ECR_REPOSITORY_AI_YOLO: safeguard-ai-yolo
   ECR_REPOSITORY_AI_STT: safeguard-ai-stt
+  ECR_REPOSITORY_AI_RAG: safeguard-ai-rag
   ECR_REPOSITORY_FRONTEND: safeguard-frontend
   ECS_SERVICE: safeguard-task-service-qhobrl5v
   ECS_CLUSTER: safeguard-cluster
@@ -86,6 +87,18 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_AI_STT:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY_AI_STT:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_AI_STT:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_AI_STT:latest
+
+      - name: Build, tag, and push AI RAG image to Amazon ECR
+        id: build-ai-rag
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build AI (RAG)
+          cd ai/rag
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_AI_RAG:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY_AI_RAG:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_AI_RAG:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_AI_RAG:latest
 
       - name: Register Task Definition
         id: register-task

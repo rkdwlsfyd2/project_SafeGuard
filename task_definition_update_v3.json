@@ -124,13 +124,186 @@
                 }
             },
             "systemControls": []
+        },
+        {
+            "name": "milvus-minio",
+            "image": "minio/minio:RELEASE.2023-03-20T20-16-18Z",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 9000,
+                    "hostPort": 9000,
+                    "protocol": "tcp",
+                    "name": "minio-9000-tcp"
+                },
+                {
+                    "containerPort": 9001,
+                    "hostPort": 9001,
+                    "protocol": "tcp",
+                    "name": "minio-9001-tcp"
+                }
+            ],
+            "essential": true,
+            "command": [
+                "minio",
+                "server",
+                "/data",
+                "--console-address",
+                ":9001"
+            ],
+            "environment": [
+                {
+                    "name": "MINIO_ACCESS_KEY",
+                    "value": "minioadmin"
+                },
+                {
+                    "name": "MINIO_SECRET_KEY",
+                    "value": "minioadmin"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/safeguard-task",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "ap-northeast-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        },
+        {
+            "name": "milvus-etcd",
+            "image": "quay.io/coreos/etcd:v3.5.5",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 2379,
+                    "hostPort": 2379,
+                    "protocol": "tcp",
+                    "name": "etcd-2379-tcp"
+                }
+            ],
+            "essential": true,
+            "command": [
+                "etcd",
+                "-advertise-client-urls",
+                "http://127.0.0.1:2379",
+                "-listen-client-urls",
+                "http://0.0.0.0:2379",
+                "--data-dir",
+                "/etcd"
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/safeguard-task",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "ap-northeast-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        },
+        {
+            "name": "milvus-standalone",
+            "image": "milvusdb/milvus:v2.3.4",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 19530,
+                    "hostPort": 19530,
+                    "protocol": "tcp",
+                    "name": "milvus-19530-tcp"
+                },
+                {
+                    "containerPort": 9091,
+                    "hostPort": 9091,
+                    "protocol": "tcp",
+                    "name": "milvus-9091-tcp"
+                }
+            ],
+            "essential": true,
+            "command": [
+                "milvus",
+                "run",
+                "standalone"
+            ],
+            "environment": [
+                {
+                    "name": "ETCD_ENDPOINTS",
+                    "value": "127.0.0.1:2379"
+                },
+                {
+                    "name": "MINIO_ADDRESS",
+                    "value": "127.0.0.1:9000"
+                }
+            ],
+            "dependsOn": [
+                {
+                    "containerName": "milvus-etcd",
+                    "condition": "START"
+                },
+                {
+                    "containerName": "milvus-minio",
+                    "condition": "START"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/safeguard-task",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "ap-northeast-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        },
+        {
+            "name": "safeguard-ai-rag",
+            "image": "274799453401.dkr.ecr.ap-northeast-2.amazonaws.com/safeguard-ai-rag:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 8001,
+                    "hostPort": 8001,
+                    "protocol": "tcp",
+                    "name": "ai-rag-8001-tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "MILVUS_HOST",
+                    "value": "127.0.0.1"
+                },
+                {
+                    "name": "MILVUS_PORT",
+                    "value": "19530"
+                }
+            ],
+            "dependsOn": [
+                {
+                    "containerName": "milvus-standalone",
+                    "condition": "START"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/safeguard-task",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "ap-northeast-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
         }
     ],
     "requiresCompatibilities": [
         "FARGATE"
     ],
-    "cpu": "1024",
-    "memory": "3072",
+    "cpu": "4096",
+    "memory": "8192",
     "runtimePlatform": {
         "cpuArchitecture": "X86_64",
         "operatingSystemFamily": "LINUX"
