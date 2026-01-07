@@ -40,7 +40,7 @@ MILVUS_PORT = "19530"
 COLLECTION_NAME = "law_rag"
 
 # 반드시 임베딩 모델 차원과 일치해야 함
-EMBEDDING_DIM = 768
+EMBEDDING_DIM = 384
 
 
 def connect_milvus():
@@ -111,13 +111,14 @@ def create_collection():
     return collection
 
 
-def get_collection(load: bool = True) -> Collection:
+def get_collection(load: bool = True, drop_old: bool = False) -> Collection:
     """
     'law_rag' 컬렉션 객체를 가져옵니다.
     컬렉션이 없으면 새로 생성하고, 있으면 로드합니다.
 
     Args:
         load (bool): 검색을 위해 컬렉션을 메모리에 로드할지 여부 (기본값: True)
+        drop_old (bool): True일 경우 기존 컬렉션을 삭제하고 새로 생성합니다. (기본값: False)
 
     Returns:
         Collection: Milvus 컬렉션 객체
@@ -125,7 +126,12 @@ def get_collection(load: bool = True) -> Collection:
     connect_milvus()
 
     if utility.has_collection(COLLECTION_NAME):
-        collection = Collection(COLLECTION_NAME)
+        if drop_old:
+            print(f"Collection {COLLECTION_NAME} exists. Dropping for fresh ingestion...")
+            utility.drop_collection(COLLECTION_NAME)
+            collection = create_collection()
+        else:
+            collection = Collection(COLLECTION_NAME)
     else:
         collection = create_collection()
 

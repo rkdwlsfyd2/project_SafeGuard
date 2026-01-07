@@ -206,5 +206,3 @@ if __name__ == "__main__":
         print(f"[SOURCE] 출처: {res['source']} (유사도: {res['distance']:.4f})")
         print(res['text'][:100] + "...")
         print("-" * 50)
-
-

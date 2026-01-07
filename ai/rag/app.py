@@ -28,7 +28,8 @@ class ComplaintInput(BaseModel):
     text: str
 
 class ComplaintResponse(BaseModel):
-    agency: str
+    agency_code: int
+    agency_name: str
     reasoning: str = ""
     sources: list = []
     message: str = "Success"
@@ -73,9 +74,10 @@ async def classify_text(input_data: ComplaintInput):
         # 3. 최적의 기관명 반환
         result_data = classify_complaint(input_data.text)
         
-        # result_data는 dict {agency, reasoning, sources} 형태
+        # result_data는 dict {agency_code, agency_name, reasoning, sources} 형태
         return ComplaintResponse(
-            agency=result_data["agency"],
+            agency_code=result_data["agency_code"],
+            agency_name=result_data["agency_name"],
             reasoning=result_data.get("reasoning", ""),
             sources=result_data.get("sources", [])
         )

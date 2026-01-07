@@ -18,60 +18,11 @@ import os
 import pdfplumber
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
-from pymilvus import (
-    connections,
-    FieldSchema,
-    CollectionSchema,
-    DataType,
-    Collection,
-    utility
-)
+from milvus_client import get_collection
 
-# Configuration
-MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
-MILVUS_PORT = "19530"
-COLLECTION_NAME = "law_rag"
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2" 
-DIMENSION = 384 
 
-def get_collection(drop_if_exists=False):
-    """
-    Milvus 컬렉션을 가져오거나 새로 생성합니다.
 
-    Args:
-        drop_if_exists (bool): True일 경우 기존 컬렉션을 삭제하고 새로 생성합니다.
-
-    Returns:
-        Collection: Milvus 컬렉션 객체
-    """
-    connections.connect(host=MILVUS_HOST, port=MILVUS_PORT)
-
-    if utility.has_collection(COLLECTION_NAME):
-        if drop_if_exists:
-            print(f"Collection {COLLECTION_NAME} exists. Dropping for fresh ingestion...")
-            utility.drop_collection(COLLECTION_NAME)
-        else:
-            return Collection(COLLECTION_NAME)
-
-    fields = [
-        FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-        FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=DIMENSION),
-        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
-        FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=512),
-    ]
-
-    schema = CollectionSchema(fields, description="Law RAG Collection")
-    collection = Collection(name=COLLECTION_NAME, schema=schema)
-
-    collection.create_index(
-        field_name="embedding",
-        index_params={
-            "index_type": "IVF_FLAT",
-            "metric_type": "COSINE",
-            "params": {"nlist": 128}
-        }
-    )
-    return collection
 
 def ingest_pdfs():
     """
@@ -172,7 +123,8 @@ def ingest_pdfs():
     embeddings = model.encode(data_texts, batch_size=32, show_progress_bar=True)
 
     # Insert into Milvus
-    collection = get_collection(drop_if_exists=True)
+    # Insert into Milvus
+    collection = get_collection(drop_old=True)
     
     print("Inserting data into Milvus...")
     insert_data = [

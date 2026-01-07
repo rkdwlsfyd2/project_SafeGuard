@@ -1,122 +1,155 @@
-from query import ask
-from collections import Counter
-
+import os
+import logging
 import unicodedata
+from collections import Counter
+from query import ask
 
-# 문서 출처 기반 기관 매핑 규칙
-AGENCY_MAPPING = {
-    "도로교통": "경찰청 / 지자체 (Police/Local Gov)",
-    "환경": "환경부 (Ministry of Environment)",
-    "물환경": "환경부 (Ministry of Environment)",
-    "자연": "환경부 (Ministry of Environment)",
-    "폐기물": "환경부 / 지자체 (Ministry of Environment / Local Gov)",
-    "하수도": "환경부 / 지자체 (Ministry of Environment / Local Gov)",
-    "개인정보": "개인정보보호위원회 (PIPC)",
-    "민원": "국민권익위원회 (ACRC) / 행정안전부",
-    "형법": "법무부 (Ministry of Justice) / 경찰청",
-    "행정": "행정안전부 (Ministry of the Interior and Safety)"
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# =========================
+# 키워드 → 기관 매핑 (fallback + source 보정용)
+# =========================
+KEYWORD_TO_AGENCY = {
+    "도로교통": "경찰청",
+    "불법주차": "경찰청",
+    "주차": "국토교통부",
+    "환경": "기후에너지환경부",
+    "폐수": "기후에너지환경부",
+    "하천": "기후에너지환경부",
+    "쓰레기": "기후에너지환경부",
+    "개인정보": "개인정보보호위원회",
+    "민원": "국민권익위원회",
+    "형법": "법무부",
+    "근로": "고용노동부",
+    "노동": "고용노동부",
 }
 
-def classify_complaint(user_query):
-    """
-    사용자의 민원 내용을 분석하여 담당 기관을 분류합니다.
-    하이브리드 검색(Vector + BM25)을 통해 관련 법령을 찾고, 
-    검색된 문서의 출처(파일명)를 기반으로 담당 기관을 추론합니다.
 
-    Args:
-        user_query (str): 사용자 민원 내용
+# =========================
+# 기관 코드 정의 (절대 기준)
+# =========================
+AGENCY_CODES = {
+    "경찰청": 0,
+    "국토교통부": 1,
+    "고용노동부": 2,
+    "국방부": 3,
+    "국민권익위원회": 4,
+    "식품의약품안전처": 5,
+    "대검찰청": 6,
+    "기획재정부": 7,
+    "행정안전부": 8,
+    "보건복지부": 9,
+    "과학기술정보통신부": 10,
+    "국세청": 11,
+    "기후에너지환경부": 12,
+    "법무부": 13,
+    "공정거래위원회": 14,
+    "교육부": 15,
+    "해양수산부": 16,
+    "농림축산식품부": 17,
+    "소방청": 18,
+    "인사혁신처": 19,
+    "기타": 20
+}
 
-    Returns:
-        dict: {
-            "agency": str,      # 분류된 담당 기관명
-            "reasoning": str,   # 판단 근거
-            "sources": list     # 검색된 법령 및 유사도 정보 리스트
-        }
-    """
-    print(f"\n 질문: {user_query}")
-    
-    # 1. 관련 문서 검색
-    results = ask(user_query, top_k=5)
-    
+# =========================
+# 기관 → UI 유형 매핑
+# =========================
+AGENCY_TO_CATEGORY = {
+    0: "경찰·검찰",
+    6: "경찰·검찰",
+    13: "경찰·검찰",
+
+    1: "교통",
+    8: "행정·안전",
+    18: "행정·안전",
+    19: "행정·안전",
+    4: "행정·안전",
+
+    2: "산업·통상",
+    7: "산업·통상",
+    10: "산업·통상",
+    14: "산업·통상",
+    16: "산업·통상",
+    17: "산업·통상",
+
+    12: "환경",
+    9: "보건",
+    5: "보건",
+
+    15: "교육",
+    3: "행정·안전",
+    11: "행정·안전",
+
+    20: "기타"
+}
+
+
+# =========================
+# 핵심 분류 함수
+# =========================
+def classify_complaint(user_query: str) -> dict:
+    logger.info("=" * 60)
+    logger.info("[RAG] Query received: %s", user_query)
+
+    results = ask(user_query, top_k=3)
+
     if not results:
-        return "관련 법령을 찾을 수 없습니다."
+        return {
+            "agency_code": 20,
+            "agency_name": "기타",
+            "category": "기타",
+            "confidence": 0.0,
+            "reasoning": "관련 법령을 찾을 수 없습니다.",
+            "sources": []
+        }
 
-    # 2. 출처 분석
-    detected_sources = [r['source'] for r in results]
     agency_counts = Counter()
-    
-    print(" 검색된 법령 근거:")
-    for r in results:
-        # 점수 유형에 따른 라벨링
-        score_val = r.get('score', 0)
-        rtype = r.get('type', 'unknown')
-        
-        if rtype == 'vector':
-            score_label = f"벡터 유사도: {score_val:.4f} (기준: 0.4↑ 양호, 0.6↑ 우수)"
-        elif rtype == 'bm25':
-            score_label = f"BM25 키워드 점수: {score_val:.2f} (절대값, 높을수록 정확)"
-        else:
-            # RRF 결과인 경우 (Merged) - rrf_score가 별도로 있을 수 있음
-            rrf_score = r.get('rrf_score', 0)
-            score_label = f"통합 랭킹(RRF): {rrf_score:.4f} (벡터+BM25 순위 결합)"
-
-        print(f" - [{rtype.upper()}] {r['source']} | {score_label}")
-        
-        # 파일명 내 단순 키워드 매칭 (NFC 정규화 적용)
-        source_nfc = unicodedata.normalize('NFC', r['source'])
-        matched = False
-        for key, agency in AGENCY_MAPPING.items():
-            if key in source_nfc:
-                agency_counts[agency] += 1
-                matched = True
-        
-        if not matched:
-            agency_counts["기타/미분류"] += 1
-
-    # 3. 최적 기관 결정
-    if not agency_counts:
-        print("\n 판단 근거: 관련 법령 내에서 담당 기관 정보를 찾을 수 없습니다.")
-        return "기관을 특정할 수 없습니다."
-        
-    best_agency = agency_counts.most_common(1)[0][0]
-    best_count = agency_counts.most_common(1)[0][1]
-    total_docs = len(results)
-    
-    # 근거 텍스트 생성
-    reasoning = f"검색된 연관 법령 {total_docs}건 중 {best_count}건이 '{best_agency}' 소관으로 식별됨."
-    
-    print(f"\n 판단 근거: {reasoning}")
-    print(f" 추천 담당 기관: {best_agency}")
-
-    # 상세 분석 결과 구성
     source_details = []
+
+    logger.info("[RAG] Evidence documents:")
+
     for r in results:
-        score_val = r.get('score', 0)
-        rtype = r.get('type', 'unknown')
-        if rtype == 'vector':
-            score_desc = f"Vector: {score_val:.4f}"
-        elif rtype == 'bm25':
-            score_desc = f"BM25: {score_val:.2f}"
-        else:
-            score_desc = f"RRF: {r.get('rrf_score', 0):.4f}"
-        
-        source_details.append(f"{r['source']} ({score_desc})")
+        raw_source = unicodedata.normalize("NFC", r.get("source", ""))
+        filename = os.path.basename(raw_source)
+
+        score = r.get("score", 0.0)
+        rtype = r.get("type", "unknown")
+        score_label = "Vector" if rtype == "vector" else rtype.upper()
+
+        logger.info(" - %s | %s %.2f", filename, score_label, score)
+
+        matched_agency = "기타"
+        for key, agency in KEYWORD_TO_AGENCY.items():
+            if key in raw_source:
+                matched_agency = agency
+                break
+
+        agency_counts[matched_agency] += 1
+        source_details.append(f"{filename} ({score_label}: {score:.2f})")
+
+    best_agency, best_count = agency_counts.most_common(1)[0]
+    total_docs = len(results)
+
+    agency_code = AGENCY_CODES.get(best_agency, 20)
+    category = AGENCY_TO_CATEGORY.get(agency_code, "기타")
+    confidence = round(best_count / total_docs, 2)
+
+    reasoning = (
+        f"검색된 연관 법령 {total_docs}건 중 "
+        f"{best_count}건이 '{best_agency}' 소관으로 식별됨."
+    )
+
+    logger.info("[RAG] Final decision: %s (%d)", best_agency, agency_code)
+    logger.info("[RAG] Confidence: %.2f", confidence)
+    logger.info("=" * 60)
 
     return {
-        "agency": best_agency,
+        "agency_code": agency_code,
+        "agency_name": best_agency,
+        "category": category,
+        "confidence": confidence,
         "reasoning": reasoning,
         "sources": source_details
     }
-
-if __name__ == "__main__":
-    # Test Cases
-    test_queries = [
-        "집 앞에 불법주차된 차 때문에 통행이 불편해요.",
-        "공장에서 폐수를 하천으로 무단 방류하고 있습니다.",
-        "웹사이트에서 제 주민등록번호가 노출되었어요. 처벌 가능한가요?",
-        "시청 직원이 불친절하게 민원을 처리했습니다."
-    ]
-    
-    for q in test_queries:
-        classify_complaint(q)
-        print("="*60)
