@@ -1,28 +1,24 @@
 package com.safeguard.entity;
 
-import com.civilcomplaint.enums.UserRole;
-import lombok.*;
+import com.safeguard.enums.UserRole;
+import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class AppUser {
     private Long userNo;
-    private String userId; // 이메일로도 사용 가능
-    private String email; // 명시적 이메일 필드 추가
+    private String userId;
     private String pw;
     private String name;
-
-    private LocalDate birthDate;
+    private LocalDate birthDate; // DATE 권장
     private String addr;
     private String phone;
+    private String email;
 
-    private OffsetDateTime createdDate;
-    private UserRole role; // USER, ADMIN 등
+    private OffsetDateTime createdDate; // TIMESTAMPTZ
+    private UserRole role;
 
     // 기관 계정일 때만 값 있음(일반/관리자는 null)
     private Long agencyNo;

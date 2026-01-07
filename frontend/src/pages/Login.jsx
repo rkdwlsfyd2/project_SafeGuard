@@ -124,6 +124,7 @@ function Login() {
                             </label>
                             <input
                                 type="text"
+                                name="userId"
                                 value={userId}
                                 onChange={(e) => setUserId(e.target.value)}
                                 required
@@ -188,17 +189,12 @@ function Login() {
 
                         <div style={{
                             display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
+                            justifyContent: 'flex-end',
                             marginBottom: '24px'
                         }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                <input type="checkbox" style={{ width: '18px', height: '18px', accentColor: '#7c3aed' }} />
-                                <span style={{ fontSize: '0.9rem', color: '#64748b' }}>로그인 유지</span>
-                            </label>
-                            <a href="#" style={{ fontSize: '0.9rem', color: '#7c3aed', fontWeight: '500' }}>
-                                비밀번호 찾기
-                            </a>
+                            <Link to="/find-account" style={{ fontSize: '0.9rem', color: '#7c3aed', fontWeight: '500', textDecoration: 'none' }}>
+                                아이디/비밀번호 찾기
+                            </Link>
                         </div>
 
                         <button

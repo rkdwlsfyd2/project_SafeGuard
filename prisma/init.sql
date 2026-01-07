@@ -82,12 +82,13 @@ CREATE TABLE app_user (
   user_id      VARCHAR(50)  NOT NULL,                 -- 로그인 ID
   pw           VARCHAR(255) NOT NULL,                 -- 암호화 비밀번호
   name         VARCHAR(50)  NOT NULL,                 -- 이름
-  birth_date   DATE         NOT NULL,                 -- 생년월일(날짜면 DATE가 적합)
+  birth_date   DATE         NOT NULL,                 -- 생년월일
   addr         VARCHAR(100) NOT NULL,                 -- 주소
-  phone        VARCHAR(20)  NOT NULL,                 -- 전화번호(문자열)
+  phone        VARCHAR(20)  NOT NULL,                 -- 전화번호
+  email        VARCHAR(100),                          -- 이메일 (연락처용)
   created_date TIMESTAMPTZ  DEFAULT CURRENT_TIMESTAMP,-- 가입 일시
   role         user_role    NOT NULL,                 -- 권한(USER/ADMIN/AGENCY)
-  agency_no    BIGINT       REFERENCES agency(agency_no) -- 기관계정 소속(기관 계정만 값)
+  agency_no    BIGINT       REFERENCES agency(agency_no) -- 기관계정 소속
 );
 
 COMMENT ON TABLE app_user IS '시스템 사용자(일반/관리자/기관계정)';

@@ -11,6 +11,8 @@ import List from './pages/List';
 import Detail from './pages/Detail';
 import MapView from './pages/MapView';
 import MyPage from './pages/MyPage';
+import FindAccount from './pages/FindAccount';
+import ResetPassword from './pages/ResetPassword';
 import './index.css';
 
 function App() {
@@ -62,6 +64,8 @@ function App() {
           <Route path="/reports/:id" element={<Detail />} />
           <Route path="/map" element={<MapView />} />
           <Route path="/mypage" element={<MyPage />} />
+          <Route path="/find-account" element={<FindAccount />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
 
         {/* Footer */}

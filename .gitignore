@@ -1,3 +1,6 @@
+############################
+# Build / Package
+############################
 # Gradle
 .gradle/
 build/
@@ -5,15 +8,33 @@ build/
 # Maven
 target/
 
+############################
+# IDE / Editor
+############################
 # IntelliJ
 .idea/
 *.iml
 
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+
+# Visual Studio
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+############################
 # OS
+############################
 .DS_Store
 
+############################
 # Logs
-logs
+############################
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -21,27 +42,62 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+############################
+# Node
+############################
+node_modules/
+dist/
+dist-ssr/
 *.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+############################
+# Python
+############################
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
 
-# Milvus Data
+############################
+# AI / RAG / STT (중요)
+############################
+# RAG 생성 데이터 (대용량 / 재생성 가능)
+ai/rag/rag_data/*.pdf
+ai/rag/rag_data/*.pkl
+ai/rag/rag_data/*.index
+ai/rag/rag_data/*.bin
+ai/rag/rag_data/*.npy
+
+# STT 임시 파일
+ai/stt/tmp/
+ai/stt/audio/
+ai/stt/uploads/
+
+############################
+# Milvus / Vector DB
+############################
 milvus-data/
 milvus-etcd-data/
 milvus-minio-data/
 
+############################
+# Docker
+############################
+docker-data/
+*.tar
+
+############################
+# Prisma / Generated
+############################
 /src/generated/prisma
-# Env
-.env
+
+############################
+# Test / Cache
+############################
+.cache/
+.pytest_cache/
+.mypy_cache/
+coverage/

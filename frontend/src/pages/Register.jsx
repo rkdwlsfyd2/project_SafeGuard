@@ -172,6 +172,7 @@ function Register() {
                         />
                     </div>
 
+
                     {/* 비밀번호 */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                         <div>
@@ -290,7 +291,7 @@ function Register() {
                             value={formData.phone}
                             onChange={handleChange}
                             required
-                            placeholder="010-0000-0000"
+                            placeholder="예: 01012345678"
                             style={inputStyle}
                             onFocus={(e) => {
                                 e.target.style.borderColor = '#7c3aed';

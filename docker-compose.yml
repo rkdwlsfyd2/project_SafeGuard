@@ -2,16 +2,17 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:17.7-alpine
+    image: postgis/postgis:17-3.5-alpine
     container_name: safeguard-db
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: safeguard
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data_17:/var/lib/postgresql/data
+      - ./prisma/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - safeguard-network
     healthcheck:

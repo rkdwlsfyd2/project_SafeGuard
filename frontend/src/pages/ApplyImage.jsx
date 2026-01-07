@@ -96,7 +96,8 @@ function ApplyImage() {
 
         try {
             // 이미지 분석 API 호출
-            const response = await fetch('http://localhost:5000/api/analyze-image', {
+            // nginx.conf에 /api/analyze-image -> ai-yolo:5000 설정됨
+            const response = await fetch('/api/analyze-image', {
                 method: 'POST',
                 body: uploadData,
             });
