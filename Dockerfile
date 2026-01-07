@@ -1,12 +1,14 @@
 # Build Stage
-FROM node:18-alpine as build
+FROM node:22-alpine as build
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# 프론트엔드 폴더의 package.json 복사
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install
 
-COPY . .
+# 프론트엔드 소스코드 복사
+COPY frontend/ .
 RUN npm run build
 
 # Serve Stage
