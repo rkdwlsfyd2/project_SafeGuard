@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.safeguard.mapper.UserMapper">
+
+    <resultMap id="UserResultMap" type="com.safeguard.dto.UserDTO">
+        <id property="userNo" column="user_no"/>
+        <result property="userId" column="user_id"/>
+        <result property="pw" column="pw"/>
+        <result property="name" column="name"/>
+        <result property="birthDate" column="birth_date"/>
+        <result property="addr" column="addr"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="createdDate" column="created_date"/>
+        <result property="role" column="role"/>
+        <result property="agencyNo" column="agency_no"/>
+    </resultMap>
+
+    <insert id="save" parameterType="com.safeguard.dto.UserDTO" useGeneratedKeys="true" keyProperty="userNo">
+        INSERT INTO app_user (user_id, pw, name, birth_date, addr, phone, email, role, agency_no, created_date)
+        VALUES (#{userId}, #{pw}, #{name}, #{birthDate}, #{addr}, #{phone}, #{email}, #{role}::user_role, #{agencyNo}, NOW())
+    </insert>
+
+    <update id="updatePassword">
+        UPDATE app_user SET pw = #{password} WHERE user_id = #{userId}
+    </update>
+
+    <select id="findByUserId" parameterType="string" resultMap="UserResultMap">
+        SELECT * FROM app_user WHERE user_id = #{userId}
+    </select>
+
+    <select id="findByNameAndPhone" resultMap="UserResultMap">
+        SELECT * FROM app_user WHERE name = #{name} AND phone = #{phone}
+    </select>
+
+    <select id="findByUserIdAndPhone" resultMap="UserResultMap">
+        SELECT * FROM app_user WHERE user_id = #{userId} AND phone = #{phone}
+    </select>
+    
+    <select id="existsByUserId" parameterType="string" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM app_user WHERE user_id = #{userId})
+    </select>
+
+</mapper>

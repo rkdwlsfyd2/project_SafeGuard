@@ -3,6 +3,22 @@ import { useNavigate } from 'react-router-dom';
 
 function Home() {
     const navigate = useNavigate();
+    const [statsData, setStatsData] = React.useState({ total: 0, processing: 0, completed: 0 });
+    const [topLiked, setTopLiked] = React.useState([]);
+
+    React.useEffect(() => {
+        // Fetch Stats
+        fetch('http://localhost:5000/api/complaints/stats')
+            .then(res => res.json())
+            .then(data => setStatsData(data))
+            .catch(err => console.error('Failed to fetch stats:', err));
+
+        // Fetch Top Liked
+        fetch('http://localhost:5000/api/complaints/top-liked')
+            .then(res => res.json())
+            .then(data => setTopLiked(data))
+            .catch(err => console.error('Failed to fetch top liked:', err));
+    }, []);
 
     const cards = [
         {
@@ -29,9 +45,9 @@ function Home() {
     ];
 
     const stats = [
-        { label: '전체 민원', value: '1,272,379', color: '#7c3aed', icon: '📊' },
-        { label: '처리 중', value: '196,266', color: '#f59e0b', icon: '⏳', percent: 15 },
-        { label: '답변 완료', value: '1,076,113', color: '#10b981', icon: '✅', percent: 85 }
+        { label: '전체 민원', value: statsData.total.toLocaleString(), color: '#7c3aed', icon: '📊' },
+        { label: '처리 중', value: statsData.processing.toLocaleString(), color: '#f59e0b', icon: '⏳', percent: statsData.total > 0 ? (statsData.processing / statsData.total * 100) : 0 },
+        { label: '답변 완료', value: statsData.completed.toLocaleString(), color: '#10b981', icon: '✅', percent: statsData.total > 0 ? (statsData.completed / statsData.total * 100) : 0 }
     ];
 
     return (
@@ -209,38 +225,68 @@ function Home() {
             </section>
 
             {/* 민원 피드 섹션 */}
-            <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 20px' }}>
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '24px'
-                }}>
-                    {[
-                        { title: '📋 최신 민원', desc: '최근 접수된 민원' },
-                        { title: '🔥 주요 민원', desc: '많은 관심을 받는 민원' }
-                    ].map((box, idx) => (
-                        <div
-                            key={idx}
-                            onClick={() => navigate('/list')}
-                            style={{
-                                backgroundColor: 'white',
-                                borderRadius: '20px',
-                                overflow: 'hidden',
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                                cursor: 'pointer',
-                                transition: 'box-shadow 0.3s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 10px 40px rgba(0,0,0,0.15)'}
-                            onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)'}
-                        >
-                            <div style={{
-                                background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                                padding: '20px 24px',
-                                color: 'white'
-                            }}>
-                                <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0 }}>{box.title}</h3>
-                                <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '4px' }}>{box.desc}</p>
-                            </div>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '24px'
+            }}>
+                {/* 최신 민원 박스 (기존 유지) */}
+                <div
+                    onClick={() => navigate('/list')}
+                    style={{
+                        backgroundColor: 'white',
+                        borderRadius: '20px',
+                        overflow: 'hidden',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        cursor: 'pointer',
+                        transition: 'box-shadow 0.3s',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 10px 40px rgba(0,0,0,0.15)'}
+                    onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)'}
+                >
+                    <div style={{
+                        background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                        padding: '20px 24px',
+                        color: 'white'
+                    }}>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0 }}>📋 최신 민원</h3>
+                        <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '4px' }}>목록으로 이동</p>
+                    </div>
+                    <div style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#94a3b8',
+                        padding: '40px'
+                    }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <p style={{ fontSize: '1rem', color: '#64748b' }}>전체 목록 보러가기</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 주요 민원 (TOP 5 좋아요) */}
+                <div
+                    style={{
+                        backgroundColor: 'white',
+                        borderRadius: '20px',
+                        overflow: 'hidden',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    }}
+                >
+                    <div style={{
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+                        padding: '20px 24px',
+                        color: 'white'
+                    }}>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0 }}>🔥 주요 민원 (화제의 민원)</h3>
+                        <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '4px' }}>가장 많은 관심(좋아요)을 받은 민원</p>
+                    </div>
+                    <div style={{ padding: '0' }}>
+                        {topLiked.length === 0 ? (
                             <div style={{
                                 height: '200px',
                                 display: 'flex',
@@ -248,16 +294,44 @@ function Home() {
                                 justifyContent: 'center',
                                 color: '#94a3b8'
                             }}>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '3rem', marginBottom: '12px' }}>📭</div>
-                                    <p>아직 민원이 없습니다</p>
-                                    <p style={{ fontSize: '0.85rem', color: '#cbd5e1', marginTop: '4px' }}>클릭하여 목록 보기</p>
-                                </div>
+                                <p>아직 주요 민원이 없습니다</p>
                             </div>
-                        </div>
-                    ))}
+                        ) : (
+                            <div>
+                                {topLiked.map((c, idx) => (
+                                    <div
+                                        key={c.complaintNo}
+                                        onClick={() => navigate(`/reports/${c.complaintNo}`)}
+                                        style={{
+                                            padding: '16px 24px',
+                                            borderBottom: idx < topLiked.length - 1 ? '1px solid #f1f5f9' : 'none',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                                    >
+                                        <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', marginRight: '10px' }}>
+                                            <span style={{
+                                                marginRight: '8px',
+                                                fontWeight: '700',
+                                                color: idx < 3 ? '#ef4444' : '#64748b'
+                                            }}>{idx + 1}.</span>
+                                            <span style={{ fontWeight: '600', color: '#334155' }}>{c.title}</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.9rem', color: '#ef4444', fontWeight: '700', minWidth: '60px', textAlign: 'right' }}>
+                                            ❤️ {c.likeCount}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </section>
+            </div>
         </div>
     );
 }

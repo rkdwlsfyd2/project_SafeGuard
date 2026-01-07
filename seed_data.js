@@ -47,43 +47,11 @@ function request(endpoint, method, data = null, token = null) {
 }
 
 async function main() {
-    console.log("🔑 로그인/회원가입 시도 중...");
+    console.log("🚀 80개 더미 데이터 생성 시작 (인증 없이 /api/seed/complaints 사용)...");
+    const token = null;
 
-    // Using random email to avoid duplicate key error on re-run
-    const randomId = Math.floor(Math.random() * 10000);
-    const userCred = {
-        email: `dummy_${randomId}@test.com`,
-        password: "password123",
-        name: "더미유저",
-        phone: "010-1234-5678"
-    };
 
-    // Try verifying typical test user first
-    const fixedUser = { email: "test@test.com", password: "password123", name: "테스트유저", phone: "010-0000-0000" };
-    let loginRes = await request('/auth/login', 'POST', { email: fixedUser.email, password: fixedUser.password });
-
-    if (!loginRes) {
-        console.log("✨ 테스트 유저 가입 진행...");
-        await request('/auth/register', 'POST', fixedUser);
-        loginRes = await request('/auth/login', 'POST', { email: fixedUser.email, password: fixedUser.password });
-    }
-
-    // If fixed user fails (maybe manual deletion), try random
-    if (!loginRes) {
-        console.log("✨ 랜덤 유저 가입 진행...");
-        await request('/auth/register', 'POST', userCred);
-        loginRes = await request('/auth/login', 'POST', { email: userCred.email, password: userCred.password });
-    }
-
-    if (!loginRes || !loginRes.accessToken) {
-        console.error("❌ 로그인 실패 (토큰 없음)");
-        return;
-    }
-
-    const token = loginRes.accessToken;
-    console.log("✅ 로그인 성공! (Token 확보)");
-
-    const categories = ["도로/시설물", "불법주차", "환경오염", "기타", "안전신문고"];
+    const categories = ["교통", "행정·안전", "도로", "산업·통상", "주택·건축", "교육", "경찰·검찰", "환경", "보건", "관광", "기타"];
     const titles = [
         "도로 파손 신고합니다", "신호등이 고장났어요", "횡단보도 페인트가 지워졌어요",
         "가로등이 깜빡거립니다", "불법 주차 차량 신고", "쓰레기 무단 투기 목격",
@@ -97,9 +65,19 @@ async function main() {
         "비가 오면 물이 고입니다.", "악취가 납니다."
     ];
 
+    console.log("🚀 데이터 초기화(DELETE ALL)...");
+    await request('/seed/reset', 'POST');
+
     console.log("🚀 80개 더미 데이터 생성 시작...");
 
     for (let i = 0; i < 80; i++) {
+        // Generate random date within last 30 days
+        const randomDays = Math.floor(Math.random() * 30);
+        const randomHours = Math.floor(Math.random() * 24);
+        const createdDate = new Date();
+        createdDate.setDate(createdDate.getDate() - randomDays);
+        createdDate.setHours(createdDate.getHours() - randomHours);
+
         const data = {
             title: `${titles[Math.floor(Math.random() * titles.length)]}`,
             description: `${contents[Math.floor(Math.random() * contents.length)]} (자동 생성된 민원 #${i + 1})`,
@@ -107,11 +85,11 @@ async function main() {
             address: "서울시 강남구 테헤란로 123",
             latitude: 37.5000 + (Math.random() * 0.01),
             longitude: 127.0300 + (Math.random() * 0.01),
-            // Dummy image path (must be relative or absolute path handled by backend?)
-            // Backend probably expects just a string.
             imagePath: "/uploads/dummy.jpg",
             analysisResult: JSON.stringify({ label: "Dummy", confidence: 0.99 }),
-            status: "PENDING"
+            status: "RECEIVED",
+            likeCount: Math.floor(Math.random() * 100), // Random likes
+            createdDate: createdDate.toISOString() // Random date
         };
 
         // Randomize Status slightly

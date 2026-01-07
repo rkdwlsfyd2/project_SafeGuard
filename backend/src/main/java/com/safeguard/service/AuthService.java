@@ -39,7 +39,7 @@ public class AuthService {
                 .addr(request.getAddr())
                 .phone(request.getPhone())
                 .email(request.getEmail())
-                .role(request.getAgencyNo() != null ? "AGENCY" : "USER")
+                .role(request.getAgencyNo() != null ? com.safeguard.enums.UserRole.AGENCY : com.safeguard.enums.UserRole.USER)
                 .agencyNo(request.getAgencyNo())
                 .createdDate(OffsetDateTime.now())
                 .build();
@@ -55,14 +55,14 @@ public class AuthService {
             throw new RuntimeException("Invalid password");
         }
 
-        String token = jwtTokenProvider.createToken(user.getUserId(), user.getRole());
+        String token = jwtTokenProvider.createToken(user.getUserId(), user.getRole().name());
 
         return Map.of(
                 "token", token,
                 "user", Map.of(
                         "userId", user.getUserId(),
                         "name", user.getName(),
-                        "role", user.getRole()));
+                        "role", user.getRole().name()));
     }
 
     public String findId(String name, String phone) {
