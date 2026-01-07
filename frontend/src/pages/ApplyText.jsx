@@ -5,16 +5,11 @@ import { complaintsAPI, getToken, analyzeText } from '../utils/api';
 function ApplyText() {
     const navigate = useNavigate();
     const mapRef = useRef(null);
-
     const [formData, setFormData] = useState({
         title: '',
         content: '',
         isPublic: true,
-        location: {
-            lat: 37.5665,
-            lng: 126.9780,
-            address: '서울특별시 중구'
-        }
+        location: null
     });
     const [loading, setLoading] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
@@ -73,20 +68,26 @@ function ApplyText() {
     useEffect(() => {
         if (formData.title) setCurrentStep(2);
         if (formData.title && formData.content) setCurrentStep(3);
-        if (formData.title && formData.content && formData.location.address) setCurrentStep(4);
+        if (formData.title && formData.content && formData.location) setCurrentStep(4);
     }, [formData]);
 
     const handleAnalyze = async () => {
+
+        const result = await analyzeText(formData.content);
+        console.log('AI RESULT RAW:', result);
+        setAiResult(result);
+
         if (!formData.content || formData.content.length < 10) {
             alert('민원 내용을 10자 이상 입력해주세요.');
             return;
         }
+
+
         setAnalyzing(true);
+        setError(''); // Clear previous errors
         try {
             const result = await analyzeText(formData.content);
             setAiResult(result);
-            // 자동으로 3단계(위치)로 넘어가는 효과? 
-            // 분석이 완료되면 사용자에게 알림?
         } catch (err) {
             alert('AI 분석에 실패했습니다: ' + err.message);
         } finally {
@@ -109,7 +110,9 @@ function ApplyText() {
         setError('');
         try {
             const result = await complaintsAPI.create({
-                category: '일반',
+                category: aiResult?.category ?? '기타',
+                agencyName: aiResult?.agency_name ?? null,
+                agencyCode: aiResult?.agency_code ?? null,
                 title: formData.title,
                 content: formData.content,
                 isPublic: formData.isPublic,
@@ -127,7 +130,7 @@ function ApplyText() {
     const steps = [
         { num: 1, label: '제목 입력', done: !!formData.title },
         { num: 2, label: '내용 작성', done: !!formData.content },
-        { num: 3, label: '위치 선택', done: true },
+        { num: 3, label: '위치 선택', done: !!formData.location },
         { num: 4, label: '접수 완료', done: false }
     ];
 
@@ -286,7 +289,11 @@ function ApplyText() {
                                     gap: '8px'
                                 }}>
                                     <span style={{ fontSize: '1.1rem' }}>📍</span>
-                                    <span style={{ color: '#16a34a', fontWeight: '500' }}>{formData.location.address}</span>
+                                    <span style={{ color: '#16a34a', fontWeight: '500' }}>
+                                        {formData.location
+                                            ? formData.location.address
+                                            : '위치를 선택해주세요'}
+                                    </span>
                                 </div>
                                 <div
                                     ref={mapRef}
@@ -391,7 +398,9 @@ function ApplyText() {
                                     📊 민원 유형 분석
                                 </div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
-                                    {aiResult ? '일반 민원' : (formData.content.length > 10 ? '분석 가능' : '내용을 입력하세요')}
+                                    {aiResult
+                                        ? (aiResult.category || '유형 분석 실패')
+                                        : (formData.content.length > 10 ? '분석 가능' : '내용을 입력하세요')}
                                 </div>
                             </div>
                             <div style={{
