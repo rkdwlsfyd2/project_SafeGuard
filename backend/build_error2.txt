@@ -1,0 +1,42 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------< com.civilcomplaint:civil-complaint-api >---------------
+[INFO] Building civil-complaint-api 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ civil-complaint-api ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ civil-complaint-api ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 34 source files with javac [debug parameters release 17] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[3,32] cannot access org.springframework.boot.SpringApplication
+  bad class file: C:\Users\rkdwl\.m2\repository\org\springframework\boot\spring-boot\3.4.1\spring-boot-3.4.1.jar(org/springframework/boot/SpringApplication.class)
+    class file has wrong version 61.0, should be 52.0
+    Please remove or make sure it appears in the correct subdirectory of the classpath.
+[INFO] 1 error
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  6.854 s
+[INFO] Finished at: 2026-01-06T12:13:18+09:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project civil-complaint-api: Compilation failure
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[3,32] cannot access org.springframework.boot.SpringApplication
+[ERROR]   bad class file: C:\Users\rkdwl\.m2\repository\org\springframework\boot\spring-boot\3.4.1\spring-boot-3.4.1.jar(org/springframework/boot/SpringApplication.class)
+[ERROR]     class file has wrong version 61.0, should be 52.0
+[ERROR]     Please remove or make sure it appears in the correct subdirectory of the classpath.
+[ERROR] 
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

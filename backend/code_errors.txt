@@ -1,0 +1,156 @@
+﻿
+> [ERROR] COMPILATION
+ ERROR : 
+  [INFO] ------------
+---------------------
+---------------------
+-------
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+4,33] package org.loc
+ationtech.jts.geom do
+es not exist
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+13,13] cannot find sy
+mbol
+    symbol:   class G
+eometry
+    location: class c
+om.civilcomplaint.ent
+ity.SpatialFeature
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+13,22] cannot find sy
+mbol
+    symbol:   class G
+eometry
+    location: class c
+om.civilcomplaint.ent
+ity.SpatialFeature
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+8,1] cannot find symb
+ol
+    symbol:   class G
+eometry
+    location: class c
+om.civilcomplaint.ent
+ity.SpatialFeature
+  [INFO] 4 errors 
+  [INFO] ------------
+---------------------
+---------------------
+-------
+  [INFO] ------------
+---------------------
+---------------------
+------------------
+> [ERROR] Failed to e
+xecute goal org.apach
+e.maven.plugins:maven
+-compiler-plugin:3.11
+.0:compile (default-c
+ompile) on project ci
+vil-complaint-api: Co
+mpilation failure: Co
+mpilation failure: 
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+4,33] package org.loc
+ationtech.jts.geom do
+es not exist
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+13,13] cannot find sy
+mbol
+> [ERROR]   symbol:  
+ class Geometry
+> [ERROR]   location:
+ class com.civilcompl
+aint.entity.SpatialFe
+ature
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+13,22] cannot find sy
+mbol
+> [ERROR]   symbol:  
+ class Geometry
+> [ERROR]   location:
+ class com.civilcompl
+aint.entity.SpatialFe
+ature
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+8,1] cannot find symb
+ol
+> [ERROR]   symbol:  
+ class Geometry
+> [ERROR]   location:
+ class com.civilcompl
+aint.entity.SpatialFe
+ature
+> [ERROR] -> [Help 1]
+  org.apache.maven.li
+fecycle.LifecycleExec
+utionException: Faile
+d to execute goal org
+.apache.maven.plugins
+:maven-compiler-plugi
+n:3.11.0:compile (def
+ault-compile) on proj
+ect civil-complaint-a
+pi: Compilation failu
+re
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.doExe
+cute2 (MojoExecutor.j
+ava:333)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.doExe
+cute (MojoExecutor.ja
+va:316)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:212)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:174)
+> [ERROR] 
+> [ERROR] Re-run Mave
+n using the -X switch
+ to enable full debug
+ logging.
+> [ERROR] 
+
+

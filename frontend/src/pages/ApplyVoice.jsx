@@ -1,80 +1,475 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { complaintsAPI, getToken } from '../utils/api';
 
 function ApplyVoice() {
-    const sidebarItemStyle = { marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '10px', color: '#555', fontSize: '0.9rem' };
+    const navigate = useNavigate();
+    const mapRef = useRef(null);
+
+    const [formData, setFormData] = useState({
+        title: '',
+        content: '',
+        isPublic: true,
+        location: {
+            lat: 37.5665,
+            lng: 126.9780,
+            address: '서울특별시 중구'
+        }
+    });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [currentStep, setCurrentStep] = useState(1);
+    
+    // Voice Recording State
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingTime, setRecordingTime] = useState(0);
+
+    // Mock Voice Transcription
+    const mockTranscription = "공원에 가로등이 고장나서 너무 어둡습니다. 저녁에 산책하기가 무서워요. 빠른 수리 부탁드립니다.";
+
+    useEffect(() => {
+        let interval;
+        if (isRecording) {
+            interval = setInterval(() => {
+                setRecordingTime(prev => prev + 1);
+            }, 1000);
+        } else {
+            clearInterval(interval);
+        }
+        return () => clearInterval(interval);
+    }, [isRecording]);
+
+    const handleToggleRecord = () => {
+        if (isRecording) {
+            setIsRecording(false);
+            // Simulate transcription completion
+            if (!formData.content) {
+                setFormData(prev => ({ ...prev, content: mockTranscription }));
+            }
+        } else {
+            setIsRecording(true);
+            setRecordingTime(0);
+        }
+    };
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    // 카카오 지도 초기화
+    useEffect(() => {
+        const loadKakaoMap = () => {
+            if (window.kakao && window.kakao.maps) {
+                window.kakao.maps.load(() => {
+                    const container = mapRef.current;
+                    const options = {
+                        center: new window.kakao.maps.LatLng(37.5665, 126.9780),
+                        level: 3
+                    };
+                    const newMap = new window.kakao.maps.Map(container, options);
+
+                    const marker = new window.kakao.maps.Marker({
+                        position: newMap.getCenter(),
+                        map: newMap
+                    });
+
+                    window.kakao.maps.event.addListener(newMap, 'click', (mouseEvent) => {
+                        const latlng = mouseEvent.latLng;
+                        marker.setPosition(latlng);
+
+                        const geocoder = new window.kakao.maps.services.Geocoder();
+                        geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result, status) => {
+                            if (status === window.kakao.maps.services.Status.OK) {
+                                const addr = result[0].address.address_name;
+                                setFormData(prev => ({
+                                    ...prev,
+                                    location: { lat: latlng.getLat(), lng: latlng.getLng(), address: addr }
+                                }));
+                            }
+                        });
+                    });
+                });
+            }
+        };
+
+        const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY;
+        if (kakaoKey) {
+            const script = document.createElement('script');
+            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&autoload=false&libraries=services`;
+            script.async = true;
+            script.onload = loadKakaoMap;
+            document.head.appendChild(script);
+            return () => document.head.removeChild(script);
+        }
+    }, []);
+
+    // 단계 업데이트
+    useEffect(() => {
+        if (formData.title) setCurrentStep(2);
+        if (formData.title && formData.content) setCurrentStep(3);
+        if (formData.title && formData.content && formData.location.address) setCurrentStep(4);
+    }, [formData]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!getToken()) {
+            alert('로그인이 필요합니다.');
+            navigate('/login');
+            return;
+        }
+        if (!formData.title || !formData.content) {
+            setError('제목과 내용을 입력해주세요 (음성 인식을 완료해주세요).');
+            return;
+        }
+        setLoading(true);
+        setError('');
+        try {
+            // Voice complaint is treated as text complaint for now, but category/content could indicate source
+            const result = await complaintsAPI.create({
+                category: '음성',
+                title: formData.title,
+                content: formData.content, // Transcription result
+                isPublic: formData.isPublic,
+                location: formData.location
+            });
+            alert(`음성 민원이 접수되었습니다. (접수번호: ${result.complaintNo})`);
+            navigate('/list');
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const steps = [
+        { num: 1, label: '제목 입력', done: !!formData.title },
+        { num: 2, label: '음성 녹음', done: !!formData.content },
+        { num: 3, label: '위치 선택', done: true },
+        { num: 4, label: '접수 완료', done: false }
+    ];
 
     return (
-        <div className="apply-voice-page" style={{ padding: '40px 0' }}>
-            <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 3fr 1.2fr', gap: '30px' }}>
-                {/* Left Sidebar Steps */}
-                <div style={{ backgroundColor: '#F9F9F9', padding: '30px', borderRadius: '8px' }}>
-                    <div style={sidebarItemStyle}>민원 제목 <span style={{ color: 'red' }}>✓</span></div>
-                    <div style={sidebarItemStyle}>음성 인식 <span style={{ color: 'red' }}>✓</span></div>
-                    <div style={{ ...sidebarItemStyle, marginTop: '350px' }}>신고 내용 공유 여부 <span style={{ color: 'red' }}>✓</span></div>
-                    <div style={sidebarItemStyle}>개인정보 동의 여부 <span style={{ color: 'red' }}>✓</span></div>
+        <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '40px 20px' }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                {/* 페이지 헤더 */}
+                <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                    <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#1e293b', marginBottom: '10px' }}>
+                        🎙️ 음성 민원 신청
+                    </h1>
+                    <p style={{ color: '#64748b', fontSize: '1.1rem' }}>목소리로 쉽고 빠르게 민원을 신청하세요</p>
                 </div>
 
-                {/* Center Main Form */}
-                <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                    <div style={{ backgroundColor: 'var(--primary-color)', color: 'white', padding: '15px', textAlign: 'center', fontWeight: 'bold' }}>
-                        통합 민원 신청
+                <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 320px', gap: '24px' }}>
+                    {/* 왼쪽 - 진행 단계 */}
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '20px',
+                        padding: '30px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        height: 'fit-content',
+                        position: 'sticky',
+                        top: '100px'
+                    }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#374151', marginBottom: '24px' }}>
+                            📋 작성 단계
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {steps.map((step, idx) => (
+                                <div key={step.num} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{
+                                        width: '36px',
+                                        height: '36px',
+                                        borderRadius: '50%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '700',
+                                        backgroundColor: currentStep > step.num || step.done ? '#7c3aed' : currentStep === step.num ? '#eef2ff' : '#f1f5f9',
+                                        color: currentStep > step.num || step.done ? 'white' : currentStep === step.num ? '#7c3aed' : '#94a3b8',
+                                        border: currentStep === step.num ? '2px solid #7c3aed' : 'none',
+                                        transition: 'all 0.3s'
+                                    }}>
+                                        {currentStep > step.num || step.done ? '✓' : step.num}
+                                    </div>
+                                    <span style={{
+                                        fontSize: '0.95rem',
+                                        fontWeight: currentStep === step.num ? '600' : '400',
+                                        color: currentStep === step.num ? '#1e293b' : '#64748b'
+                                    }}>
+                                        {step.label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div style={{ padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <input type="text" placeholder="" style={{ width: '100%', padding: '12px', border: '1px solid #E0E0E0', borderRadius: '4px', marginBottom: '40px' }} />
 
-                        <div style={{ width: '120px', height: '120px', borderRadius: '50%', border: '4px solid var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '30px' }}>
-                            <svg width="60" height="60" viewBox="0 0 24 24" fill="var(--primary-color)">
-                                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
-                                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-                            </svg>
+                    {/* 가운데 - 메인 폼 */}
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '20px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{
+                            background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                            padding: '24px 30px',
+                            color: 'white'
+                        }}>
+                            <h2 style={{ fontSize: '1.3rem', fontWeight: '700', margin: 0 }}>음성 민원 신청서</h2>
+                            <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '6px' }}>녹음 버튼을 눌러 말씀을 시작하세요</p>
                         </div>
 
-                        <div style={{ width: '100%', backgroundColor: '#EEE', height: '30px', borderRadius: '15px', position: 'relative', overflow: 'hidden', marginBottom: '10px' }}>
-                            <div style={{ width: '30%', height: '100%', backgroundColor: '#FF4B4B' }}></div>
-                            <div style={{ position: 'absolute', top: '0', left: '10px', height: '100%', display: 'flex', alignItems: 'center', color: 'white', fontSize: '0.8rem' }}>0:30</div>
-                            <div style={{ position: 'absolute', top: '0', right: '10px', height: '100%', display: 'flex', alignItems: 'center', color: '#555', fontSize: '0.8rem' }}>5:00</div>
-                        </div>
+                        <form onSubmit={handleSubmit} style={{ padding: '30px' }}>
+                            {error && (
+                                <div style={{
+                                    padding: '14px 18px',
+                                    backgroundColor: '#fef2f2',
+                                    border: '1px solid #fecaca',
+                                    borderRadius: '12px',
+                                    color: '#dc2626',
+                                    marginBottom: '20px',
+                                    fontSize: '0.9rem'
+                                }}>
+                                    ⚠️ {error}
+                                </div>
+                            )}
 
-                        <div style={{ width: '100%', marginBottom: '20px', marginTop: '30px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                                <span style={{ fontWeight: 'bold' }}>발생 위치</span>
-                                <button style={{ backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '5px 15px', borderRadius: '4px', cursor: 'pointer' }}>위치 찾기</button>
+                            {/* 제목 입력 */}
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                    민원 제목 <span style={{ color: '#ef4444' }}>*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.title}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                                    placeholder="민원 제목을 입력하세요"
+                                    style={{
+                                        width: '100%',
+                                        padding: '14px 18px',
+                                        border: '2px solid #e2e8f0',
+                                        borderRadius: '12px',
+                                        fontSize: '1rem',
+                                        outline: 'none',
+                                        transition: 'border-color 0.2s',
+                                        boxSizing: 'border-box'
+                                    }}
+                                    onFocus={(e) => e.target.style.borderColor = '#7c3aed'}
+                                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                                />
                             </div>
-                            <div style={{ width: '100%', height: '180px', backgroundColor: '#EEE', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                <img src="https://via.placeholder.com/600x200?text=Map+Placeholder" alt="Map" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                        </div>
 
-                        <div style={{ width: '100%', display: 'flex', gap: '20px', marginBottom: '15px' }}>
-                            <label><input type="radio" name="share" /> 공개</label>
-                            <label><input type="radio" name="share" /> 비공개</label>
-                        </div>
-                        <div style={{ width: '100%', display: 'flex', gap: '20px' }}>
-                            <label><input type="radio" name="agree" /> 동의</label>
-                            <label><input type="radio" name="agree" /> 비동의</label>
-                        </div>
+                            {/* 음성 녹음 섹션 */}
+                            <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '16px', textAlign: 'left' }}>
+                                    음성 녹음 <span style={{ color: '#ef4444' }}>*</span>
+                                </label>
+                                
+                                <div style={{ 
+                                    padding: '40px', 
+                                    backgroundColor: isRecording ? '#faf5ff' : '#f8fafc',
+                                    borderRadius: '16px',
+                                    border: isRecording ? '2px solid #7c3aed' : '2px dashed #cbd5e1',
+                                    transition: 'all 0.3s'
+                                }}>
+                                    <div 
+                                        onClick={handleToggleRecord}
+                                        style={{
+                                            width: '80px',
+                                            height: '80px',
+                                            borderRadius: '50%',
+                                            backgroundColor: isRecording ? '#ef4444' : '#7c3aed',
+                                            margin: '0 auto 20px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            boxShadow: isRecording ? '0 0 0 10px rgba(239, 68, 68, 0.2)' : '0 4px 12px rgba(124, 58, 237, 0.3)',
+                                            transition: 'all 0.3s'
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '2rem' }}>{isRecording ? '⏹' : '🎤'}</span>
+                                    </div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: '700', color: isRecording ? '#ef4444' : '#1e293b', marginBottom: '8px' }}>
+                                        {isRecording ? formatTime(recordingTime) : !formData.content ? '녹음 시작' : '다시 녹음하기'}
+                                    </div>
+                                    <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
+                                        {isRecording ? '말씀을 하신 후 정지 버튼을 눌러주세요' : '버튼을 눌러 음성 인식을 시작하세요'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 인식된 텍스트 */}
+                            {formData.content && (
+                                <div style={{ marginBottom: '24px' }}>
+                                    <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                        인식된 내용 (수정 가능)
+                                    </label>
+                                    <textarea
+                                        value={formData.content}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                                        style={{
+                                            width: '100%',
+                                            height: '120px',
+                                            padding: '14px 18px',
+                                            border: '2px solid #e2e8f0',
+                                            borderRadius: '12px',
+                                            fontSize: '1rem',
+                                            outline: 'none',
+                                            resize: 'none',
+                                            boxSizing: 'border-box'
+                                        }}
+                                        onFocus={(e) => e.target.style.borderColor = '#7c3aed'}
+                                        onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                                    />
+                                </div>
+                            )}
+
+                            {/* 위치 선택 */}
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                    발생 위치
+                                    <span style={{ fontWeight: '400', color: '#94a3b8', marginLeft: '8px' }}>지도를 클릭하여 선택</span>
+                                </label>
+                                <div style={{
+                                    padding: '10px 14px',
+                                    backgroundColor: '#f0fdf4',
+                                    borderRadius: '8px',
+                                    marginBottom: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}>
+                                    <span style={{ fontSize: '1.1rem' }}>📍</span>
+                                    <span style={{ color: '#16a34a', fontWeight: '500' }}>{formData.location.address}</span>
+                                </div>
+                                <div
+                                    ref={mapRef}
+                                    style={{
+                                        width: '100%',
+                                        height: '220px',
+                                        backgroundColor: '#f1f5f9',
+                                        borderRadius: '12px',
+                                        overflow: 'hidden',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#94a3b8',
+                                        border: '2px dashed #e2e8f0'
+                                    }}
+                                >
+                                    {!import.meta.env.VITE_KAKAO_MAP_KEY && '🗺️ 카카오 맵 API 키가 필요합니다'}
+                                </div>
+                            </div>
+
+                            {/* 공개 여부 */}
+                            <div style={{ marginBottom: '30px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
+                                    공개 여부
+                                </label>
+                                <div style={{ display: 'flex', gap: '16px' }}>
+                                    {[{ value: true, label: '🌐 공개', desc: '다른 시민들도 볼 수 있음' }, { value: false, label: '🔒 비공개', desc: '나와 담당자만 확인 가능' }].map(opt => (
+                                        <label key={String(opt.value)} style={{
+                                            flex: 1,
+                                            padding: '16px',
+                                            borderRadius: '12px',
+                                            border: formData.isPublic === opt.value ? '2px solid #7c3aed' : '2px solid #e2e8f0',
+                                            backgroundColor: formData.isPublic === opt.value ? '#faf5ff' : 'white',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}>
+                                            <input
+                                                type="radio"
+                                                checked={formData.isPublic === opt.value}
+                                                onChange={() => setFormData(prev => ({ ...prev, isPublic: opt.value }))}
+                                                style={{ display: 'none' }}
+                                            />
+                                            <div style={{ fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>{opt.label}</div>
+                                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{opt.desc}</div>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 제출 버튼 */}
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                style={{
+                                    width: '100%',
+                                    padding: '18px',
+                                    background: loading ? '#94a3b8' : 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '14px',
+                                    fontSize: '1.1rem',
+                                    fontWeight: '700',
+                                    cursor: loading ? 'not-allowed' : 'pointer',
+                                    boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
+                                    transition: 'all 0.3s'
+                                }}
+                            >
+                                {loading ? '접수 중...' : '🚀 민원 접수하기'}
+                            </button>
+                        </form>
                     </div>
-                </div>
 
-                {/* Right AI Analysis */}
-                <div style={{ background: 'linear-gradient(to bottom, #7C3AED, #60A5FA)', borderRadius: '12px', padding: '2px' }}>
-                    <div style={{ backgroundColor: 'white', borderRadius: '10px', height: '100%', padding: '20px' }}>
-                        <h3 style={{ textAlign: 'center', color: '#4F46E5', marginBottom: '20px' }}>AI 분석결과</h3>
-                        <div style={{ padding: '15px', backgroundColor: '#EEF2FF', borderRadius: '8px', marginBottom: '15px' }}>
-                            <div style={{ fontSize: '0.8rem', color: '#6366F1', marginBottom: '5px' }}>민원 유형 AI 결과</div>
-                            <div style={{ fontWeight: 'bold', textAlign: 'center' }}>유형: <span style={{ color: '#4F46E5' }}>교통</span></div>
+                    {/* 오른쪽 - AI 분석 */}
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '20px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        overflow: 'hidden',
+                        height: 'fit-content',
+                        position: 'sticky',
+                        top: '100px'
+                    }}>
+                        <div style={{
+                            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                            padding: '20px',
+                            color: 'white',
+                            textAlign: 'center'
+                        }}>
+                            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🤖</div>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>AI 음성 분석</h3>
                         </div>
-                        <div style={{ padding: '15px', backgroundColor: '#EEF2FF', borderRadius: '8px', marginBottom: '15px' }}>
-                            <div style={{ fontSize: '0.8rem', color: '#6366F1', marginBottom: '5px' }}>처리 기관 AI 분류 결과</div>
-                            <div style={{ fontWeight: 'bold', textAlign: 'center' }}>처리기관: <span style={{ color: '#4F46E5' }}>도로교통부</span></div>
-                        </div>
-                        <div style={{ padding: '15px', backgroundColor: '#EEF2FF', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '0.8rem', color: '#6366F1', marginBottom: '5px' }}>음성 인식 결과</div>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '0.85rem', color: '#312E81', marginBottom: '5px' }}>발생지점</div>
-                                <div style={{ fontSize: '0.8rem', marginBottom: '10px' }}>서울 강남구 남부순환로365길 33</div>
-                                <div style={{ fontSize: '0.85rem', color: '#312E81', marginBottom: '5px' }}>민원 내용</div>
-                                <div style={{ fontSize: '0.8rem' }}>공원 내 잡초 제거 요청</div>
+                        <div style={{ padding: '24px' }}>
+                            <div style={{
+                                padding: '18px',
+                                backgroundColor: '#f5f3ff',
+                                borderRadius: '12px',
+                                marginBottom: '16px'
+                            }}>
+                                <div style={{ fontSize: '0.8rem', color: '#7c3aed', fontWeight: '600', marginBottom: '8px' }}>
+                                    📊 감정/톤 분석
+                                </div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
+                                    {formData.content ? '차분함 (78%)' : '분석 대기'}
+                                </div>
+                            </div>
+                            <div style={{
+                                padding: '18px',
+                                backgroundColor: '#fdf4ff',
+                                borderRadius: '12px'
+                            }}>
+                                <div style={{ fontSize: '0.8rem', color: '#a855f7', fontWeight: '600', marginBottom: '8px' }}>
+                                    🏛️ 키워드 추출
+                                </div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
+                                    {formData.content ? '가로등, 공원, 수리' : '-'}
+                                </div>
+                            </div>
+                            <div style={{
+                                marginTop: '20px',
+                                padding: '14px',
+                                backgroundColor: '#f0fdf4',
+                                borderRadius: '12px',
+                                textAlign: 'center'
+                            }}>
+                                <span style={{ fontSize: '0.85rem', color: '#16a34a' }}>✨ 음성을 텍스트로 자동 변환합니다</span>
                             </div>
                         </div>
                     </div>

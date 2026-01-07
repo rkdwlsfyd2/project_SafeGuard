@@ -1,0 +1,55 @@
+﻿
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+AppUser.java:[10,2] c
+annot find symbol
+    symbol: class Bui
+lder
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+AppUser.java:[11,2] c
+annot find symbol
+    symbol: class NoA
+rgsConstructor
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+AppUser.java:[12,2] c
+annot find symbol
+    symbol: class All
+ArgsConstructor
+  [INFO] 3 errors 
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+AppUser.java:[10,2] c
+annot find symbol
+  [ERROR]   symbol: c
+lass Builder
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+AppUser.java:[11,2] c
+annot find symbol
+  [ERROR]   symbol: c
+lass NoArgsConstructo
+r
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+AppUser.java:[12,2] c
+annot find symbol
+  [ERROR]   symbol: c
+lass AllArgsConstruct
+or
+  [ERROR] -> [Help 1]
+
+

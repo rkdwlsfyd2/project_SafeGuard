@@ -1,0 +1,239 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------< com.civilcomplaint:civil-complaint-api >---------------
+[INFO] Building civil-complaint-api 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ civil-complaint-api ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 1 resource
+[INFO] Copying 0 resource
+[INFO] 
+[INFO] --- compiler:3.10.1:compile (default-compile) @ civil-complaint-api ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 34 source files to C:\Users\rkdwl\react-run\spring-server\target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/UserRole.java:[4,5] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/UserRole.java:[4,11] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/UserRole.java:[4,12] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/UserRole.java:[4,15] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,27] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,30] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,31] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,35] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,38] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,41] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[11,27] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[11,31] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[11,34] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[11,37] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[11,40] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[33,21] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[33,25] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[39,13] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[39,17] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[44,21] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[44,29] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[44,30] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[44,35] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[44,39] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,21] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,35] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,38] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,40] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,46] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[47,20] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[47,26] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[55,16] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[75,21] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[75,35] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[75,38] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[78,26] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[78,37] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[78,40] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[78,52] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[79,48] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[79,51] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[79,62] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[79,65] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[82,18] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[88,45] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[88,48] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[88,58] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[88,68] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[88,71] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[96,38] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[98,21] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[98,32] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/AgencyController.java:[33,36] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/AgencyController.java:[33,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/Agency.java:[8,5] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/Agency.java:[8,9] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,31] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,48] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,56] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,60] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,66] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[11,31] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[83,68] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[83,71] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[85,14] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[87,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[87,48] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[97,13] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[97,14] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[150,36] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[153,37] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[153,40] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[153,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[162,68] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[162,71] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[165,42] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[165,50] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[165,53] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[169,50] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[169,53] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[169,60] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[169,63] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[182,37] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[182,40] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[182,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[189,68] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[189,71] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[192,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[192,44] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[192,51] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[192,54] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[196,50] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[196,54] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[196,55] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[196,61] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[196,64] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[202,38] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[202,39] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[49,50] unclosed string literal
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[49,69] ';' expected
+[INFO] 102 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.874 s
+[INFO] Finished at: 2026-01-06T13:39:56+09:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.10.1:compile (default-compile) on project civil-complaint-api: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/UserRole.java:[4,5] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/UserRole.java:[4,11] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/UserRole.java:[4,12] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/UserRole.java:[4,15] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,27] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,30] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,31] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,35] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,38] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[8,41] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[11,27] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[11,31] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[11,34] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[11,37] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/dto/request/LoginRequest.java:[11,40] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[33,21] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[33,25] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[39,13] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[39,17] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[44,21] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[44,29] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[44,30] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[44,35] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[44,39] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,21] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,35] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,38] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,40] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[45,46] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[47,20] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[47,26] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[55,16] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[75,21] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[75,35] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[75,38] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[78,26] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[78,37] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[78,40] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[78,52] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[79,48] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[79,51] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[79,62] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[79,65] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[82,18] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[88,45] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[88,48] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[88,58] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[88,68] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[88,71] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[96,38] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[98,21] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java:[98,32] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/AgencyController.java:[33,36] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/AgencyController.java:[33,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/Agency.java:[8,5] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/entity/Agency.java:[8,9] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,31] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,48] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,56] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,60] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[10,66] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/CivilComplaintApplication.java:[11,31] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[83,68] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[83,71] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[85,14] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[87,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[87,48] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[97,13] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[97,14] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[150,36] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[153,37] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[153,40] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[153,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[162,68] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[162,71] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[165,42] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[165,50] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[165,53] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[169,50] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[169,53] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[169,60] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[169,63] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[182,37] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[182,40] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[182,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[189,68] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[189,71] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[192,43] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[192,44] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[192,51] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[192,54] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[196,50] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[196,54] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[196,55] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[196,61] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[196,64] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[202,38] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[202,39] unmappable character for encoding UTF-8
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[49,50] unclosed string literal
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[49,69] ';' expected
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

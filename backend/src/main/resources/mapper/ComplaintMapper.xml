@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.civilcomplaint.mapper.ComplaintMapper">
+    
+    <resultMap id="complaintResultMap" type="Complaint">
+        <id property="complaintNo" column="complaint_no"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="category" column="category"/>
+        <result property="address" column="address"/>
+        <result property="latitude" column="latitude"/>
+        <result property="longitude" column="longitude"/>
+        <result property="imagePath" column="image_path"/>
+        <result property="analysisResult" column="analysis_result"/>
+        <result property="status" column="status"/>
+        <result property="isPublic" column="is_public"/>
+        <result property="createdDate" column="created_date"/>
+        <result property="updatedDate" column="updated_date"/>
+        <result property="completedDate" column="completed_date"/>
+        <result property="userNo" column="user_no"/>
+    </resultMap>
+    
+    <select id="findAll" resultMap="complaintResultMap">
+        SELECT * FROM complaint ORDER BY created_date DESC
+    </select>
+    
+    <select id="findByUserId" resultMap="complaintResultMap">
+        SELECT * FROM complaint WHERE user_no = #{userNo} ORDER BY created_date DESC
+    </select>
+    
+    <select id="findByComplaintNo" resultMap="complaintResultMap">
+        SELECT * FROM complaint WHERE complaint_no = #{complaintNo}
+    </select>
+    
+    <insert id="insert" useGeneratedKeys="true" keyProperty="complaintNo" keyColumn="complaint_no">
+        INSERT INTO complaint (
+            title, 
+            content, 
+            category, 
+            address, 
+            latitude, 
+            longitude, 
+            image_path, 
+            analysis_result, 
+            status, 
+            is_public,
+            created_date, 
+            updated_date, 
+            user_no
+        )
+        VALUES (
+            #{title}, 
+            #{content}, 
+            #{category}, 
+            #{address}, 
+            #{latitude}, 
+            #{longitude}, 
+            #{imagePath}, 
+            #{analysisResult}, 
+            #{status}, 
+            #{isPublic},
+            NOW(), 
+            NOW(), 
+            #{userNo}
+        )
+    </insert>
+    
+    <update id="update">
+        UPDATE complaint SET 
+            title = #{title},
+            content = #{content},
+            category = #{category},
+            address = #{address},
+            latitude = #{latitude},
+            longitude = #{longitude},
+            image_path = #{imagePath},
+            analysis_result = #{analysisResult},
+            status = #{status},
+            is_public = #{isPublic},
+            updated_date = NOW()
+        WHERE complaint_no = #{complaintNo}
+    </update>
+    
+    <delete id="deleteByComplaintNo">
+        DELETE FROM complaint WHERE complaint_no = #{complaintNo}
+    </delete>
+    
+</mapper>

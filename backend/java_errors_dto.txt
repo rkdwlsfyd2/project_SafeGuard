@@ -1,0 +1,48 @@
+﻿
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/config/
+JwtAuthenticationFilt
+er.java:[34,56] incom
+patible types: java.l
+ang.Integer cannot be
+ converted to java.la
+ng.Long
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/ComplaintService.jav
+a:[65,61] cannot find
+ symbol
+    symbol:   variabl
+e PENDING
+    location: class c
+om.civilcomplaint.enu
+ms.ComplaintStatus
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/config/
+JwtAuthenticationFilt
+er.java:[34,56] incom
+patible types: java.l
+ang.Integer cannot be
+ converted to java.la
+ng.Long
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/ComplaintService.jav
+a:[65,61] cannot find
+ symbol
+  [ERROR]   symbol:  
+ variable PENDING
+  [ERROR]   location:
+ class com.civilcompl
+aint.enums.ComplaintS
+tatus
+
+

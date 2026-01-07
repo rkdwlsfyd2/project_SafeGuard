@@ -1,0 +1,315 @@
+﻿
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/CivilCo
+mplaintApplication.ja
+va:[3,32] cannot acce
+ss org.springframewor
+k.boot.SpringApplicat
+ion
+    bad class file: C
+:\Users\rkdwl\.m2\rep
+ository\org\springfra
+mework\boot\spring-bo
+ot\3.4.1\spring-boot-
+3.4.1.jar(org/springf
+ramework/boot/SpringA
+pplication.class)
+      class file has 
+wrong version 61.0, s
+hould be 52.0
+      Please remove o
+r make sure it appear
+s in the correct subd
+irectory of the class
+path.
+  [INFO] 1 error
+  [INFO] ------------
+---------------------
+---------------------
+-------
+  [INFO] ------------
+---------------------
+---------------------
+------------------
+  [INFO] BUILD FAILUR
+E
+  [INFO] ------------
+---------------------
+---------------------
+------------------
+  [INFO] Total time: 
+ 1.777 s
+  [INFO] Finished at:
+ 2026-01-07T10:19:46+
+09:00
+  [INFO] ------------
+---------------------
+---------------------
+------------------
+  [ERROR] Failed to e
+xecute goal org.apach
+e.maven.plugins:maven
+-compiler-plugin:3.13
+.0:compile (default-c
+ompile) on project ci
+vil-complaint-api: Co
+mpilation failure
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/CivilCo
+mplaintApplication.ja
+va:[3,32] cannot acce
+ss org.springframewor
+k.boot.SpringApplicat
+ion
+  [ERROR]   bad class
+ file: C:\Users\rkdwl
+\.m2\repository\org\s
+pringframework\boot\s
+pring-boot\3.4.1\spri
+ng-boot-3.4.1.jar(org
+/springframework/boot
+/SpringApplication.cl
+ass)
+  [ERROR]     class f
+ile has wrong version
+ 61.0, should be 52.0
+  [ERROR]     Please 
+remove or make sure i
+t appears in the corr
+ect subdirectory of t
+he classpath.
+  [ERROR] 
+  [ERROR] -> [Help 1]
+  org.apache.maven.li
+fecycle.LifecycleExec
+utionException: Faile
+d to execute goal org
+.apache.maven.plugins
+:maven-compiler-plugi
+n:3.13.0:compile (def
+ault-compile) on proj
+ect civil-complaint-a
+pi: Compilation failu
+re
+> /C:/Users/rkdwl/rea
+ct-run/backend/src/ma
+in/java/com/civilcomp
+laint/CivilComplaintA
+pplication.java:[3,32
+] cannot access org.s
+pringframework.boot.S
+pringApplication
+    bad class file: C
+:\Users\rkdwl\.m2\rep
+ository\org\springfra
+mework\boot\spring-bo
+ot\3.4.1\spring-boot-
+3.4.1.jar(org/springf
+ramework/boot/SpringA
+pplication.class)
+      class file has 
+wrong version 61.0, s
+hould be 52.0
+      Please remove o
+r make sure it appear
+s in the correct subd
+irectory of the class
+path.
+  
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.doExe
+cute2 (MojoExecutor.j
+ava:333)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.doExe
+cute (MojoExecutor.ja
+va:316)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:212)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:174)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.acces
+s$000 (MojoExecutor.j
+ava:75)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor$1.run
+ (MojoExecutor.java:1
+62)
+      at org.apache.m
+aven.plugin.DefaultMo
+josExecutionStrategy.
+execute (DefaultMojos
+ExecutionStrategy.jav
+a:39)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:159)
+      at org.apache.m
+aven.lifecycle.intern
+al.LifecycleModuleBui
+lder.buildProject (Li
+fecycleModuleBuilder.
+java:105)
+      at org.apache.m
+aven.lifecycle.intern
+al.LifecycleModuleBui
+lder.buildProject (Li
+fecycleModuleBuilder.
+java:73)
+      at org.apache.m
+aven.lifecycle.intern
+al.builder.singlethre
+aded.SingleThreadedBu
+ilder.build (SingleTh
+readedBuilder.java:53
+)
+      at org.apache.m
+aven.lifecycle.intern
+al.LifecycleStarter.e
+xecute (LifecycleStar
+ter.java:118)
+      at org.apache.m
+aven.DefaultMaven.doE
+xecute (DefaultMaven.
+java:261)
+      at org.apache.m
+aven.DefaultMaven.doE
+xecute (DefaultMaven.
+java:173)
+      at org.apache.m
+aven.DefaultMaven.exe
+cute (DefaultMaven.ja
+va:101)
+      at org.apache.m
+aven.cli.MavenCli.exe
+cute (MavenCli.java:9
+06)
+> /C:/Users/rkdwl/rea
+ct-run/backend/src/ma
+in/java/com/civilcomp
+laint/CivilComplaintA
+pplication.java:[3,32
+] cannot access org.s
+pringframework.boot.S
+pringApplication
+    bad class file: C
+:\Users\rkdwl\.m2\rep
+ository\org\springfra
+mework\boot\spring-bo
+ot\3.4.1\spring-boot-
+3.4.1.jar(org/springf
+ramework/boot/SpringA
+pplication.class)
+      class file has 
+wrong version 61.0, s
+hould be 52.0
+      Please remove o
+r make sure it appear
+s in the correct subd
+irectory of the class
+path.
+  
+      at org.apache.m
+aven.plugin.compiler.
+AbstractCompilerMojo.
+execute (AbstractComp
+ilerMojo.java:1309)
+      at org.apache.m
+aven.plugin.compiler.
+CompilerMojo.execute 
+(CompilerMojo.java:21
+5)
+      at org.apache.m
+aven.plugin.DefaultBu
+ildPluginManager.exec
+uteMojo (DefaultBuild
+PluginManager.java:12
+6)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.doExe
+cute2 (MojoExecutor.j
+ava:328)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.doExe
+cute (MojoExecutor.ja
+va:316)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:212)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:174)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.acces
+s$000 (MojoExecutor.j
+ava:75)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor$1.run
+ (MojoExecutor.java:1
+62)
+      at org.apache.m
+aven.plugin.DefaultMo
+josExecutionStrategy.
+execute (DefaultMojos
+ExecutionStrategy.jav
+a:39)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:159)
+      at org.apache.m
+aven.lifecycle.intern
+al.LifecycleModuleBui
+lder.buildProject (Li
+fecycleModuleBuilder.
+java:105)
+      at org.apache.m
+aven.lifecycle.intern
+al.LifecycleModuleBui
+lder.buildProject (Li
+fecycleModuleBuilder.
+java:73)
+      at org.apache.m
+aven.lifecycle.intern
+al.builder.singlethre
+aded.SingleThreadedBu
+ilder.build (SingleTh
+readedBuilder.java:53
+)
+      at org.apache.m
+aven.lifecycle.intern
+al.LifecycleStarter.e
+xecute (LifecycleStar
+ter.java:118)
+      at org.apache.m
+aven.DefaultMaven.doE
+xecute (DefaultMaven.
+java:261)
+
+

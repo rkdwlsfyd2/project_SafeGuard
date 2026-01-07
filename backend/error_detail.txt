@@ -1,0 +1,133 @@
+﻿
+> [ERROR] Failed to e
+xecute goal org.apach
+e.maven.plugins:maven
+-compiler-plugin:3.11
+.0:compile (default-c
+ompile) on project ci
+vil-complaint-api: Fa
+tal error compiling: 
+invalid flag: --relea
+se -> [Help 1]
+  org.apache.maven.li
+fecycle.LifecycleExec
+utionException: Faile
+d to execute goal org
+.apache.maven.plugins
+:maven-compiler-plugi
+n:3.11.0:compile (def
+ault-compile) on proj
+ect civil-complaint-a
+pi: Fatal error compi
+ling
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.doExe
+cute2 (MojoExecutor.j
+ava:333)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.doExe
+cute (MojoExecutor.ja
+va:316)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:212)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:174)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.acces
+s$000 (MojoExecutor.j
+ava:75)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor$1.run
+ (MojoExecutor.java:1
+62)
+      at org.apache.m
+aven.plugin.DefaultMo
+josExecutionStrategy.
+execute (DefaultMojos
+ExecutionStrategy.jav
+a:39)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:159)
+      at org.apache.m
+aven.lifecycle.intern
+al.LifecycleModuleBui
+lder.buildProject (Li
+fecycleModuleBuilder.
+java:105)
+      at org.apache.m
+aven.lifecycle.intern
+al.LifecycleModuleBui
+lder.buildProject (Li
+fecycleModuleBuilder.
+java:73)
+      at org.apache.m
+aven.lifecycle.intern
+al.builder.singlethre
+aded.SingleThreadedBu
+ilder.build (SingleTh
+readedBuilder.java:53
+)
+      at org.apache.m
+aven.lifecycle.intern
+al.LifecycleStarter.e
+xecute (LifecycleStar
+ter.java:118)
+      at org.apache.m
+aven.DefaultMaven.doE
+xecute (DefaultMaven.
+java:261)
+      at org.apache.m
+aven.DefaultMaven.doE
+xecute (DefaultMaven.
+java:173)
+      at org.apache.m
+aven.DefaultMaven.exe
+cute (DefaultMaven.ja
+va:101)
+      at org.apache.m
+aven.cli.MavenCli.exe
+cute (MavenCli.java:9
+06)
+      at org.apache.m
+aven.cli.MavenCli.doM
+ain (MavenCli.java:28
+3)
+      at org.apache.m
+aven.cli.MavenCli.mai
+n (MavenCli.java:206)
+      at sun.reflect.
+NativeMethodAccessorI
+mpl.invoke0 (Native M
+ethod)
+> [ERROR] 
+> [ERROR] Re-run Mave
+n using the -X switch
+ to enable full debug
+ logging.
+> [ERROR] 
+> [ERROR] For more in
+formation about the e
+rrors and possible so
+lutions, please read 
+the following article
+s:
+> [ERROR] [Help 1] ht
+tp://cwiki.apache.org
+/confluence/display/M
+AVEN/MojoExecutionExc
+eption
+
+

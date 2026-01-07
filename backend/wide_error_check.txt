@@ -1,0 +1,61 @@
+﻿
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/CivilCo
+mplaintApplication.ja
+va:[3,32] cannot acce
+ss org.springframewor
+k.boot.SpringApplicat
+ion
+    bad class file: C
+:\Users\rkdwl\.m2\rep
+ository\org\springfra
+mework\boot\spring-bo
+ot\3.4.1\spring-boot-
+3.4.1.jar(org/springf
+ramework/boot/SpringA
+pplication.class)
+      class file has 
+wrong version 61.0, s
+hould be 52.0
+      Please remove o
+r make sure it appear
+s in the correct subd
+irectory of the class
+path.
+  [INFO] 1 error
+  [INFO] ------------
+---------------------
+---------------------
+-------
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/CivilCo
+mplaintApplication.ja
+va:[3,32] cannot acce
+ss org.springframewor
+k.boot.SpringApplicat
+ion
+  [ERROR]   bad class
+ file: C:\Users\rkdwl
+\.m2\repository\org\s
+pringframework\boot\s
+pring-boot\3.4.1\spri
+ng-boot-3.4.1.jar(org
+/springframework/boot
+/SpringApplication.cl
+ass)
+  [ERROR]     class f
+ile has wrong version
+ 61.0, should be 52.0
+  [ERROR]     Please 
+remove or make sure i
+t appears in the corr
+ect subdirectory of t
+he classpath.
+  [ERROR] 
+  [ERROR] -> [Help 1]
+
+

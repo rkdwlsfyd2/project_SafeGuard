@@ -1,0 +1,149 @@
+﻿
+  [INFO] Recompiling 
+the module because of
+ changed source code.
+  [INFO] Compiling 33
+ source files with ja
+vac [debug parameters
+ release 17] to targe
+t\classes
+  [INFO] ------------
+---------------------
+---------------------
+-------
+> [ERROR] COMPILATION
+ ERROR : 
+  [INFO] ------------
+---------------------
+---------------------
+-------
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/CivilCo
+mplaintApplication.ja
+va:[3,32] cannot acce
+ss org.springframewor
+k.boot.SpringApplicat
+ion
+    bad class file: C
+:\Users\rkdwl\.m2\rep
+ository\org\springfra
+mework\boot\spring-bo
+ot\3.4.1\spring-boot-
+3.4.1.jar(org/springf
+ramework/boot/SpringA
+pplication.class)
+      class file has 
+wrong version 61.0, s
+hould be 52.0
+      Please remove o
+r make sure it appear
+s in the correct subd
+irectory of the class
+path.
+  [INFO] Total time: 
+ 1.981 s
+  [INFO] Finished at:
+ 2026-01-07T10:32:15+
+09:00
+  [INFO] ------------
+---------------------
+---------------------
+------------------
+> [ERROR] Failed to e
+xecute goal org.apach
+e.maven.plugins:maven
+-compiler-plugin:3.13
+.0:compile (default-c
+ompile) on project ci
+vil-complaint-api: Co
+mpilation failure
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/CivilCo
+mplaintApplication.ja
+va:[3,32] cannot acce
+ss org.springframewor
+k.boot.SpringApplicat
+ion
+> [ERROR]   bad class
+ file: C:\Users\rkdwl
+\.m2\repository\org\s
+pringframework\boot\s
+pring-boot\3.4.1\spri
+ng-boot-3.4.1.jar(org
+/springframework/boot
+/SpringApplication.cl
+ass)
+> [ERROR]     class f
+ile has wrong version
+ 61.0, should be 52.0
+> [ERROR]     Please 
+remove or make sure i
+t appears in the corr
+ect subdirectory of t
+he classpath.
+> [ERROR] 
+> [ERROR] -> [Help 1]
+  org.apache.maven.li
+fecycle.LifecycleExec
+utionException: Faile
+d to execute goal org
+.apache.maven.plugins
+:maven-compiler-plugi
+n:3.13.0:compile (def
+ault-compile) on proj
+ect civil-complaint-a
+pi: Compilation failu
+re
+  /C:/Users/rkdwl/rea
+ct-run/backend/src/ma
+in/java/com/civilcomp
+laint/CivilComplaintA
+pplication.java:[3,32
+] cannot access org.s
+pringframework.boot.S
+pringApplication
+    bad class file: C
+:\Users\rkdwl\.m2\rep
+ository\org\springfra
+mework\boot\spring-bo
+ot\3.4.1\spring-boot-
+3.4.1.jar(org/springf
+ramework/boot/SpringA
+pplication.class)
+      at org.codehaus
+.plexus.classworlds.l
+auncher.Launcher.laun
+ch (Launcher.java:201
+)
+      at org.codehaus
+.plexus.classworlds.l
+auncher.Launcher.main
+WithExitCode (Launche
+r.java:361)
+      at org.codehaus
+.plexus.classworlds.l
+auncher.Launcher.main
+ (Launcher.java:314)
+> [ERROR] 
+> [ERROR] Re-run Mave
+n using the -X switch
+ to enable full debug
+ logging.
+> [ERROR] 
+> [ERROR] For more in
+formation about the e
+rrors and possible so
+lutions, please read 
+the following article
+s:
+> [ERROR] [Help 1] ht
+tp://cwiki.apache.org
+/confluence/display/M
+AVEN/MojoFailureExcep
+tion
+
+

@@ -1,12 +1,86 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { complaintsAPI, getToken } from '../utils/api';
 
 function ApplyImage() {
-    const sidebarItemStyle = { marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '10px', color: '#555', fontSize: '0.9rem' };
+    const navigate = useNavigate();
+    const mapRef = useRef(null);
+    const fileInputRef = useRef(null);
+
+    const [formData, setFormData] = useState({
+        title: '',
+        content: '',
+        imagePath: '',
+        isPublic: true,
+        location: {
+            lat: 37.5665,
+            lng: 126.9780,
+            address: '서울특별시 중구'
+        }
+    });
+
     const [selectedImage, setSelectedImage] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [aiResult, setAiResult] = useState({ type: '-', agency: '-' });
-    const fileInputRef = useRef(null);
+
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [currentStep, setCurrentStep] = useState(1);
+
+    // 카카오 지도 초기화
+    useEffect(() => {
+        const loadKakaoMap = () => {
+            if (window.kakao && window.kakao.maps) {
+                window.kakao.maps.load(() => {
+                    const container = mapRef.current;
+                    const options = {
+                        center: new window.kakao.maps.LatLng(37.5665, 126.9780),
+                        level: 3
+                    };
+                    const newMap = new window.kakao.maps.Map(container, options);
+
+                    const marker = new window.kakao.maps.Marker({
+                        position: newMap.getCenter(),
+                        map: newMap
+                    });
+
+                    window.kakao.maps.event.addListener(newMap, 'click', (mouseEvent) => {
+                        const latlng = mouseEvent.latLng;
+                        marker.setPosition(latlng);
+
+                        const geocoder = new window.kakao.maps.services.Geocoder();
+                        geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result, status) => {
+                            if (status === window.kakao.maps.services.Status.OK) {
+                                const addr = result[0].address.address_name;
+                                setFormData(prev => ({
+                                    ...prev,
+                                    location: { lat: latlng.getLat(), lng: latlng.getLng(), address: addr }
+                                }));
+                            }
+                        });
+                    });
+                });
+            }
+        };
+
+        const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY;
+        if (kakaoKey) {
+            const script = document.createElement('script');
+            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&autoload=false&libraries=services`;
+            script.async = true;
+            script.onload = loadKakaoMap;
+            document.head.appendChild(script);
+            return () => document.head.removeChild(script);
+        }
+    }, []);
+
+    // 단계 업데이트
+    useEffect(() => {
+        if (formData.title) setCurrentStep(2);
+        if (formData.title && selectedImage) setCurrentStep(3);
+        if (formData.title && selectedImage && formData.location.address) setCurrentStep(4);
+    }, [formData, selectedImage]);
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
@@ -17,24 +91,30 @@ function ApplyImage() {
         setIsAnalyzing(true);
         setAiResult({ type: '분석 중...', agency: '분석 중...' });
 
-        const formData = new FormData();
-        formData.append('image', file);
+        const uploadData = new FormData();
+        uploadData.append('image', file);
 
         try {
-            console.log('[프론트엔드 로그] AI 분석 요청 시작...');
+            // 이미지 분석 API 호출
             const response = await fetch('http://localhost:5000/api/analyze-image', {
                 method: 'POST',
-                body: formData,
+                body: uploadData,
             });
 
             if (!response.ok) throw new Error('분석 실패');
 
             const data = await response.json();
-            console.log('[프론트엔드 로그] 분석 완료:', data);
             setAiResult({ type: data.type, agency: data.agency });
+
+            // 분석 결과를 내용에 자동 채움
+            setFormData(prev => ({
+                ...prev,
+                content: `[AI 이미지 분석 결과]\n유형: ${data.type}\n담당: ${data.agency}\n\n(상세 내용을 추가로 입력해주세요)`
+            }));
+
         } catch (error) {
-            console.error('[프론트엔드 로그] 오류 발생:', error);
-            setAiResult({ type: '오류 발생', agency: '다시 시도해주세요' });
+            console.error('AI Analysis Error:', error);
+            setAiResult({ type: '분석 실패', agency: '-' });
         } finally {
             setIsAnalyzing(false);
         }
@@ -44,111 +124,398 @@ function ApplyImage() {
         fileInputRef.current.click();
     };
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!getToken()) {
+            alert('로그인이 필요합니다.');
+            navigate('/login');
+            return;
+        }
+        if (!formData.title || !selectedImage) {
+            setError('제목과 이미지를 모두 입력해주세요.');
+            return;
+        }
+        setLoading(true);
+        setError('');
+        try {
+            // 실제 구현시에는 이미지를 먼저 업로드하고 경로를 받아오거나, 
+            // create API가 MultipartFile을 지원해야 함.
+            // 여기서는 단순화를 위해 텍스트 정보만 전송한다고 가정하거나,
+            // 이미지는 별도 처리가 필요할 수 있음.
+            // * 중요: 기존 로직에 맞춰 create 호출. 이미지 전송 로직은 백엔드 스펙에 따라 달라질 수 있음.
+            // 현재는 텍스트 기반 create만 확인되었음.
+
+            const result = await complaintsAPI.create({
+                category: '이미지',
+                title: formData.title,
+                content: formData.content,
+                isPublic: formData.isPublic,
+                location: formData.location
+            });
+            alert(`이미지 민원이 접수되었습니다. (접수번호: ${result.complaintNo})`);
+            navigate('/list');
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const steps = [
+        { num: 1, label: '제목 입력', done: !!formData.title },
+        { num: 2, label: '사진 첨부', done: !!selectedImage },
+        { num: 3, label: '위치 선택', done: true },
+        { num: 4, label: '접수 완료', done: false }
+    ];
+
     return (
-        <div className="apply-image-page" style={{ padding: '40px 0' }}>
-            <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 3fr 1.2fr', gap: '30px' }}>
-                {/* Left Sidebar Steps */}
-                <div style={{ backgroundColor: '#F9F9F9', padding: '30px', borderRadius: '8px' }}>
-                    <div style={sidebarItemStyle}>민원 제목 <span style={{ color: 'red' }}>✓</span></div>
-                    <div style={sidebarItemStyle}>파일첨부 <span style={{ color: selectedImage ? 'green' : 'red' }}>✓</span></div>
-                    <div style={{ ...sidebarItemStyle, marginTop: '350px' }}>신고 내용 공유 여부 <span style={{ color: 'red' }}>✓</span></div>
-                    <div style={sidebarItemStyle}>개인정보 동의 여부 <span style={{ color: 'red' }}>✓</span></div>
+        <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '40px 20px' }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                {/* 페이지 헤더 */}
+                <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                    <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#1e293b', marginBottom: '10px' }}>
+                        📷 이미지 민원 신청
+                    </h1>
+                    <p style={{ color: '#64748b', fontSize: '1.1rem' }}>현장 사진으로 정확하게 민원을 신청하세요</p>
                 </div>
 
-                {/* Center Main Form */}
-                <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                    <div style={{ backgroundColor: 'var(--primary-color)', color: 'white', padding: '15px', textAlign: 'center', fontWeight: 'bold' }}>
-                        통합 민원 신청
+                <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 320px', gap: '24px' }}>
+                    {/* 왼쪽 - 진행 단계 */}
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '20px',
+                        padding: '30px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        height: 'fit-content',
+                        position: 'sticky',
+                        top: '100px'
+                    }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#374151', marginBottom: '24px' }}>
+                            📋 작성 단계
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {steps.map((step, idx) => (
+                                <div key={step.num} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{
+                                        width: '36px',
+                                        height: '36px',
+                                        borderRadius: '50%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '700',
+                                        backgroundColor: currentStep > step.num || step.done ? '#7c3aed' : currentStep === step.num ? '#eef2ff' : '#f1f5f9',
+                                        color: currentStep > step.num || step.done ? 'white' : currentStep === step.num ? '#7c3aed' : '#94a3b8',
+                                        border: currentStep === step.num ? '2px solid #7c3aed' : 'none',
+                                        transition: 'all 0.3s'
+                                    }}>
+                                        {currentStep > step.num || step.done ? '✓' : step.num}
+                                    </div>
+                                    <span style={{
+                                        fontSize: '0.95rem',
+                                        fontWeight: currentStep === step.num ? '600' : '400',
+                                        color: currentStep === step.num ? '#1e293b' : '#64748b'
+                                    }}>
+                                        {step.label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div style={{ padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <input type="text" placeholder="민원 제목을 입력하세요." style={{ width: '100%', padding: '12px', border: '1px solid #E0E0E0', borderRadius: '4px', marginBottom: '40px' }} />
 
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            style={{ display: 'none' }}
-                            ref={fileInputRef}
-                        />
+                    {/* 가운데 - 메인 폼 */}
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '20px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{
+                            background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                            padding: '24px 30px',
+                            color: 'white'
+                        }}>
+                            <h2 style={{ fontSize: '1.3rem', fontWeight: '700', margin: 0 }}>이미지 민원 신청서</h2>
+                            <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '6px' }}>사진을 업로드하면 AI가 분석합니다</p>
+                        </div>
 
-                        <div
-                            onClick={triggerFileInput}
-                            style={{
-                                width: '150px',
-                                height: '150px',
-                                borderRadius: '50%',
-                                border: `4px solid ${isAnalyzing ? '#DDD' : 'var(--primary-color)'}`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginBottom: '30px',
-                                cursor: 'pointer',
-                                overflow: 'hidden',
-                                position: 'relative'
-                            }}
-                        >
-                            {previewUrl ? (
-                                <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                                <img src="/assets/icons.png" alt="Attach" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
-                            )}
-                            {isAnalyzing && (
-                                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                                    분석 중...
+                        <form onSubmit={handleSubmit} style={{ padding: '30px' }}>
+                            {error && (
+                                <div style={{
+                                    padding: '14px 18px',
+                                    backgroundColor: '#fef2f2',
+                                    border: '1px solid #fecaca',
+                                    borderRadius: '12px',
+                                    color: '#dc2626',
+                                    marginBottom: '20px',
+                                    fontSize: '0.9rem'
+                                }}>
+                                    ⚠️ {error}
                                 </div>
                             )}
-                        </div>
-                        <p style={{ color: '#777', marginBottom: '40px' }}>
-                            {selectedImage ? selectedImage.name : '사진을 업로드해 주세요.'}
-                        </p>
 
-                        <div style={{ width: '100%', marginBottom: '20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                                <span style={{ fontWeight: 'bold' }}>발생 위치</span>
-                                <button style={{ backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '5px 15px', borderRadius: '4px', cursor: 'pointer' }}>위치 찾기</button>
+                            {/* 제목 입력 */}
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                    민원 제목 <span style={{ color: '#ef4444' }}>*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.title}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                                    placeholder="민원 제목을 입력하세요"
+                                    style={{
+                                        width: '100%',
+                                        padding: '14px 18px',
+                                        border: '2px solid #e2e8f0',
+                                        borderRadius: '12px',
+                                        fontSize: '1rem',
+                                        outline: 'none',
+                                        transition: 'border-color 0.2s',
+                                        boxSizing: 'border-box'
+                                    }}
+                                    onFocus={(e) => e.target.style.borderColor = '#7c3aed'}
+                                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                                />
                             </div>
-                            <div style={{ width: '100%', height: '180px', backgroundColor: '#EEE', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                <img src="https://via.placeholder.com/600x200?text=Map+Placeholder" alt="Map" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                        </div>
 
-                        <div style={{ width: '100%', display: 'flex', gap: '20px', marginBottom: '15px' }}>
-                            <label><input type="radio" name="share" /> 공개</label>
-                            <label><input type="radio" name="share" /> 비공개</label>
-                        </div>
-                        <div style={{ width: '100%', display: 'flex', gap: '20px' }}>
-                            <label><input type="radio" name="agree" /> 동의</label>
-                            <label><input type="radio" name="agree" /> 비동의</label>
-                        </div>
+                            {/* 이미지 업로드 섹션 */}
+                            <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '16px', textAlign: 'left' }}>
+                                    현장 사진 첨부 <span style={{ color: '#ef4444' }}>*</span>
+                                </label>
+
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    style={{ display: 'none' }}
+                                    ref={fileInputRef}
+                                />
+
+                                <div
+                                    onClick={triggerFileInput}
+                                    style={{
+                                        padding: '20px',
+                                        backgroundColor: '#f8fafc',
+                                        borderRadius: '16px',
+                                        border: '2px dashed #cbd5e1',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s',
+                                        minHeight: '200px'
+                                    }}
+                                    onMouseOver={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
+                                    onMouseOut={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+                                >
+                                    {previewUrl ? (
+                                        <div style={{ position: 'relative', width: '100%', height: '300px' }}>
+                                            <img
+                                                src={previewUrl}
+                                                alt="Preview"
+                                                style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }}
+                                            />
+                                            {isAnalyzing && (
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    backgroundColor: 'rgba(255,255,255,0.8)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    borderRadius: '8px',
+                                                    color: '#7c3aed',
+                                                    fontWeight: '700'
+                                                }}>
+                                                    AI 분석 중... 🔄
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>📸</div>
+                                            <div style={{ fontSize: '1rem', color: '#64748b' }}>클릭하여 사진을 업로드하세요</div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 내용 입력 (자동 채움) */}
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                    민원 내용 (자동 생성됨)
+                                </label>
+                                <textarea
+                                    value={formData.content}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                                    placeholder="사진을 업로드하면 AI가 분석 결과를 입력합니다"
+                                    style={{
+                                        width: '100%',
+                                        height: '120px',
+                                        padding: '14px 18px',
+                                        border: '2px solid #e2e8f0',
+                                        borderRadius: '12px',
+                                        fontSize: '1rem',
+                                        outline: 'none',
+                                        resize: 'none',
+                                        boxSizing: 'border-box'
+                                    }}
+                                    onFocus={(e) => e.target.style.borderColor = '#7c3aed'}
+                                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                                />
+                            </div>
+
+                            {/* 위치 선택 */}
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                    발생 위치
+                                    <span style={{ fontWeight: '400', color: '#94a3b8', marginLeft: '8px' }}>지도를 클릭하여 선택</span>
+                                </label>
+                                <div style={{
+                                    padding: '10px 14px',
+                                    backgroundColor: '#f0fdf4',
+                                    borderRadius: '8px',
+                                    marginBottom: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}>
+                                    <span style={{ fontSize: '1.1rem' }}>📍</span>
+                                    <span style={{ color: '#16a34a', fontWeight: '500' }}>{formData.location.address}</span>
+                                </div>
+                                <div
+                                    ref={mapRef}
+                                    style={{
+                                        width: '100%',
+                                        height: '220px',
+                                        backgroundColor: '#f1f5f9',
+                                        borderRadius: '12px',
+                                        overflow: 'hidden',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#94a3b8',
+                                        border: '2px dashed #e2e8f0'
+                                    }}
+                                >
+                                    {!import.meta.env.VITE_KAKAO_MAP_KEY && '🗺️ 카카오 맵 API 키가 필요합니다'}
+                                </div>
+                            </div>
+
+                            {/* 공개 여부 */}
+                            <div style={{ marginBottom: '30px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
+                                    공개 여부
+                                </label>
+                                <div style={{ display: 'flex', gap: '16px' }}>
+                                    {[{ value: true, label: '🌐 공개', desc: '다른 시민들도 볼 수 있음' }, { value: false, label: '🔒 비공개', desc: '나와 담당자만 확인 가능' }].map(opt => (
+                                        <label key={String(opt.value)} style={{
+                                            flex: 1,
+                                            padding: '16px',
+                                            borderRadius: '12px',
+                                            border: formData.isPublic === opt.value ? '2px solid #7c3aed' : '2px solid #e2e8f0',
+                                            backgroundColor: formData.isPublic === opt.value ? '#faf5ff' : 'white',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}>
+                                            <input
+                                                type="radio"
+                                                checked={formData.isPublic === opt.value}
+                                                onChange={() => setFormData(prev => ({ ...prev, isPublic: opt.value }))}
+                                                style={{ display: 'none' }}
+                                            />
+                                            <div style={{ fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>{opt.label}</div>
+                                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{opt.desc}</div>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 제출 버튼 */}
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                style={{
+                                    width: '100%',
+                                    padding: '18px',
+                                    background: loading ? '#94a3b8' : 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '14px',
+                                    fontSize: '1.1rem',
+                                    fontWeight: '700',
+                                    cursor: loading ? 'not-allowed' : 'pointer',
+                                    boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
+                                    transition: 'all 0.3s'
+                                }}
+                            >
+                                {loading ? '접수 중...' : '🚀 민원 접수하기'}
+                            </button>
+                        </form>
                     </div>
-                </div>
 
-                {/* Right AI Analysis */}
-                <div style={{ background: 'linear-gradient(to bottom, #7C3AED, #60A5FA)', borderRadius: '12px', padding: '2px' }}>
-                    <div style={{ backgroundColor: 'white', borderRadius: '10px', height: '100%', padding: '20px' }}>
-                        <h3 style={{ textAlign: 'center', color: '#4F46E5', marginBottom: '20px' }}>AI 분석결과</h3>
-                        <div style={{ padding: '15px', backgroundColor: '#EEF2FF', borderRadius: '8px', marginBottom: '15px' }}>
-                            <div style={{ fontSize: '0.8rem', color: '#6366F1', marginBottom: '5px' }}>민원 유형 AI 결과</div>
-                            <div style={{ fontWeight: 'bold', textAlign: 'center' }}>유형: <span style={{ color: '#4F46E5' }}>{aiResult.type}</span></div>
+                    {/* 오른쪽 - AI 분석 */}
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '20px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        overflow: 'hidden',
+                        height: 'fit-content',
+                        position: 'sticky',
+                        top: '100px'
+                    }}>
+                        <div style={{
+                            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                            padding: '20px',
+                            color: 'white',
+                            textAlign: 'center'
+                        }}>
+                            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🤖</div>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>AI 이미지 분석</h3>
                         </div>
-                        <div style={{ padding: '15px', backgroundColor: '#EEF2FF', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '0.8rem', color: '#6366F1', marginBottom: '5px' }}>처리 기관 AI 분류 결과</div>
-                            <div style={{ fontWeight: 'bold', textAlign: 'center' }}>처리기관: <span style={{ color: '#4F46E5' }}>{aiResult.agency}</span></div>
-                        </div>
-
-                        {isAnalyzing && (
-                            <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.8rem', color: '#777' }}>
-                                <div className="loader" style={{ border: '3px solid #f3f3f3', borderTop: '3px solid #3498db', borderRadius: '50%', width: '20px', height: '20px', animation: 'spin 2s linear infinite', margin: '0 auto 10px' }}></div>
-                                AI가 이미지를 분석 중입니다...
+                        <div style={{ padding: '24px' }}>
+                            <div style={{
+                                padding: '18px',
+                                backgroundColor: '#f5f3ff',
+                                borderRadius: '12px',
+                                marginBottom: '16px'
+                            }}>
+                                <div style={{ fontSize: '0.8rem', color: '#7c3aed', fontWeight: '600', marginBottom: '8px' }}>
+                                    📊 이미지 분석 결과
+                                </div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
+                                    {aiResult.type}
+                                </div>
                             </div>
-                        )}
-
-                        <style>{`
-                            @keyframes spin {
-                                0% { transform: rotate(0deg); }
-                                100% { transform: rotate(360deg); }
-                            }
-                        `}</style>
+                            <div style={{
+                                padding: '18px',
+                                backgroundColor: '#fdf4ff',
+                                borderRadius: '12px'
+                            }}>
+                                <div style={{ fontSize: '0.8rem', color: '#a855f7', fontWeight: '600', marginBottom: '8px' }}>
+                                    🏛️ 처리 기관 분류
+                                </div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
+                                    {aiResult.agency}
+                                </div>
+                            </div>
+                            <div style={{
+                                marginTop: '20px',
+                                padding: '14px',
+                                backgroundColor: '#f0fdf4',
+                                borderRadius: '12px',
+                                textAlign: 'center'
+                            }}>
+                                <span style={{ fontSize: '0.85rem', color: '#16a34a' }}>✨ 사진에서 자동으로 정보를 추출합니다</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,0 +1,30 @@
+﻿
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/config/
+JwtAuthenticationFilt
+er.java:[34,56] incom
+patible types: java.l
+ang.Integer cannot be
+ converted to java.la
+ng.Long
+  [INFO] 1 error
+  [INFO] ------------
+---------------------
+---------------------
+-------
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/config/
+JwtAuthenticationFilt
+er.java:[34,56] incom
+patible types: java.l
+ang.Integer cannot be
+ converted to java.la
+ng.Long
+  [ERROR] 
+  [ERROR] -> [Help 1]
+
+

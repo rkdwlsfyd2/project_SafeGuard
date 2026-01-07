@@ -1,0 +1,94 @@
+﻿
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+4,33] package org.loc
+ationtech.jts.geom do
+es not exist
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+13,13] cannot find sy
+mbol
+    symbol:   class G
+eometry
+    location: class c
+om.civilcomplaint.ent
+ity.SpatialFeature
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+13,22] cannot find sy
+mbol
+    symbol:   class G
+eometry
+    location: class c
+om.civilcomplaint.ent
+ity.SpatialFeature
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+8,1] cannot find symb
+ol
+    symbol:   class G
+eometry
+    location: class c
+om.civilcomplaint.ent
+ity.SpatialFeature
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+4,33] package org.loc
+ationtech.jts.geom do
+es not exist
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+13,13] cannot find sy
+mbol
+  [ERROR]   symbol:  
+ class Geometry
+  [ERROR]   location:
+ class com.civilcompl
+aint.entity.SpatialFe
+ature
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+13,22] cannot find sy
+mbol
+  [ERROR]   symbol:  
+ class Geometry
+  [ERROR]   location:
+ class com.civilcompl
+aint.entity.SpatialFe
+ature
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/entity/
+SpatialFeature.java:[
+8,1] cannot find symb
+ol
+  [ERROR]   symbol:  
+ class Geometry
+  [ERROR]   location:
+ class com.civilcompl
+aint.entity.SpatialFe
+ature
+
+

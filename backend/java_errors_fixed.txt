@@ -1,0 +1,262 @@
+﻿
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[29
+,39] cannot find symb
+ol
+    symbol:   method 
+builder()
+    location: class c
+om.civilcomplaint.ent
+ity.AppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[38
+,41] cannot find symb
+ol
+    symbol:   method 
+getId()
+    location: variabl
+e user of type com.ci
+vilcomplaint.entity.A
+ppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[39
+,44] cannot find symb
+ol
+    symbol:   method 
+getEmail()
+    location: variabl
+e user of type com.ci
+vilcomplaint.entity.A
+ppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[49
+,73] cannot find symb
+ol
+    symbol:   method 
+getPassword()
+    location: variabl
+e user of type com.ci
+vilcomplaint.entity.A
+ppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[52
+,81] cannot find symb
+ol
+    symbol:   method 
+getEmail()
+    location: variabl
+e user of type com.ci
+vilcomplaint.entity.A
+ppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[52
+,67] cannot find symb
+ol
+    symbol:   method 
+getId()
+    location: variabl
+e user of type com.ci
+vilcomplaint.entity.A
+ppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[58
+,57] cannot find symb
+ol
+    symbol:   method 
+getId()
+    location: variabl
+e user of type com.ci
+vilcomplaint.entity.A
+ppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[59
+,60] cannot find symb
+ol
+    symbol:   method 
+getEmail()
+    location: variabl
+e user of type com.ci
+vilcomplaint.entity.A
+ppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[71
+,41] cannot find symb
+ol
+    symbol:   method 
+getId()
+    location: variabl
+e user of type com.ci
+vilcomplaint.entity.A
+ppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[72
+,44] cannot find symb
+ol
+    symbol:   method 
+getEmail()
+    location: variabl
+e user of type com.ci
+vilcomplaint.entity.A
+ppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[75
+,48] cannot find symb
+ol
+    symbol:   method 
+getCreatedAt()
+    location: variabl
+e user of type com.ci
+vilcomplaint.entity.A
+ppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/AuthService.java:[75
+,78] cannot find symb
+ol
+    symbol:   method 
+getCreatedAt()
+    location: variabl
+e user of type com.ci
+vilcomplaint.entity.A
+ppUser
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/ComplaintService.jav
+a:[26,62] cannot find
+ symbol
+    symbol:   method 
+getUserId()
+    location: variabl
+e c of type com.civil
+complaint.entity.Comp
+laint
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/ComplaintService.jav
+a:[29,34] cannot find
+ symbol
+    symbol:   method 
+getId()
+    location: variabl
+e c of type com.civil
+complaint.entity.Comp
+laint
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/ComplaintService.jav
+a:[30,41] cannot find
+ symbol
+    symbol:   method 
+getImagePath()
+    location: variabl
+e c of type com.civil
+complaint.entity.Comp
+laint
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/ComplaintService.jav
+a:[31,43] cannot find
+ symbol
+    symbol:   method 
+getDescription()
+    location: variabl
+e c of type com.civil
+complaint.entity.Comp
+laint
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/ComplaintService.jav
+a:[33,41] cannot find
+ symbol
+    symbol:   method 
+getCreatedAt()
+    location: variabl
+e c of type com.civil
+complaint.entity.Comp
+laint
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/ComplaintService.jav
+a:[33,68] cannot find
+ symbol
+    symbol:   method 
+getCreatedAt()
+    location: variabl
+e c of type com.civil
+complaint.entity.Comp
+laint
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/ComplaintService.jav
+a:[45,50] cannot find
+ symbol
+    symbol:   method 
+getUserId()
+    location: variabl
+e c of type com.civil
+complaint.entity.Comp
+laint
+> [ERROR] /C:/Users/r
+kdwl/react-run/backen
+d/src/main/java/com/c
+ivilcomplaint/service
+/ComplaintService.jav
+a:[46,51] cannot find
+ symbol
+    symbol:   method 
+getUserId()
+    location: variabl
+e c of type com.civil
+complaint.entity.Comp
+laint
+
+

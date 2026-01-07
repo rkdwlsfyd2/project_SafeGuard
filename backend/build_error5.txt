@@ -1,0 +1,310 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------< com.civilcomplaint:civil-complaint-api >---------------
+[INFO] Building civil-complaint-api 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ civil-complaint-api ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ civil-complaint-api ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 34 source files with javac [debug parameters release 17] to target\classes
+[INFO] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java: C:\Users\rkdwl\react-run\spring-server\src\main\java\com\civilcomplaint\service\ImageAnalysisService.java uses unchecked or unsafe operations.
+[INFO] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ImageAnalysisService.java: Recompile with -Xlint:unchecked for details.
+[INFO] Some messages have been simplified; recompile with -Xdiags:verbose to get full output
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[25,97] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[31,93] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[37,80] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[43,84] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[49,75] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[55,70] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[30,38] cannot find symbol
+  symbol:   method findPublicOrOwn(java.lang.Long,org.springframework.data.domain.PageRequest)
+  location: variable complaintRepository of type com.civilcomplaint.repository.ComplaintRepository
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[31,38] cannot find symbol
+  symbol:   method findPublicOnly(org.springframework.data.domain.PageRequest)
+  location: variable complaintRepository of type com.civilcomplaint.repository.ComplaintRepository
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[35,66] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[46,92] cannot find symbol
+  symbol:   method getComplaintNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[45,85] cannot find symbol
+  symbol:   method getComplaintNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[38,43] cannot find symbol
+  symbol:   method getComplaintNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[39,40] cannot find symbol
+  symbol:   method getCategory()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[40,37] cannot find symbol
+  symbol:   method getTitle()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[41,74] cannot find symbol
+  symbol:   method name()
+  location: class java.lang.String
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[42,40] cannot find symbol
+  symbol:   method getIsPublic()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[43,43] cannot find symbol
+  symbol:   method getCreatedDate()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[43,72] cannot find symbol
+  symbol:   method getCreatedDate()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[49,25] incompatible types: inference variable T has incompatible bounds
+    equality constraints: com.civilcomplaint.dto.response.ComplaintListResponse.ComplaintSummary
+    lower bounds: java.lang.Object
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[63,52] incompatible types: java.lang.Long cannot be converted to java.lang.Integer
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[65,15] cannot find symbol
+  symbol:   method getIsPublic()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[65,54] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[69,54] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[70,52] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[70,70] invalid method reference
+  cannot find symbol
+    symbol:   method getUserId()
+    location: class com.civilcomplaint.entity.AppUser
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[75,71] incompatible types: java.lang.Long cannot be converted to java.lang.Integer
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[76,71] incompatible types: java.lang.Long cannot be converted to java.lang.Integer
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[88,31] cannot find symbol
+  symbol:   method getComplaintNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[89,28] cannot find symbol
+  symbol:   method getCategory()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[90,25] cannot find symbol
+  symbol:   method getTitle()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[91,27] cannot find symbol
+  symbol:   method getContent()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[92,62] cannot find symbol
+  symbol:   method name()
+  location: class java.lang.String
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[93,28] cannot find symbol
+  symbol:   method getIsPublic()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[94,31] cannot find symbol
+  symbol:   method getCreatedDate()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[94,60] cannot find symbol
+  symbol:   method getCreatedDate()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[105,17] cannot find symbol
+  symbol:   method category(java.lang.String)
+  location: class com.civilcomplaint.entity.Complaint.ComplaintBuilder
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[113,59] cannot find symbol
+  symbol:   method getComplaintNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[117,36] cannot find symbol
+  symbol:   method getComplaintNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[118,36] cannot find symbol
+  symbol:   method getCreatedDate()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[118,65] cannot find symbol
+  symbol:   method getCreatedDate()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[124,52] incompatible types: java.lang.Long cannot be converted to java.lang.Integer
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[126,15] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[128,27] incomparable types: java.lang.String and com.civilcomplaint.entity.ComplaintStatus
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[132,14] cannot find symbol
+  symbol:   method setTitle(java.lang.String)
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[134,14] cannot find symbol
+  symbol:   method setContent(java.lang.String)
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[136,14] cannot find symbol
+  symbol:   method setIsPublic(java.lang.Boolean)
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[146,52] incompatible types: java.lang.Long cannot be converted to java.lang.Integer
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[148,15] cannot find symbol
+  symbol:   method getUserNo()
+  location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[150,27] incomparable types: java.lang.String and com.civilcomplaint.entity.ComplaintStatus
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[177,35] cannot find symbol
+  symbol:   method findMapLocations()
+  location: variable complaintRepository of type com.civilcomplaint.repository.ComplaintRepository
+[INFO] 50 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  11.784 s
+[INFO] Finished at: 2026-01-06T14:39:56+09:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project civil-complaint-api: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[25,97] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[31,93] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[37,80] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[43,84] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[49,75] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/controller/ComplaintController.java:[55,70] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable user of type com.civilcomplaint.security.JwtUserDetails
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[30,38] cannot find symbol
+[ERROR]   symbol:   method findPublicOrOwn(java.lang.Long,org.springframework.data.domain.PageRequest)
+[ERROR]   location: variable complaintRepository of type com.civilcomplaint.repository.ComplaintRepository
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[31,38] cannot find symbol
+[ERROR]   symbol:   method findPublicOnly(org.springframework.data.domain.PageRequest)
+[ERROR]   location: variable complaintRepository of type com.civilcomplaint.repository.ComplaintRepository
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[35,66] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[46,92] cannot find symbol
+[ERROR]   symbol:   method getComplaintNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[45,85] cannot find symbol
+[ERROR]   symbol:   method getComplaintNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[38,43] cannot find symbol
+[ERROR]   symbol:   method getComplaintNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[39,40] cannot find symbol
+[ERROR]   symbol:   method getCategory()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[40,37] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[41,74] cannot find symbol
+[ERROR]   symbol:   method name()
+[ERROR]   location: class java.lang.String
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[42,40] cannot find symbol
+[ERROR]   symbol:   method getIsPublic()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[43,43] cannot find symbol
+[ERROR]   symbol:   method getCreatedDate()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[43,72] cannot find symbol
+[ERROR]   symbol:   method getCreatedDate()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[49,25] incompatible types: inference variable T has incompatible bounds
+[ERROR]     equality constraints: com.civilcomplaint.dto.response.ComplaintListResponse.ComplaintSummary
+[ERROR]     lower bounds: java.lang.Object
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[63,52] incompatible types: java.lang.Long cannot be converted to java.lang.Integer
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[65,15] cannot find symbol
+[ERROR]   symbol:   method getIsPublic()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[65,54] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[69,54] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[70,52] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[70,70] invalid method reference
+[ERROR]   cannot find symbol
+[ERROR]     symbol:   method getUserId()
+[ERROR]     location: class com.civilcomplaint.entity.AppUser
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[75,71] incompatible types: java.lang.Long cannot be converted to java.lang.Integer
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[76,71] incompatible types: java.lang.Long cannot be converted to java.lang.Integer
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[88,31] cannot find symbol
+[ERROR]   symbol:   method getComplaintNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[89,28] cannot find symbol
+[ERROR]   symbol:   method getCategory()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[90,25] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[91,27] cannot find symbol
+[ERROR]   symbol:   method getContent()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[92,62] cannot find symbol
+[ERROR]   symbol:   method name()
+[ERROR]   location: class java.lang.String
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[93,28] cannot find symbol
+[ERROR]   symbol:   method getIsPublic()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[94,31] cannot find symbol
+[ERROR]   symbol:   method getCreatedDate()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[94,60] cannot find symbol
+[ERROR]   symbol:   method getCreatedDate()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[105,17] cannot find symbol
+[ERROR]   symbol:   method category(java.lang.String)
+[ERROR]   location: class com.civilcomplaint.entity.Complaint.ComplaintBuilder
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[113,59] cannot find symbol
+[ERROR]   symbol:   method getComplaintNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[117,36] cannot find symbol
+[ERROR]   symbol:   method getComplaintNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[118,36] cannot find symbol
+[ERROR]   symbol:   method getCreatedDate()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[118,65] cannot find symbol
+[ERROR]   symbol:   method getCreatedDate()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[124,52] incompatible types: java.lang.Long cannot be converted to java.lang.Integer
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[126,15] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[128,27] incomparable types: java.lang.String and com.civilcomplaint.entity.ComplaintStatus
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[132,14] cannot find symbol
+[ERROR]   symbol:   method setTitle(java.lang.String)
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[134,14] cannot find symbol
+[ERROR]   symbol:   method setContent(java.lang.String)
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[136,14] cannot find symbol
+[ERROR]   symbol:   method setIsPublic(java.lang.Boolean)
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[146,52] incompatible types: java.lang.Long cannot be converted to java.lang.Integer
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[148,15] cannot find symbol
+[ERROR]   symbol:   method getUserNo()
+[ERROR]   location: variable c of type com.civilcomplaint.entity.Complaint
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[150,27] incomparable types: java.lang.String and com.civilcomplaint.entity.ComplaintStatus
+[ERROR] /C:/Users/rkdwl/react-run/spring-server/src/main/java/com/civilcomplaint/service/ComplaintService.java:[177,35] cannot find symbol
+[ERROR]   symbol:   method findMapLocations()
+[ERROR]   location: variable complaintRepository of type com.civilcomplaint.repository.ComplaintRepository
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

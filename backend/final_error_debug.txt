@@ -1,0 +1,61 @@
+﻿
+> [ERROR] Failed to e
+xecute goal org.apach
+e.maven.plugins:maven
+-compiler-plugin:3.11
+.0:compile (default-c
+ompile) on project ci
+vil-complaint-api: Fa
+tal error compiling: 
+invalid flag: --relea
+se -> [Help 1]
+  org.apache.maven.li
+fecycle.LifecycleExec
+utionException: Faile
+d to execute goal org
+.apache.maven.plugins
+:maven-compiler-plugi
+n:3.11.0:compile (def
+ault-compile) on proj
+ect civil-complaint-a
+pi: Fatal error compi
+ling
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.doExe
+cute2 (MojoExecutor.j
+ava:333)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.doExe
+cute (MojoExecutor.ja
+va:316)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:212)
+      at org.apache.m
+aven.lifecycle.intern
+al.MojoExecutor.execu
+te (MojoExecutor.java
+:174)
+> [ERROR] 
+> [ERROR] Re-run Mave
+n using the -X switch
+ to enable full debug
+ logging.
+> [ERROR] 
+> [ERROR] For more in
+formation about the e
+rrors and possible so
+lutions, please read 
+the following article
+s:
+> [ERROR] [Help 1] ht
+tp://cwiki.apache.org
+/confluence/display/M
+AVEN/MojoExecutionExc
+eption
+
+
