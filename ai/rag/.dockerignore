@@ -1,0 +1,10 @@
+rag_data/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+.git/
+.gitignore

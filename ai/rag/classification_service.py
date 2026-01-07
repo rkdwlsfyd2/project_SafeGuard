@@ -1,3 +1,18 @@
+"""
+classification_service.py
+
+[역할 설명]
+이 파일은 RAG 기반 민원 분류 시스템에서
+'검색 결과(query.py)'를 바탕으로 실제 행정기관을 최종 결정하는
+분류 판단 레이어(Classification Layer)입니다.
+
+- query.py : 벡터 검색 + BM25 검색 (의미 기반 Retrieval)
+- classification_service.py : 검색 결과를 행정 도메인 기준으로 해석 및 보정
+
+이 파일은 검색을 직접 수행하지 않으며,
+RAG 결과를 키워드 및 도메인 규칙으로 보조 판단만 수행합니다.
+"""
+
 import os
 import logging
 import unicodedata
@@ -7,28 +22,85 @@ from query import ask
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# =========================
-# 키워드 → 기관 매핑 (fallback + source 보정용)
-# =========================
+# ======================================================
+# 키워드 → 기관 매핑 (rag_data 기반, 보조 힌트용)
+# ======================================================
 KEYWORD_TO_AGENCY = {
+
+    # 경찰청 / 치안
     "도로교통": "경찰청",
-    "불법주차": "경찰청",
+    "교통위반": "경찰청",
+    "불법주정차": "경찰청",
+    "신호위반": "경찰청",
+    "과속": "경찰청",
+    "음주운전": "경찰청",
+
+    # 국토교통부 (교통·건설·시설)
     "주차": "국토교통부",
+    "주차장": "국토교통부",
+    "도로": "국토교통부",
+    "포트홀": "국토교통부",
+    "싱크홀": "국토교통부",
+    "건축": "국토교통부",
+    "건축물": "국토교통부",
+    "불법건축": "국토교통부",
+    "아파트": "국토교통부",
+    "공동주택": "국토교통부",
+    "관리비": "국토교통부",
+    "시설물": "국토교통부",
+    "지하안전": "국토교통부",
+    "지반침하": "국토교통부",
+    "옥외광고": "국토교통부",
+
+    # 기후에너지환경부 (환경 민원)
     "환경": "기후에너지환경부",
+    "악취": "기후에너지환경부",
+    "냄새": "기후에너지환경부",
+    "하수": "기후에너지환경부",
+    "하수구": "기후에너지환경부",
+    "배수구": "기후에너지환경부",
+    "오수": "기후에너지환경부",
+    "정화조": "기후에너지환경부",
     "폐수": "기후에너지환경부",
     "하천": "기후에너지환경부",
+    "수질": "기후에너지환경부",
     "쓰레기": "기후에너지환경부",
-    "개인정보": "개인정보보호위원회",
-    "민원": "국민권익위원회",
-    "형법": "법무부",
+    "불법투기": "기후에너지환경부",
+    "소음": "기후에너지환경부",
+    "진동": "기후에너지환경부",
+    "빛공해": "기후에너지환경부",
+
+    # 소방청
+    "소방": "소방청",
+    "화재": "소방청",
+
+    # 보건복지부 / 식약처
+    "감염병": "보건복지부",
+    "전염병": "보건복지부",
+    "보건": "보건복지부",
+    "식품": "식품의약품안전처",
+    "위생": "식품의약품안전처",
+
+    # 고용노동부
     "근로": "고용노동부",
     "노동": "고용노동부",
+    "임금": "고용노동부",
+    "체불": "고용노동부",
+    "해고": "고용노동부",
+
+    # 행정
+    "민원": "국민권익위원회",
+    "청원": "국민권익위원회",
+    "지방자치": "행정안전부",
+
+    # 교육
+    "학교": "교육부",
+    "교육": "교육부",
 }
 
-
-# =========================
-# 기관 코드 정의 (절대 기준)
-# =========================
+# ======================================================
+# 기관 코드 (절대 기준)
+# ======================================================
 AGENCY_CODES = {
     "경찰청": 0,
     "국토교통부": 1,
@@ -53,21 +125,17 @@ AGENCY_CODES = {
     "기타": 20
 }
 
-# =========================
-# 기관 → UI 유형 매핑
-# =========================
+# ======================================================
+# 기관 → UI 카테고리
+# ======================================================
 AGENCY_TO_CATEGORY = {
     0: "경찰·검찰",
     6: "경찰·검찰",
     13: "경찰·검찰",
 
     1: "교통",
-    8: "행정·안전",
-    18: "행정·안전",
-    19: "행정·안전",
-    4: "행정·안전",
 
-    2: "산업·통상",
+    2: "산업·통상",  # 고용노동부
     7: "산업·통상",
     10: "산업·통상",
     14: "산업·통상",
@@ -75,24 +143,35 @@ AGENCY_TO_CATEGORY = {
     17: "산업·통상",
 
     12: "환경",
+
     9: "보건",
     5: "보건",
 
     15: "교육",
-    3: "행정·안전",
+
+    8: "행정·안전",  # 행정안전부
+    18: "행정·안전", # 소방청
+    19: "행정·안전",
+    4: "행정·안전",  # 국민권익위
+    3: "행정·안전",  # 국방부
     11: "행정·안전",
 
-    20: "기타"
+    20: "기타",
 }
 
-
-# =========================
-# 핵심 분류 함수
-# =========================
+# ======================================================
+# 민원 분류 메인 함수
+# ======================================================
 def classify_complaint(user_query: str) -> dict:
+    """
+    사용자 민원 문장을 입력받아
+    RAG 검색 결과를 기반으로 소관 기관을 최종 판단한다.
+    """
+
     logger.info("=" * 60)
     logger.info("[RAG] Query received: %s", user_query)
 
+    # 1. RAG 검색 수행
     results = ask(user_query, top_k=3)
 
     if not results:
@@ -101,49 +180,96 @@ def classify_complaint(user_query: str) -> dict:
             "agency_name": "기타",
             "category": "기타",
             "confidence": 0.0,
-            "reasoning": "관련 법령을 찾을 수 없습니다.",
+            "reasoning": "관련 법령 검색 결과가 없습니다.",
             "sources": []
         }
 
-    agency_counts = Counter()
+    agency_scores = Counter()
     source_details = []
 
-    logger.info("[RAG] Evidence documents:")
-
+    # 2. 검색 결과 해석
     for r in results:
         raw_source = unicodedata.normalize("NFC", r.get("source", ""))
         filename = os.path.basename(raw_source)
-
-        score = r.get("score", 0.0)
         rtype = r.get("type", "unknown")
-        score_label = "Vector" if rtype == "vector" else rtype.upper()
 
-        logger.info(" - %s | %s %.2f", filename, score_label, score)
+        weight = 1.0
+
+        if rtype == "vector":
+            # Milvus COSINE similarity: 1.0 is best, 0.0 is worst.
+            score_value = r.get("score", 0.0)
+            weight += score_value # Higher similarity -> higher weight
+            score_label = "COSINE"
+        else:
+            score_value = r.get("bm25_score", 0.0)
+            # BM25 scores can be large, normalize it a bit for combination
+            weight += min(1.0, score_value / 10.0)
+            score_label = "BM25"
 
         matched_agency = "기타"
+
+        # 1순위: 사용자 질의 핵심 키워드 (가장 강력한 힌트)
+        query_hint_agency = "기타"
         for key, agency in KEYWORD_TO_AGENCY.items():
-            if key in raw_source:
-                matched_agency = agency
+            if key in user_query:
+                query_hint_agency = agency
+                # 질의에 핵심 키워드가 있으면 해당 기관 점수를 대폭 가산
                 break
 
-        agency_counts[matched_agency] += 1
-        source_details.append(f"{filename} ({score_label}: {score:.2f})")
+        # 2순위: 파일명 기반 매칭
+        for key, agency in KEYWORD_TO_AGENCY.items():
+            if key in filename:
+                matched_agency = agency
+                weight += 0.5 # 파일명 일치는 강력한 근거
+                break
+        
+        # 지방자치법 등 범용 법령에 대한 예외 처리
+        if "지방자치법" in filename:
+            matched_agency = "행정안전부"
 
-    best_agency, best_count = agency_counts.most_common(1)[0]
-    total_docs = len(results)
+        # 3순위: 본문 기반 매칭
+        if matched_agency == "기타":
+            text_snippet = r.get("text", "")[:500]
+            for key, agency in KEYWORD_TO_AGENCY.items():
+                if key in text_snippet:
+                    matched_agency = agency
+                    break
+
+        # 최종 가중치 합산
+        if matched_agency == "기타" and query_hint_agency != "기타":
+            matched_agency = query_hint_agency
+            weight += 0.2
+        elif matched_agency != "기타" and matched_agency == query_hint_agency:
+            # 검색 결과와 질의 키워드가 일치하면 대폭 신뢰도 상승
+            weight += 1.0
+
+        agency_scores[matched_agency] += weight
+        source_details.append(f"{filename} ({score_label}: {score_value:.4f})")
+
+    # 3. 최종 기관 결정
+    best_agency, best_score = agency_scores.most_common(1)[0]
+    total_score = sum(agency_scores.values())
 
     agency_code = AGENCY_CODES.get(best_agency, 20)
     category = AGENCY_TO_CATEGORY.get(agency_code, "기타")
-    confidence = round(best_count / total_docs, 2)
+    confidence = round(best_score / total_score, 2) if total_score else 0.0
 
     reasoning = (
-        f"검색된 연관 법령 {total_docs}건 중 "
-        f"{best_count}건이 '{best_agency}' 소관으로 식별됨."
+        f"검색된 법령 근거 중 가장 높은 점수가 "
+        f"'{best_agency}' 소관으로 판단되었습니다."
     )
 
-    logger.info("[RAG] Final decision: %s (%d)", best_agency, agency_code)
-    logger.info("[RAG] Confidence: %.2f", confidence)
-    logger.info("=" * 60)
+    top_source_text = results[0].get("text", "내용 없음")[:150] + "..." if results else "없음"
+
+    logger.info("-" * 40)
+    logger.info("[ANALYSIS REPORT]")
+    logger.info(f"1. 입력 텍스트: {user_query}")
+    logger.info(f"2. 민원 유형: {category}")
+    logger.info(f"3. 판단 기관: {best_agency}")
+    logger.info(f"4. 판단 근거: {reasoning}")
+    logger.info(f"5. 관련 법령 개요: {top_source_text}")
+    logger.info(f"6. 참조 소스: {', '.join(source_details[:2])}")
+    logger.info("-" * 40)
 
     return {
         "agency_code": agency_code,
