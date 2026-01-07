@@ -7,7 +7,7 @@ function Detail() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetch(`/api/reports/${id}`)
+        fetch(`http://localhost:5000/api/reports/${id}`)
             .then(res => res.json())
             .then(data => setReport(data))
             .catch(err => console.error('Failed to fetch report detail:', err));

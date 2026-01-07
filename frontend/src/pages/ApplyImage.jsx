@@ -22,7 +22,7 @@ function ApplyImage() {
 
         try {
             console.log('[프론트엔드 로그] AI 분석 요청 시작...');
-            const response = await fetch('/api/analyze-image', {
+            const response = await fetch('http://localhost:5000/api/analyze-image', {
                 method: 'POST',
                 body: formData,
             });

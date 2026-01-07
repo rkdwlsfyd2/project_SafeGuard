@@ -1,5 +1,5 @@
 // 프론트엔드에서 사용할 API 유틸리티
-const API_BASE = '/api';
+const API_BASE = 'http://localhost:5000/api';
 
 // 토큰 저장/조회
 export const getToken = () => localStorage.getItem('token');
