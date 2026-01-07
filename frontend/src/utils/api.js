@@ -118,7 +118,7 @@ export const agenciesAPI = {
 };
 
 // Text Analysis API (RAG Service)
-const RAG_API_BASE = 'http://localhost:8001';
+const RAG_API_BASE = 'http://127.0.0.1:8001';
 
 export const analyzeText = async (text) => {
     try {
