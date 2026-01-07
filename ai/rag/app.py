@@ -16,6 +16,7 @@ rag/app.py
 """
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from classification_service import classify_complaint
 from milvus_client import connect_milvus
@@ -23,6 +24,15 @@ import uvicorn
 import os
 
 app = FastAPI()
+
+# CORS settings
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 class ComplaintInput(BaseModel):
     text: str
