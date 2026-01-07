@@ -40,6 +40,7 @@ class ComplaintInput(BaseModel):
 class ComplaintResponse(BaseModel):
     agency_code: int
     agency_name: str
+    category: str  # Added category field
     reasoning: str = ""
     sources: list = []
     message: str = "Success"
@@ -88,6 +89,7 @@ async def classify_text(input_data: ComplaintInput):
         return ComplaintResponse(
             agency_code=result_data["agency_code"],
             agency_name=result_data["agency_name"],
+            category=result_data.get("category", "기타"), # Added category mapping
             reasoning=result_data.get("reasoning", ""),
             sources=result_data.get("sources", [])
         )
