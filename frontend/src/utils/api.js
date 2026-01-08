@@ -116,7 +116,15 @@ export const complaintsAPI = {
         method: 'POST',
     }),
 
-    getMapLocations: () => apiRequest('/complaints/map/locations'),
+//    getMapLocations: () => apiRequest('/complaints/map/locations'),
+    getMapItems: (params) => {
+        const query = new URLSearchParams(params).toString();
+        return apiRequest(`/gis/map-items${query ? `?${query}` : ''}`);
+    },
+      getComplaints: (params) => {
+        const query = new URLSearchParams(params).toString();
+        return apiRequest(`/gis/complaints${query ? `?${query}` : ''}`);
+    },
 };
 
 // Agencies API

@@ -1,0 +1,42 @@
+package com.safeguard.controller;
+
+import com.safeguard.dto.*;
+import com.safeguard.service.ComplaintGisService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/gis")
+public class ComplaintGisController {
+
+    private final ComplaintGisService complaintGisService;
+
+    /**
+     * 지도에 그릴 아이템(줌 기준으로 마커/클러스터 자동 분기)
+     *
+     * 호출 예:
+     * /api/gis/map-items?swLat=..&swLng=..&neLat=..&neLng=..&zoom=6&category=...&status=...
+     */
+    @GetMapping("/map-items")
+    public List<MapItemDto> mapItems(@ModelAttribute MapSearchRequest req) {
+        return complaintGisService.getMapItems(req);
+    }
+
+    /**
+     * 오른쪽 목록(페이지네이션)
+     *
+     * 호출 예:
+     * /api/gis/complaints?swLat=..&swLng=..&neLat=..&neLng=..&page=0&size=20
+     */
+    @GetMapping("/complaints")
+    public PageResponse<ComplaintListItemDto> list(
+            @ModelAttribute MapSearchRequest req,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return complaintGisService.listComplaints(req, page, size);
+    }
+}

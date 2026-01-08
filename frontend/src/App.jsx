@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -17,12 +17,31 @@ import Dashboard from './pages/Dashboard';
 import './index.css';
 
 function App() {
-  const role = localStorage.getItem('role') || 'USER'; // Default to USER
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [role, setRole] = useState(localStorage.getItem('role') || 'USER');
+
+  // localStorage 변경을 다른 탭/창에서도 반영 (선택사항이지만 유용)
+  useEffect(() => {
+    const onStorage = () => {
+      setToken(localStorage.getItem('token'));
+      setRole(localStorage.getItem('role') || 'USER');
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  if (import.meta.env.DEV) {
+    console.log('ENV TEST:', import.meta.env.VITE_KAKAO_MAP_KEY);
+  }
 
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('userId');
+
+    setToken(null);
+    setRole('USER');
+
     window.location.href = '/login';
   };
 
@@ -33,11 +52,16 @@ function App() {
         <div className="top-bar">
           <div className="container" style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <div className="top-bar__links">
-              {localStorage.getItem('token') ? (
+              {token ? (
                 <>
                   <Link to="/mypage">마이페이지</Link>
                   <span>|</span>
-                  <button onClick={logout} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, font: 'inherit' }}>로그아웃</button>
+                  <button
+                    onClick={logout}
+                    style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                  >
+                    로그아웃
+                  </button>
                 </>
               ) : (
                 <>
