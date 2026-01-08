@@ -187,14 +187,14 @@ def classify_complaint(user_query: str) -> dict:
     agency_scores = Counter()
     source_details = []
 
-    # 1순위: 사용자 질의 핵심 키워드 (가장 강력한 힌트 추출)
+    # 1순위: 사용자 질의 핵심 키워드 
     query_hint_agency = "기타"
     for key, agency in KEYWORD_TO_AGENCY.items():
         if key in user_query:
             query_hint_agency = agency
             break
     
-    # 질의에 명확한 의도가 있다면 기본 점수 부여 (기본 3.0점의 강력한 출발)
+    # 질의에 명확한 의도가 있다면 기본 점수 부여 
     if query_hint_agency != "기타":
         agency_scores[query_hint_agency] += 3.0
 

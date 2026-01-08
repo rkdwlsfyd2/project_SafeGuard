@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.safeguard.mapper.ComplaintMapper">
+
+    <insert id="insertComplaint" useGeneratedKeys="true" keyProperty="complaintNo">
+        INSERT INTO complaint (
+            category, title, content, status, is_public, user_no, created_date
+        ) VALUES (
+            #{category}, #{title}, #{content}, 
+            #{status, typeHandler=org.apache.ibatis.type.EnumTypeHandler}, 
+            #{isPublic}, #{userNo}, CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <insert id="insertSpatialFeature">
+        INSERT INTO spatial_feature (
+            feature_type, geom, addr_text, complaint_no, created_at
+        ) VALUES (
+            #{featureType}, 
+            ST_SetSRID(ST_MakePoint(#{geom.x}, #{geom.y}), 4326), 
+            #{addrText}, #{complaintNo}, CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <insert id="insertComplaintAgency">
+        INSERT INTO complaint_agency (
+            complaint_no, agency_no, status, assigned_at
+        ) VALUES (
+            #{complaintNo}, #{agencyNo}, 'ASSIGNED', CURRENT_TIMESTAMP
+        )
+    </insert>
+
+</mapper>

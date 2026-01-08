@@ -4,7 +4,6 @@ import com.safeguard.dto.UserDTO;
 import com.safeguard.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -26,10 +25,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     private UserDetails createUserDetails(UserDTO user) {
-        return User.builder()
-                .username(user.getUserId())
-                .password(user.getPw())
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole())))
-                .build();
+        return new CustomUserDetails(
+                user.getUserId(),
+                user.getPw(),
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole())),
+                user.getUserNo());
     }
 }

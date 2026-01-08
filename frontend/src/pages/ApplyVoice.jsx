@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { complaintsAPI, getToken } from '../utils/api';
+import { complaintsAPI, sttAPI, getToken, analyzeText } from '../utils/api';
 
 function ApplyVoice() {
     const navigate = useNavigate();
@@ -19,13 +19,14 @@ function ApplyVoice() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [currentStep, setCurrentStep] = useState(1);
-    
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [ragResult, setRagResult] = useState(null);
+
     // Voice Recording State
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
-
-    // Mock Voice Transcription
-    const mockTranscription = "공원에 가로등이 고장나서 너무 어둡습니다. 저녁에 산책하기가 무서워요. 빠른 수리 부탁드립니다.";
+    const mediaRecorderRef = useRef(null);
+    const chunksRef = useRef([]);
 
     useEffect(() => {
         let interval;
@@ -39,16 +40,48 @@ function ApplyVoice() {
         return () => clearInterval(interval);
     }, [isRecording]);
 
-    const handleToggleRecord = () => {
+    const handleToggleRecord = async () => {
         if (isRecording) {
+            // STOP RECORDING
+            mediaRecorderRef.current.stop();
             setIsRecording(false);
-            // Simulate transcription completion
-            if (!formData.content) {
-                setFormData(prev => ({ ...prev, content: mockTranscription }));
-            }
         } else {
-            setIsRecording(true);
-            setRecordingTime(0);
+            // START RECORDING
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mediaRecorder = new MediaRecorder(stream);
+                mediaRecorderRef.current = mediaRecorder;
+                chunksRef.current = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) chunksRef.current.push(e.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(chunksRef.current, { type: 'audio/wav' });
+                    setLoading(true);
+                    setError('');
+                    try {
+                        const result = await sttAPI.transcribe(audioBlob);
+                        if (result && result.sttText) {
+                            setFormData(prev => ({ ...prev, content: result.sttText }));
+                        }
+                    } catch (err) {
+                        setError('음성 인식에 실패했습니다: ' + err.message);
+                    } finally {
+                        setLoading(false);
+                    }
+                    // Stop all tracks
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                setIsRecording(true);
+                setRecordingTime(0);
+            } catch (err) {
+                console.error("Recording error:", err);
+                setError("마이크 접근 권한이 필요합니다.");
+            }
         }
     };
 
@@ -112,6 +145,38 @@ function ApplyVoice() {
         if (formData.title && formData.content && formData.location.address) setCurrentStep(4);
     }, [formData]);
 
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setLoading(true);
+        setError('');
+        try {
+            const result = await sttAPI.transcribe(file);
+            if (result && result.sttText) {
+                setFormData(prev => ({ ...prev, content: result.sttText }));
+            }
+        } catch (err) {
+            setError('음성 파일 인식에 실패했습니다: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAnalyze = async () => {
+        if (!formData.content) return;
+        setIsAnalyzing(true);
+        try {
+            // content가 URL일 수도 있고 텍스트일 수도 있으나 여기서는 STT 결과를 사용
+            const result = await analyzeText(formData.content);
+            setRagResult(result);
+        } catch (err) {
+            setError('AI 분석 중 오류가 발생했습니다: ' + err.message);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!getToken()) {
@@ -145,7 +210,7 @@ function ApplyVoice() {
 
     const steps = [
         { num: 1, label: '제목 입력', done: !!formData.title },
-        { num: 2, label: '음성 녹음', done: !!formData.content },
+        { num: 2, label: '음성 녹음/입력', done: !!formData.content },
         { num: 3, label: '위치 선택', done: true },
         { num: 4, label: '접수 완료', done: false }
     ];
@@ -161,7 +226,7 @@ function ApplyVoice() {
                     <p style={{ color: '#64748b', fontSize: '1.1rem' }}>목소리로 쉽고 빠르게 민원을 신청하세요</p>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 320px', gap: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 340px', gap: '24px' }}>
                     {/* 왼쪽 - 진행 단계 */}
                     <div style={{
                         backgroundColor: 'white',
@@ -219,7 +284,7 @@ function ApplyVoice() {
                             color: 'white'
                         }}>
                             <h2 style={{ fontSize: '1.3rem', fontWeight: '700', margin: 0 }}>음성 민원 신청서</h2>
-                            <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '6px' }}>녹음 버튼을 눌러 말씀을 시작하세요</p>
+                            <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '6px' }}>녹음 버튼을 누르거나 음성 파일을 업로드하세요</p>
                         </div>
 
                         <form onSubmit={handleSubmit} style={{ padding: '30px' }}>
@@ -267,22 +332,22 @@ function ApplyVoice() {
                                 <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '16px', textAlign: 'left' }}>
                                     음성 녹음 <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
-                                
-                                <div style={{ 
-                                    padding: '40px', 
+
+                                <div style={{
+                                    padding: '40px',
                                     backgroundColor: isRecording ? '#faf5ff' : '#f8fafc',
                                     borderRadius: '16px',
                                     border: isRecording ? '2px solid #7c3aed' : '2px dashed #cbd5e1',
                                     transition: 'all 0.3s'
                                 }}>
-                                    <div 
+                                    <div
                                         onClick={handleToggleRecord}
                                         style={{
                                             width: '80px',
                                             height: '80px',
                                             borderRadius: '50%',
                                             backgroundColor: isRecording ? '#ef4444' : '#7c3aed',
-                                            margin: '0 auto 20px',
+                                            margin: '0 auto 12px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -293,40 +358,90 @@ function ApplyVoice() {
                                     >
                                         <span style={{ fontSize: '2rem' }}>{isRecording ? '⏹' : '🎤'}</span>
                                     </div>
-                                    <div style={{ fontSize: '1.2rem', fontWeight: '700', color: isRecording ? '#ef4444' : '#1e293b', marginBottom: '8px' }}>
-                                        {isRecording ? formatTime(recordingTime) : !formData.content ? '녹음 시작' : '다시 녹음하기'}
+                                    <div style={{ fontSize: '1.2rem', fontWeight: '700', color: isRecording ? '#ef4444' : '#1e293b', marginBottom: '12px' }}>
+                                        {isRecording ? formatTime(recordingTime) : '녹음 시작'}
                                     </div>
-                                    <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
-                                        {isRecording ? '말씀을 하신 후 정지 버튼을 눌러주세요' : '버튼을 눌러 음성 인식을 시작하세요'}
+
+                                    {/* 파일 업로드 버튼 */}
+                                    {!isRecording && (
+                                        <div style={{ marginBottom: '12px' }}>
+                                            <input
+                                                type="file"
+                                                accept="audio/*,video/*"
+                                                id="audio-upload"
+                                                onChange={handleFileUpload}
+                                                style={{ display: 'none' }}
+                                            />
+                                            <label htmlFor="audio-upload" style={{
+                                                padding: '8px 16px',
+                                                backgroundColor: 'white',
+                                                border: '1px solid #7c3aed',
+                                                borderRadius: '20px',
+                                                color: '#7c3aed',
+                                                fontSize: '0.9rem',
+                                                fontWeight: '600',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}>
+                                                📁 음성파일 업로드
+                                            </label>
+                                        </div>
+                                    )}
+
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                        {isRecording ? '말씀을 하신 후 정지 버튼을 눌러주세요' : '버튼을 눌러 음성 인식을 시작하거나 파일을 업로드하세요'}
                                     </div>
                                 </div>
                             </div>
 
                             {/* 인식된 텍스트 */}
-                            {formData.content && (
-                                <div style={{ marginBottom: '24px' }}>
-                                    <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
-                                        인식된 내용 (수정 가능)
-                                    </label>
-                                    <textarea
-                                        value={formData.content}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                    음성인식 내용 (수정 가능)
+                                </label>
+                                <textarea
+                                    value={formData.content}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                                    placeholder="음성 인식 결과가 여기에 표시됩니다. 직접 입력도 가능합니다."
+                                    style={{
+                                        width: '100%',
+                                        height: '140px',
+                                        padding: '14px 18px',
+                                        border: '2px solid #e2e8f0',
+                                        borderRadius: '12px',
+                                        fontSize: '1rem',
+                                        outline: 'none',
+                                        resize: 'none',
+                                        boxSizing: 'border-box',
+                                        transition: 'border-color 0.2s'
+                                    }}
+                                    onFocus={(e) => e.target.style.borderColor = '#7c3aed'}
+                                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                                />
+
+                                {/* AI 분석 버튼 */}
+                                <div style={{ textAlign: 'right', marginTop: '12px' }}>
+                                    <button
+                                        type="button"
+                                        onClick={handleAnalyze}
+                                        disabled={isAnalyzing || !formData.content}
                                         style={{
-                                            width: '100%',
-                                            height: '120px',
-                                            padding: '14px 18px',
-                                            border: '2px solid #e2e8f0',
-                                            borderRadius: '12px',
-                                            fontSize: '1rem',
-                                            outline: 'none',
-                                            resize: 'none',
-                                            boxSizing: 'border-box'
+                                            padding: '10px 24px',
+                                            backgroundColor: '#7c3aed',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '10px',
+                                            fontSize: '0.95rem',
+                                            fontWeight: '700',
+                                            cursor: (isAnalyzing || !formData.content) ? 'not-allowed' : 'pointer',
+                                            opacity: (isAnalyzing || !formData.content) ? 0.7 : 1,
+                                            boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)'
                                         }}
-                                        onFocus={(e) => e.target.style.borderColor = '#7c3aed'}
-                                        onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                                    />
+                                    >
+                                        {isAnalyzing ? '분석 중...' : '🤖 AI 분석 (RAG)'}
+                                    </button>
                                 </div>
-                            )}
+                            </div>
 
                             {/* 위치 선택 */}
                             <div style={{ marginBottom: '24px' }}>
@@ -429,47 +544,63 @@ function ApplyVoice() {
                     }}>
                         <div style={{
                             background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                            padding: '20px',
+                            padding: '24px',
                             color: 'white',
                             textAlign: 'center'
                         }}>
-                            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🤖</div>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>AI 음성 분석</h3>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🤖</div>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0 }}>AI 음성 분석</h3>
                         </div>
-                        <div style={{ padding: '24px' }}>
+                        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {/* 민원 유형 분석 */}
                             <div style={{
                                 padding: '18px',
                                 backgroundColor: '#f5f3ff',
-                                borderRadius: '12px',
-                                marginBottom: '16px'
+                                borderRadius: '12px'
                             }}>
-                                <div style={{ fontSize: '0.8rem', color: '#7c3aed', fontWeight: '600', marginBottom: '8px' }}>
-                                    📊 감정/톤 분석
+                                <div style={{ fontSize: '0.85rem', color: '#7c3aed', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    📊 민원 유형 분석
                                 </div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
-                                    {formData.content ? '차분함 (78%)' : '분석 대기'}
+                                <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#1e293b', textAlign: 'center' }}>
+                                    {ragResult ? ragResult.category : '분석 대기'}
                                 </div>
                             </div>
+
+                            {/* 처리 기관 */}
                             <div style={{
                                 padding: '18px',
                                 backgroundColor: '#fdf4ff',
                                 borderRadius: '12px'
                             }}>
-                                <div style={{ fontSize: '0.8rem', color: '#a855f7', fontWeight: '600', marginBottom: '8px' }}>
-                                    🏛️ 키워드 추출
+                                <div style={{ fontSize: '0.85rem', color: '#a855f7', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    🏛️ 처리 기관
                                 </div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
-                                    {formData.content ? '가로등, 공원, 수리' : '-'}
+                                <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#1e293b', textAlign: 'center' }}>
+                                    {ragResult ? ragResult.agency_name : '-'}
                                 </div>
                             </div>
+
+                            {/* RAG 판단 출력 */}
                             <div style={{
-                                marginTop: '20px',
-                                padding: '14px',
+                                padding: '18px',
+                                backgroundColor: '#eff6ff',
+                                borderRadius: '12px'
+                            }}>
+                                <div style={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: '700', marginBottom: '8px' }}>
+                                    🔍 RAG 판단 근거
+                                </div>
+                                <div style={{ fontSize: '0.9rem', color: '#475569', lineHeight: '1.5', minHeight: '60px' }}>
+                                    {ragResult ? ragResult.reasoning : '분석 결과가 여기에 표시됩니다.'}
+                                </div>
+                            </div>
+
+                            <div style={{
+                                padding: '12px',
                                 backgroundColor: '#f0fdf4',
                                 borderRadius: '12px',
                                 textAlign: 'center'
                             }}>
-                                <span style={{ fontSize: '0.85rem', color: '#16a34a' }}>✨ 음성을 텍스트로 자동 변환합니다</span>
+                                <span style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: '500' }}>✨ 음성을 텍스트로 자동 변환합니다</span>
                             </div>
                         </div>
                     </div>

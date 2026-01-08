@@ -87,6 +87,7 @@ services:
       spring.datasource.username: user
       spring.datasource.password: password
       spring.jpa.hibernate.ddl-auto: update
+      AI_RAG_URL: http://ai-rag:8001
     depends_on:
       db:
         condition: service_healthy
