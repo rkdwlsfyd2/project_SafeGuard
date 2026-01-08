@@ -26,7 +26,7 @@ const apiRequest = async (endpoint, options = {}) => {
     const data = await response.json();
 
     if (!response.ok) {
-        throw new Error(data.error || data.message || '요청 처리 중 오류가 발생했습니다.');
+        throw new Error(data.error || data.message || data.detail || '요청 처리 중 오류가 발생했습니다.');
     }
 
     return data;
