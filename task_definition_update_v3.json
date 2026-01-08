@@ -56,7 +56,9 @@
                     "awslogs-stream-prefix": "ecs"
                 }
             },
-            "systemControls": []
+            "systemControls": [],
+            "memory": 8192,
+            "memoryReservation": 4096
         },
         {
             "name": "safeguard-ai-stt",
@@ -83,7 +85,9 @@
                     "awslogs-stream-prefix": "ecs"
                 }
             },
-            "systemControls": []
+            "systemControls": [],
+            "memory": 8192,
+            "memoryReservation": 4096
         },
         {
             "name": "safeguard-backend",
@@ -123,7 +127,9 @@
                     "awslogs-stream-prefix": "ecs"
                 }
             },
-            "systemControls": []
+            "systemControls": [],
+            "memory": 2048,
+            "memoryReservation": 1024
         },
         {
             "name": "milvus-minio",
@@ -257,7 +263,9 @@
                     "awslogs-region": "ap-northeast-2",
                     "awslogs-stream-prefix": "ecs"
                 }
-            }
+            },
+            "memory": 8192,
+            "memoryReservation": 4096
         },
         {
             "name": "safeguard-ai-rag",
@@ -303,7 +311,7 @@
         "FARGATE"
     ],
     "cpu": "4096",
-    "memory": "8192",
+    "memory": "32768",
     "ephemeralStorage": {
         "sizeInGiB": 100
     },
