@@ -16,6 +16,8 @@ import ResetPassword from './pages/ResetPassword';
 import './index.css';
 
 function App() {
+  console.log("ENV TEST:", import.meta.env.VITE_KAKAO_MAP_KEY);
+
   return (
     <Router>
       <div className="app">

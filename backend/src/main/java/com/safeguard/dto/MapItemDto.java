@@ -1,0 +1,24 @@
+package com.safeguard.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public class MapItemDto {
+
+    private MapItemType type;
+    private Double lat;
+    private Double lng;
+
+    // MARKER
+    private Long complaintNo;
+    private String category;
+    private String title;
+    private String status;
+    private String address;
+
+    // CLUSTER
+    private Integer count;
+    private String clusterKey;
+}
