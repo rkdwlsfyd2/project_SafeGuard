@@ -9,6 +9,7 @@ import com.safeguard.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,96 @@ public class SeedController {
     private final UserMapper userMapper;
     private final com.safeguard.mapper.AgencyMapper agencyMapper;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
+
+    @PostMapping("/migrate-schema")
+    public ResponseEntity<Map<String, String>> migrateSchema() {
+        try {
+            log.info("[Seed] Starting schema migration (Full DDL)...");
+
+            // 1. Create Agency Table
+            jdbcTemplate.execute("""
+                        CREATE TABLE IF NOT EXISTS agency (
+                            agency_no BIGSERIAL PRIMARY KEY,
+                            agency_type VARCHAR(20) NOT NULL,
+                            agency_name VARCHAR(200) NOT NULL,
+                            region_code VARCHAR(20),
+                            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """);
+
+            // 2. Create AppUser Table
+            jdbcTemplate.execute("""
+                        CREATE TABLE IF NOT EXISTS app_user (
+                            user_no BIGSERIAL PRIMARY KEY,
+                            user_id VARCHAR(50) UNIQUE NOT NULL,
+                            pw VARCHAR(255) NOT NULL,
+                            name VARCHAR(50) NOT NULL,
+                            birth_date DATE NOT NULL,
+                            addr VARCHAR(300) NOT NULL,
+                            phone VARCHAR(20) NOT NULL,
+                            email VARCHAR(100),
+                            created_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                            role VARCHAR(20) NOT NULL DEFAULT 'USER',
+                            agency_no BIGINT REFERENCES agency(agency_no)
+                        )
+                    """);
+
+            // 3. Create Complaint Table
+            jdbcTemplate.execute("""
+                        CREATE TABLE IF NOT EXISTS complaint (
+                            complaint_no BIGSERIAL PRIMARY KEY,
+                            category VARCHAR(50) NOT NULL,
+                            title VARCHAR(200) NOT NULL,
+                            content TEXT NOT NULL,
+                            address VARCHAR(300),
+                            latitude DOUBLE PRECISION,
+                            longitude DOUBLE PRECISION,
+                            image_path VARCHAR(500),
+                            analysis_result JSONB,
+                            status VARCHAR(20) NOT NULL DEFAULT 'RECEIVED',
+                            is_public BOOLEAN NOT NULL DEFAULT TRUE,
+                            created_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            updated_date TIMESTAMPTZ,
+                            completed_date TIMESTAMPTZ,
+                            user_no BIGINT NOT NULL REFERENCES app_user(user_no),
+                            agency_no BIGINT REFERENCES agency(agency_no),
+                            like_count INTEGER DEFAULT 0,
+                            answer TEXT
+                        )
+                    """);
+
+            // 4. Create ComplaintLike Table
+            jdbcTemplate.execute("""
+                        CREATE TABLE IF NOT EXISTS complaint_like (
+                            like_id BIGSERIAL PRIMARY KEY,
+                            complaint_no BIGINT NOT NULL REFERENCES complaint(complaint_no) ON DELETE CASCADE,
+                            user_no BIGINT NOT NULL REFERENCES app_user(user_no) ON DELETE CASCADE,
+                            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                            UNIQUE(complaint_no, user_no)
+                        )
+                    """);
+
+            // Ensure columns exist (for existing tables)
+            jdbcTemplate.execute(
+                    "ALTER TABLE complaint ADD COLUMN IF NOT EXISTS agency_no BIGINT REFERENCES agency(agency_no)");
+            jdbcTemplate.execute("ALTER TABLE complaint ADD COLUMN IF NOT EXISTS answer TEXT");
+            jdbcTemplate.execute("ALTER TABLE complaint ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0");
+
+            // Ensure role is VARCHAR (handle enum migration)
+            try {
+                jdbcTemplate.execute("ALTER TABLE app_user ALTER COLUMN role TYPE VARCHAR(20) USING role::text");
+            } catch (Exception e) {
+                log.warn("Role column alter warning (might already be compatible): {}", e.getMessage());
+            }
+
+            log.info("[Seed] Schema migration completed successfully.");
+            return ResponseEntity.ok(Map.of("message", "Schema migration completed successfully"));
+        } catch (Exception e) {
+            log.error("[Seed] Schema migration failed", e);
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
 
     @PostMapping("/reset")
     public ResponseEntity<Map<String, String>> resetData() {

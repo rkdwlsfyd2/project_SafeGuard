@@ -191,21 +191,28 @@ public class ComplaintController {
 
     @PostMapping("/setup-agency")
     public ResponseEntity<String> setupAgency() {
-        if (!userMapper.existsByUserId("admin")) {
-            UserDTO admin = UserDTO.builder()
-                    .userId("admin")
-                    .pw(passwordEncoder.encode("admin123"))
-                    .name("관리자")
-                    .role(UserRole.AGENCY)
-                    .phone("010-0000-0000")
-                    .agencyNo(1L) // Assign to agency 1 (Seoul)
-                    .build();
-            userMapper.save(admin);
-            return ResponseEntity.ok("Admin created: admin/admin123");
-        } else {
-            // Update password if exists to ensure it's encoded
-            userMapper.updatePassword("admin", passwordEncoder.encode("admin123"));
-            return ResponseEntity.ok("Admin password reset: admin/admin123");
+        try {
+            if (!userMapper.existsByUserId("admin")) {
+                UserDTO admin = UserDTO.builder()
+                        .userId("admin")
+                        .pw(passwordEncoder.encode("admin123"))
+                        .name("관리자")
+                        .role(UserRole.AGENCY)
+                        .birthDate(java.time.LocalDate.of(1980, 1, 1))
+                        .addr("서울시 중구 세종대로 110")
+                        .phone("010-0000-0000")
+                        .agencyNo(1L) // Assign to agency 1 (Seoul)
+                        .build();
+                userMapper.save(admin);
+                return ResponseEntity.ok("Admin created: admin/admin123");
+            } else {
+                // Update password if exists to ensure it's encoded
+                userMapper.updatePassword("admin", passwordEncoder.encode("admin123"));
+                return ResponseEntity.ok("Admin password reset: admin/admin123");
+            }
+        } catch (Exception e) {
+            log.error("Setup Agency Failed", e);
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
 

@@ -18,7 +18,7 @@
 
     <insert id="save" parameterType="com.safeguard.dto.UserDTO" useGeneratedKeys="true" keyProperty="userNo">
         INSERT INTO app_user (user_id, pw, name, birth_date, addr, phone, email, role, agency_no, created_date)
-        VALUES (#{userId}, #{pw}, #{name}, #{birthDate}, #{addr}, #{phone}, #{email}, #{role}::user_role, #{agencyNo}, NOW())
+        VALUES (#{userId}, #{pw}, #{name}, #{birthDate}, #{addr}, #{phone}, #{email}, #{role}, #{agencyNo}, NOW())
     </insert>
 
     <update id="updatePassword">
