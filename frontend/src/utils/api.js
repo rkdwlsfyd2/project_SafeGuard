@@ -23,29 +23,10 @@ const apiRequest = async (endpoint, options = {}) => {
         headers,
     });
 
-    let data;
-    const contentType = response.headers.get('content-type');
-
-    if (contentType && contentType.includes('application/json')) {
-        try {
-            data = await response.json();
-        } catch (e) {
-            console.error('Failed to parse JSON response:', e);
-            data = { error: 'Invalid JSON response from server' };
-        }
-    } else {
-        // Handle non-JSON response (e.g. text/plain or empty)
-        const text = await response.text();
-        try {
-            // Sometimes JSON comes without header
-            data = JSON.parse(text);
-        } catch (e) {
-            data = { message: text || response.statusText };
-        }
-    }
+    const data = await response.json();
 
     if (!response.ok) {
-        throw new Error(data.error || data.message || `Request failed with status ${response.status}`);
+        throw new Error(data.error || data.message || '요청 처리 중 오류가 발생했습니다.');
     }
 
     return data;
@@ -135,16 +116,6 @@ export const complaintsAPI = {
         method: 'POST',
     }),
 
-    updateStatus: (id, status) => apiRequest(`/complaints/${id}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-    }),
-
-    updateAnswer: (id, answer) => apiRequest(`/complaints/${id}/answer`, {
-        method: 'PATCH',
-        body: JSON.stringify({ answer }),
-    }),
-
     getMapLocations: () => apiRequest('/complaints/map/locations'),
 };
 
@@ -158,30 +129,12 @@ export const agenciesAPI = {
     },
 };
 
-// Text Analysis API (RAG Service)
-const RAG_API_BASE = 'http://localhost:8001';
-
+// Text Analysis API (RAG Service 호출 - Backend Proxy 방식)
 export const analyzeText = async (text) => {
-    try {
-        const response = await fetch(`${RAG_API_BASE}/classify`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.detail || '텍스트 분석 중 오류가 발생했습니다.');
-        }
-
-        return data;
-    } catch (error) {
-        console.error('AI Analysis failed:', error);
-        throw error;
-    }
+    return apiRequest('/rag/analyze', {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+    });
 };
 
 // Image Analysis API
@@ -212,6 +165,7 @@ export const sttAPI = {
         const response = await fetch(`${API_BASE}/stt/upload_voice`, {
             method: 'POST',
             body: formData,
+            // 'Content-Type'은 FormData 전송 시 브라우저가 자동으로 boundry와 함께 설정하도록 비워둡니다.
             headers: {
                 'Authorization': getToken() ? `Bearer ${getToken()}` : '',
             }
@@ -231,5 +185,5 @@ export default {
     agencies: agenciesAPI,
     analyzeImage,
     analyzeText,
-    stt: sttAPI,
+    stt: sttAPI
 };
