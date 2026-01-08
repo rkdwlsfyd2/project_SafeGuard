@@ -34,7 +34,7 @@ base 모델 선택 이유
 - 서버 처리 속도 / 정확도 균형
 - 민원 서비스는 키워드 정확도가 핵심
 """
-model = whisper.load_model("base")
+model = whisper.load_model("small")
 
 # ======================
 # STT API
@@ -70,12 +70,15 @@ async def upload_voice(file: UploadFile = File(...)):
         subprocess.run(ffmpeg_cmd, check=True)
 
         # 3. Whisper STT
-        result = model.transcribe(
+       result = model.transcribe(
             processed_path,
             language="ko",
             fp16=torch.cuda.is_available(),
             condition_on_previous_text=False,
-            no_speech_threshold=0.6
+            no_speech_threshold=0.4,
+            temperature=0.0,
+            beam_size=5,
+            best_of=5
         )
 
         text = result.get("text", "").strip()

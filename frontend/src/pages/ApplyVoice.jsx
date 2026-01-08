@@ -284,7 +284,7 @@ function ApplyVoice() {
                             color: 'white'
                         }}>
                             <h2 style={{ fontSize: '1.3rem', fontWeight: '700', margin: 0 }}>음성 민원 신청서</h2>
-                            <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '6px' }}>녹음 버튼을 누르거나 음성 파일을 업로드하세요</p>
+                            <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '6px' }}>음성으로 민원을 작성할 수 있습니다</p>
                         </div>
 
                         <form onSubmit={handleSubmit} style={{ padding: '30px' }}>
@@ -362,34 +362,10 @@ function ApplyVoice() {
                                         {isRecording ? formatTime(recordingTime) : '녹음 시작'}
                                     </div>
 
-                                    {/* 파일 업로드 버튼 */}
-                                    {!isRecording && (
-                                        <div style={{ marginBottom: '12px' }}>
-                                            <input
-                                                type="file"
-                                                accept="audio/*,video/*"
-                                                id="audio-upload"
-                                                onChange={handleFileUpload}
-                                                style={{ display: 'none' }}
-                                            />
-                                            <label htmlFor="audio-upload" style={{
-                                                padding: '8px 16px',
-                                                backgroundColor: 'white',
-                                                border: '1px solid #7c3aed',
-                                                borderRadius: '20px',
-                                                color: '#7c3aed',
-                                                fontSize: '0.9rem',
-                                                fontWeight: '600',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s'
-                                            }}>
-                                                📁 음성파일 업로드
-                                            </label>
-                                        </div>
-                                    )}
+
 
                                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                        {isRecording ? '말씀을 하신 후 정지 버튼을 눌러주세요' : '버튼을 눌러 음성 인식을 시작하거나 파일을 업로드하세요'}
+                                        {isRecording ? '말씀을 하신 후 정지 버튼을 눌러주세요' : '버튼을 눌러 음성 인식을 하세요'}
                                     </div>
                                 </div>
                             </div>
