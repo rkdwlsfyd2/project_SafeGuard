@@ -5,6 +5,8 @@ import { complaintsAPI, getToken, analyzeText } from '../utils/api';
 function ApplyText() {
     const navigate = useNavigate();
     const mapRef = useRef(null);
+    const mapInstance = useRef(null);
+    const markerInstance = useRef(null);
     const [formData, setFormData] = useState({
         title: '',
         content: '',
@@ -28,11 +30,36 @@ function ApplyText() {
                         level: 3
                     };
                     const newMap = new window.kakao.maps.Map(container, options);
+                    mapInstance.current = newMap;
 
                     const marker = new window.kakao.maps.Marker({
                         position: newMap.getCenter(),
                         map: newMap
                     });
+                    markerInstance.current = marker;
+
+                    // 현재 위치 자동 감지
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((position) => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            const locPosition = new window.kakao.maps.LatLng(lat, lng);
+
+                            newMap.setCenter(locPosition);
+                            marker.setPosition(locPosition);
+
+                            const geocoder = new window.kakao.maps.services.Geocoder();
+                            geocoder.coord2Address(lng, lat, (result, status) => {
+                                if (status === window.kakao.maps.services.Status.OK) {
+                                    const addr = result[0].address.address_name;
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        location: { lat, lng, address: addr }
+                                    }));
+                                }
+                            });
+                        });
+                    }
 
                     window.kakao.maps.event.addListener(newMap, 'click', (mouseEvent) => {
                         const latlng = mouseEvent.latLng;
@@ -60,7 +87,19 @@ function ApplyText() {
             script.async = true;
             script.onload = loadKakaoMap;
             document.head.appendChild(script);
-            return () => document.head.removeChild(script);
+
+            // Daum Postcode Script
+            const postcodeScript = document.createElement('script');
+            postcodeScript.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+            postcodeScript.async = true;
+            document.head.appendChild(postcodeScript);
+
+            return () => {
+                document.head.removeChild(script);
+                if (document.head.contains(postcodeScript)) {
+                    document.head.removeChild(postcodeScript);
+                }
+            };
         }
     }, []);
 
@@ -70,6 +109,45 @@ function ApplyText() {
         if (formData.title && formData.content) setCurrentStep(3);
         if (formData.title && formData.content && formData.location) setCurrentStep(4);
     }, [formData]);
+
+    // Update map when location changes programmatically (e.g. from Postcode search)
+    useEffect(() => {
+        if (formData.location && mapInstance.current && markerInstance.current && window.kakao) {
+            const loc = new window.kakao.maps.LatLng(formData.location.lat, formData.location.lng);
+            mapInstance.current.setCenter(loc);
+            markerInstance.current.setPosition(loc);
+        }
+    }, [formData.location]);
+
+    const handleSearchAddress = () => {
+        if (!window.daum || !window.daum.Postcode) {
+            alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        new window.daum.Postcode({
+            oncomplete: function (data) {
+                const addr = data.roadAddress || data.jibunAddress;
+
+                // 주소로 좌표 검색
+                const geocoder = new window.kakao.maps.services.Geocoder();
+                geocoder.addressSearch(addr, function (result, status) {
+                    if (status === window.kakao.maps.services.Status.OK) {
+                        const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
+
+                        setFormData(prev => ({
+                            ...prev,
+                            location: {
+                                lat: parseFloat(result[0].y),
+                                lng: parseFloat(result[0].x),
+                                address: addr
+                            }
+                        }));
+                    }
+                });
+            }
+        }).open();
+    };
 
     const handleAnalyze = async () => {
 
@@ -203,7 +281,7 @@ function ApplyText() {
                             padding: '24px 30px',
                             color: 'white'
                         }}>
-                            <h2 style={{ fontSize: '1.3rem', fontWeight: '700', margin: 0 }}>통합 민원 신청서</h2>
+                            <h2 style={{ fontSize: '1.3rem', fontWeight: '700', margin: 0 }}>텍스트 민원 신청서</h2>
                             <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '6px' }}>아래 양식을 작성해주세요</p>
                         </div>
 
@@ -289,11 +367,39 @@ function ApplyText() {
                                     gap: '8px'
                                 }}>
                                     <span style={{ fontSize: '1.1rem' }}>📍</span>
-                                    <span style={{ color: '#16a34a', fontWeight: '500' }}>
-                                        {formData.location
-                                            ? formData.location.address
-                                            : '위치를 선택해주세요'}
-                                    </span>
+                                    <input
+                                        type="text"
+                                        value={formData.location?.address || ''}
+                                        readOnly
+                                        placeholder="주소 검색 버튼을 눌러주세요"
+                                        style={{
+                                            border: 'none',
+                                            background: 'transparent',
+                                            width: '100%',
+                                            fontSize: '1rem',
+                                            color: '#1e293b',
+                                            fontWeight: '500',
+                                            outline: 'none',
+                                            cursor: 'default'
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleSearchAddress}
+                                        style={{
+                                            padding: '8px 12px',
+                                            backgroundColor: '#3b82f6',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            fontSize: '0.85rem',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                    >
+                                        🔍 주소 검색
+                                    </button>
                                 </div>
                                 <div
                                     ref={mapRef}
@@ -345,24 +451,23 @@ function ApplyText() {
 
                             <div style={{ marginBottom: '10px' }}>
                                 <button
-                                    type="button"
-                                    onClick={handleAnalyze}
-                                    disabled={analyzing}
+                                    type="submit"
+                                    disabled={loading}
                                     style={{
                                         width: '100%',
                                         padding: '18px',
-                                        background: analyzing ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                                        background: loading ? '#94a3b8' : 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
                                         color: 'white',
                                         border: 'none',
                                         borderRadius: '14px',
                                         fontSize: '1.1rem',
                                         fontWeight: '700',
-                                        cursor: analyzing ? 'not-allowed' : 'pointer',
-                                        boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+                                        cursor: loading ? 'not-allowed' : 'pointer',
+                                        boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
                                         transition: 'all 0.3s'
                                     }}
                                 >
-                                    {analyzing ? '분석 중...' : '🔍 AI 분석하기'}
+                                    {loading ? '접수 중...' : '🚀 민원 접수하기'}
                                 </button>
                             </div>
                         </form>
@@ -395,12 +500,12 @@ function ApplyText() {
                                 marginBottom: '16px'
                             }}>
                                 <div style={{ fontSize: '0.8rem', color: '#7c3aed', fontWeight: '600', marginBottom: '8px' }}>
-                                    📊 민원 유형 분석
+                                    📊 민원 유형
                                 </div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
                                     {aiResult
                                         ? (aiResult.category || '유형 분석 실패')
-                                        : (formData.content.length > 10 ? '분석 가능' : '내용을 입력하세요')}
+                                        : (formData.content.length > 10 ? '분석 가능' : '분석 대기')}
                                 </div>
                             </div>
                             <div style={{
@@ -410,7 +515,7 @@ function ApplyText() {
                                 marginBottom: '20px'
                             }}>
                                 <div style={{ fontSize: '0.8rem', color: '#a855f7', fontWeight: '600', marginBottom: '8px' }}>
-                                    🏛️ 처리 기관 분류
+                                    🏛️ 처리 기관
                                 </div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
                                     {aiResult ? aiResult.agency_name : (formData.content.length > 10 ? '자동 배정 예정' : '-')}
@@ -419,23 +524,23 @@ function ApplyText() {
 
                             {/* 민원 접수하기 버튼 (여기로 이동됨) */}
                             <button
-                                onClick={handleSubmit}
-                                disabled={loading}
+                                onClick={handleAnalyze}
+                                disabled={analyzing || !formData.content}
                                 style={{
                                     width: '100%',
                                     padding: '16px',
-                                    background: loading ? '#94a3b8' : 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                                    background: (analyzing || !formData.content) ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '12px',
                                     fontSize: '1rem',
                                     fontWeight: '700',
-                                    cursor: loading ? 'not-allowed' : 'pointer',
-                                    boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
+                                    cursor: (analyzing || !formData.content) ? 'not-allowed' : 'pointer',
+                                    boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
                                     transition: 'all 0.3s'
                                 }}
                             >
-                                {loading ? '접수 중...' : '🚀 민원 접수하기'}
+                                {analyzing ? '분석 중...' : '🤖 AI 분석하기'}
                             </button>
 
                             {!aiResult && (

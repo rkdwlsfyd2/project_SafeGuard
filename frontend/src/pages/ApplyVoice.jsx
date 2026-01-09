@@ -5,19 +5,18 @@ import { complaintsAPI, sttAPI, getToken, analyzeText } from '../utils/api';
 function ApplyVoice() {
     const navigate = useNavigate();
     const mapRef = useRef(null);
+    const mapInstance = useRef(null);
+    const markerInstance = useRef(null);
 
     const [formData, setFormData] = useState({
         title: '',
         content: '',
         isPublic: true,
-        location: {
-            lat: 37.5665,
-            lng: 126.9780,
-            address: '서울특별시 중구'
-        }
+        location: null
     });
 
     const [loading, setLoading] = useState(false);
+    const [isTranscribing, setIsTranscribing] = useState(false);
     const [error, setError] = useState('');
     const [currentStep, setCurrentStep] = useState(1);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -98,7 +97,7 @@ function ApplyVoice() {
 
             mediaRecorder.onstop = async () => {
                 const audioBlob = new Blob(chunksRef.current, { type: options.mimeType || 'audio/wav' });
-                setLoading(true);
+                setIsTranscribing(true);
                 setError('');
 
                 try {
@@ -111,22 +110,13 @@ function ApplyVoice() {
                             content: result.original_text,
                             title: result.title || prev.title
                         }));
-
-                        // Auto-fill RAG result if available
-                        if (result.agency) {
-                            setRagResult({
-                                category: result.category,
-                                agency_name: result.agency,
-                                reasoning: `음성 분석 결과: ${result.category} (${result.agency})`
-                            });
-                        }
                     } else if (result?.stt_text) { // Fallback for old compatibility
                         setFormData(prev => ({ ...prev, content: result.stt_text }));
                     }
                 } catch (err) {
                     setError('음성 인식에 실패했습니다: ' + err.message);
                 } finally {
-                    setLoading(false);
+                    setIsTranscribing(false);
                     stream.getTracks().forEach(t => t.stop());
                 }
             };
@@ -164,11 +154,36 @@ function ApplyVoice() {
                         level: 3
                     };
                     const newMap = new window.kakao.maps.Map(container, options);
+                    mapInstance.current = newMap;
 
                     const marker = new window.kakao.maps.Marker({
                         position: newMap.getCenter(),
                         map: newMap
                     });
+                    markerInstance.current = marker;
+
+                    // 현재 위치 자동 감지
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((position) => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            const locPosition = new window.kakao.maps.LatLng(lat, lng);
+
+                            newMap.setCenter(locPosition);
+                            marker.setPosition(locPosition);
+
+                            const geocoder = new window.kakao.maps.services.Geocoder();
+                            geocoder.coord2Address(lng, lat, (result, status) => {
+                                if (status === window.kakao.maps.services.Status.OK) {
+                                    const addr = result[0].address.address_name;
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        location: { lat, lng, address: addr }
+                                    }));
+                                }
+                            });
+                        });
+                    }
 
                     window.kakao.maps.event.addListener(newMap, 'click', (mouseEvent) => {
                         const latlng = mouseEvent.latLng;
@@ -196,20 +211,67 @@ function ApplyVoice() {
             script.async = true;
             script.onload = loadKakaoMap;
             document.head.appendChild(script);
+
+            // Daum Postcode Script
+            const postcodeScript = document.createElement('script');
+            postcodeScript.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+            postcodeScript.async = true;
+            document.head.appendChild(postcodeScript);
+
             return () => {
-                if (document.head.contains(script)) {
-                    document.head.removeChild(script);
+                document.head.removeChild(script);
+                if (document.head.contains(postcodeScript)) {
+                    document.head.removeChild(postcodeScript);
                 }
             };
         }
     }, []);
 
     /** 단계 업데이트 */
+    /** 단계 업데이트 */
     useEffect(() => {
-        if (formData.title && !formData.content) setCurrentStep(1);
-        else if (formData.title && formData.content && !ragResult) setCurrentStep(2);
-        else if (formData.title && formData.content && ragResult) setCurrentStep(3);
-    }, [formData, ragResult]);
+        if (formData.title) setCurrentStep(2);
+        if (formData.title && formData.content) setCurrentStep(3);
+        if (formData.title && formData.content && formData.location) setCurrentStep(4);
+    }, [formData]);
+
+
+    // Update map when location changes programmatically
+    useEffect(() => {
+        if (formData.location && mapInstance.current && markerInstance.current && window.kakao) {
+            const loc = new window.kakao.maps.LatLng(formData.location.lat, formData.location.lng);
+            mapInstance.current.setCenter(loc);
+            markerInstance.current.setPosition(loc);
+        }
+    }, [formData.location]);
+
+    const handleSearchAddress = () => {
+        if (!window.daum || !window.daum.Postcode) {
+            alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        new window.daum.Postcode({
+            oncomplete: function (data) {
+                const addr = data.roadAddress || data.jibunAddress;
+                // 주소로 좌표 검색
+                const geocoder = new window.kakao.maps.services.Geocoder();
+                geocoder.addressSearch(addr, function (result, status) {
+                    if (status === window.kakao.maps.services.Status.OK) {
+                        const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
+                        setFormData(prev => ({
+                            ...prev,
+                            location: {
+                                lat: parseFloat(result[0].y),
+                                lng: parseFloat(result[0].x),
+                                address: addr
+                            }
+                        }));
+                    }
+                });
+            }
+        }).open();
+    };
 
     /** RAG 분석 */
     const handleAnalyze = async () => {
@@ -264,8 +326,8 @@ function ApplyVoice() {
     const steps = [
         { num: 1, label: '제목 입력', done: !!formData.title },
         { num: 2, label: '음성 녹음', done: !!formData.content },
-        { num: 3, label: 'AI 분석', done: !!ragResult },
-        { num: 4, label: '위치 선택', done: true }
+        { num: 3, label: '위치 선택', done: !!formData.location },
+        { num: 4, label: '접수 완료', done: false }
     ];
 
     return (
@@ -409,10 +471,10 @@ function ApplyVoice() {
                                         <span style={{ fontSize: '2rem' }}>{isRecording ? '⏹' : '🎤'}</span>
                                     </div>
                                     <div style={{ fontSize: '1.2rem', fontWeight: '700', color: isRecording ? '#ef4444' : '#1e293b', marginBottom: '12px' }}>
-                                        {isRecording ? formatTime(recordingTime) : '녹음 시작'}
+                                        {isRecording ? formatTime(recordingTime) : (isTranscribing ? '음성 변환 중...' : '녹음 시작')}
                                     </div>
                                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                        {isRecording ? '말씀을 하신 후 정지 버튼을 눌러주세요' : '버튼을 눌러 음성 인식을 하세요'}
+                                        {isRecording ? '말씀을 하신 후 정지 버튼을 눌러주세요' : (isTranscribing ? '잠시만 기다려주세요...' : '버튼을 눌러 음성 인식을 하세요')}
                                     </div>
                                 </div>
                             </div>
@@ -440,27 +502,7 @@ function ApplyVoice() {
                                     }}
                                 />
 
-                                <div style={{ textAlign: 'right', marginTop: '12px' }}>
-                                    <button
-                                        type="button"
-                                        onClick={handleAnalyze}
-                                        disabled={isAnalyzing || !formData.content}
-                                        style={{
-                                            padding: '10px 24px',
-                                            backgroundColor: '#7c3aed',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '10px',
-                                            fontSize: '0.95rem',
-                                            fontWeight: '700',
-                                            cursor: (isAnalyzing || !formData.content) ? 'not-allowed' : 'pointer',
-                                            opacity: (isAnalyzing || !formData.content) ? 0.7 : 1,
-                                            boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)'
-                                        }}
-                                    >
-                                        {isAnalyzing ? '분석 중...' : '🤖 AI 분석 (RAG)'}
-                                    </button>
-                                </div>
+
                             </div>
 
                             {/* 위치 선택 */}
@@ -479,7 +521,39 @@ function ApplyVoice() {
                                     gap: '8px'
                                 }}>
                                     <span style={{ fontSize: '1.1rem' }}>📍</span>
-                                    <span style={{ color: '#16a34a', fontWeight: '500' }}>{formData.location.address}</span>
+                                    <input
+                                        type="text"
+                                        value={formData.location?.address || ''}
+                                        readOnly
+                                        placeholder="주소 검색 버튼을 눌러주세요"
+                                        style={{
+                                            border: 'none',
+                                            background: 'transparent',
+                                            width: '100%',
+                                            fontSize: '1rem',
+                                            color: '#1e293b',
+                                            fontWeight: '500',
+                                            outline: 'none',
+                                            cursor: 'default'
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleSearchAddress}
+                                        style={{
+                                            padding: '8px 12px',
+                                            backgroundColor: '#3b82f6',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            fontSize: '0.85rem',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                    >
+                                        🔍 주소 검색
+                                    </button>
                                 </div>
                                 <div
                                     ref={mapRef}
@@ -557,32 +631,71 @@ function ApplyVoice() {
                     }}>
                         <div style={{
                             background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                            padding: '24px',
+                            padding: '20px',
                             color: 'white',
                             textAlign: 'center'
                         }}>
-                            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🤖</div>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0 }}>AI 음성 분석</h3>
+                            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🤖</div>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>AI 분석 결과</h3>
                         </div>
-                        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <div style={{ padding: '18px', backgroundColor: '#f5f3ff', borderRadius: '12px' }}>
-                                <div style={{ fontSize: '0.85rem', color: '#7c3aed', fontWeight: '700', marginBottom: '8px' }}>📊 민원 유형</div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#1e293b', textAlign: 'center' }}>
+                        <div style={{ padding: '24px' }}>
+                            <div style={{
+                                padding: '18px',
+                                backgroundColor: '#f5f3ff',
+                                borderRadius: '12px',
+                                marginBottom: '16px'
+                            }}>
+                                <div style={{ fontSize: '0.8rem', color: '#7c3aed', fontWeight: '600', marginBottom: '8px' }}>
+                                    📊 민원 유형
+                                </div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
                                     {ragResult ? ragResult.category : '분석 대기'}
                                 </div>
                             </div>
-                            <div style={{ padding: '18px', backgroundColor: '#fdf4ff', borderRadius: '12px' }}>
-                                <div style={{ fontSize: '0.85rem', color: '#a855f7', fontWeight: '700', marginBottom: '8px' }}>🏛️ 처리 기관</div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#1e293b', textAlign: 'center' }}>
+                            <div style={{
+                                padding: '18px',
+                                backgroundColor: '#fdf4ff',
+                                borderRadius: '12px',
+                                marginBottom: '20px'
+                            }}>
+                                <div style={{ fontSize: '0.8rem', color: '#a855f7', fontWeight: '600', marginBottom: '8px' }}>
+                                    🏛️ 처리 기관
+                                </div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
                                     {ragResult ? ragResult.agency_name : '-'}
                                 </div>
                             </div>
-                            <div style={{ padding: '18px', backgroundColor: '#eff6ff', borderRadius: '12px' }}>
-                                <div style={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: '700', marginBottom: '8px' }}>🔍 판단 근거</div>
-                                <div style={{ fontSize: '0.9rem', color: '#475569', lineHeight: '1.5', minHeight: '60px' }}>
-                                    {ragResult ? ragResult.reasoning : '분석 결과가 여기에 표시됩니다.'}
+                            <button
+                                onClick={handleAnalyze}
+                                disabled={isAnalyzing || !formData.content}
+                                style={{
+                                    width: '100%',
+                                    padding: '16px',
+                                    background: (isAnalyzing || !formData.content) ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem',
+                                    fontWeight: '700',
+                                    cursor: (isAnalyzing || !formData.content) ? 'not-allowed' : 'pointer',
+                                    boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+                                    transition: 'all 0.3s'
+                                }}
+                            >
+                                {isAnalyzing ? '분석 중...' : '🤖 AI 분석하기'}
+                            </button>
+
+                            {!ragResult && (
+                                <div style={{
+                                    marginTop: '20px',
+                                    padding: '14px',
+                                    backgroundColor: '#f0fdf4',
+                                    borderRadius: '12px',
+                                    textAlign: 'center'
+                                }}>
+                                    <span style={{ fontSize: '0.85rem', color: '#16a34a' }}>✨ AI가 민원을 자동으로 분류합니다</span>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
