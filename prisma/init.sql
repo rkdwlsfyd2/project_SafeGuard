@@ -83,9 +83,8 @@ CREATE TABLE app_user (
   pw           VARCHAR(255) NOT NULL,                 -- 암호화 비밀번호
   name         VARCHAR(50)  NOT NULL,                 -- 이름
   birth_date   DATE         NOT NULL,                 -- 생년월일
-  addr         VARCHAR(100) NOT NULL,                 -- 주소
+  addr         VARCHAR(300) NOT NULL,                 -- 주소
   phone        VARCHAR(20)  NOT NULL,                 -- 전화번호
-  email        VARCHAR(100),                          -- 이메일 (연락처용)
   created_date TIMESTAMPTZ  DEFAULT CURRENT_TIMESTAMP,-- 가입 일시
   role         user_role    NOT NULL,                 -- 권한(USER/ADMIN/AGENCY)
   agency_no    BIGINT       REFERENCES agency(agency_no) -- 기관계정 소속
@@ -116,13 +115,24 @@ CREATE TABLE complaint (
   category       VARCHAR(50)   NOT NULL,                 -- 분류
   title          VARCHAR(200)  NOT NULL,                 -- 제목
   content        TEXT          NOT NULL,                 -- 내용(TEXT 권장)
+  address        VARCHAR(300),                           -- 주소 (schema.sql 기준)
+  latitude       DOUBLE PRECISION,                       -- 위도
+  longitude      DOUBLE PRECISION,                       -- 경도
+  image_path     VARCHAR(500),                           -- 이미지 경로
+  analysis_result JSONB,                                 -- 분석 결과
   status         complaint_status NOT NULL DEFAULT 'RECEIVED', -- 전체 상태(요약)
   is_public      BOOLEAN       NOT NULL DEFAULT TRUE,    -- 공개 여부
   created_date   TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 접수 일시
   updated_date   TIMESTAMPTZ,                           -- 수정 일시
   completed_date TIMESTAMPTZ,                           -- 완료 일시
-  user_no        BIGINT        NOT NULL REFERENCES app_user(user_no) -- 작성자
+  user_no        BIGINT        NOT NULL REFERENCES app_user(user_no), -- 작성자
+  agency_no      BIGINT        REFERENCES agency(agency_no), -- 담당 기관
+  like_count     INTEGER       DEFAULT 0,                -- 좋아요 수
+  answer         TEXT                                    -- 답변
 );
+-- Note: complaint_like table is also needed by backend complaint logic but not present in original init.sql. 
+-- Assuming schema.sql is the source of truth, adding complaint_like here too if logical. 
+-- However, keeping it minimal to fix complaint table first.
 
 COMMENT ON TABLE complaint IS '민원 접수 본문';
 COMMENT ON COLUMN complaint.status IS '민원 전체 상태(요약). 기관별 상세 상태는 complaint_agency.status 참고';
