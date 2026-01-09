@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.safeguard.mapper.ComplaintGisMapper">
+
+    <!-- 공통 WHERE: req(MapSearchRequest) 기준으로만 참조 -->
+    <sql id="CommonWhere">
+        <where>
+            <!-- bounds: Kakao 기준 sw/ne -->
+            <if test="req.swLng != null and req.swLat != null and req.neLng != null and req.neLat != null">
+                AND ST_Intersects(
+                sf.geom,
+                ST_MakeEnvelope(#{req.swLng}, #{req.swLat}, #{req.neLng}, #{req.neLat}, 4326)
+                )
+            </if>
+
+            <!-- category -->
+            <if test="req.category != null and req.category != ''">
+                AND c.category = #{req.category}
+            </if>
+
+            <!-- status -->
+            <if test="req.status != null and req.status != ''">
+                AND c.status = #{req.status}
+            </if>
+
+            <!-- adminCode (필요하면 사용: 컬럼명은 실제 DB에 맞춰 수정) -->
+            <if test="req.adminCode != null and req.adminCode != ''">
+                AND c.admin_code = #{req.adminCode}
+            </if>
+
+            <!-- date range: OffsetDateTime from/to -->
+            <if test="req.from != null">
+                AND c.created_date <![CDATA[ >= ]]> #{req.from}
+            </if>
+            <if test="req.to != null">
+                AND c.created_date <![CDATA[ <= ]]> #{req.to}
+            </if>
+        </where>
+    </sql>
+
+    <!-- markers -->
+    <select id="selectMarkers" resultType="com.safeguard.dto.MapItemDto">
+        SELECT
+        'MARKER'      AS type,
+        ST_Y(sf.geom) AS lat,
+        ST_X(sf.geom) AS lng,
+        c.complaint_no AS complaintNo,
+        c.title        AS title,
+        c.category     AS category,
+        c.status       AS status,
+        sf.addr_text   AS address
+        FROM complaint c
+        JOIN spatial_feature sf ON sf.complaint_no = c.complaint_no
+        <include refid="CommonWhere"/>
+        ORDER BY c.created_date DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+
+    <!-- clusters -->
+    <select id="selectClusters" resultType="com.safeguard.dto.MapClusterDto">
+        WITH filtered AS (
+        SELECT sf.geom
+        FROM complaint c
+        JOIN spatial_feature sf ON sf.complaint_no = c.complaint_no
+        <include refid="CommonWhere"/>
+        )
+        SELECT
+        COUNT(*) AS count,
+        ST_Y(ST_Centroid(ST_Collect(geom))) AS lat,
+        ST_X(ST_Centroid(ST_Collect(geom))) AS lng
+        FROM (
+        SELECT ST_SnapToGrid(geom, #{gridDeg}) AS geom
+        FROM filtered
+        ) g
+        GROUP BY geom
+        ORDER BY count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- list -->
+    <select id="selectComplaintList" resultType="com.safeguard.dto.ComplaintListItemDto">
+        SELECT
+        c.complaint_no AS complaintNo,
+        c.title        AS title,
+        c.category     AS category,
+        c.status       AS status,
+        c.created_date AS createdDate,
+        sf.addr_text   AS addrText
+        FROM complaint c
+        JOIN spatial_feature sf ON sf.complaint_no = c.complaint_no
+        <include refid="CommonWhere"/>
+        ORDER BY c.created_date DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- count -->
+    <select id="countComplaintList" resultType="long">
+        SELECT COUNT(*)
+        FROM complaint c
+        JOIN spatial_feature sf ON sf.complaint_no = c.complaint_no
+        <include refid="CommonWhere"/>
+    </select>
+
+</mapper>

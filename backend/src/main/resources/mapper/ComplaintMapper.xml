@@ -1,219 +1,67 @@
-
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 <mapper namespace="com.safeguard.mapper.ComplaintMapper">
 
-    <resultMap id="ComplaintResultMap" type="com.safeguard.dto.ComplaintDTO">
-        <id property="complaintNo" column="complaint_no"/>
-        <result property="seqNo" column="seq_no"/>
-        <result property="title" column="title"/>
-        <result property="content" column="content"/>
-        <result property="answer" column="answer"/>
-        <result property="category" column="category"/>
-        <result property="address" column="address"/>
-        <result property="latitude" column="latitude"/>
-        <result property="longitude" column="longitude"/>
-        <result property="imagePath" column="image_path"/>
-        <result property="analysisResult" column="analysis_result"/>
-        <result property="status" column="status"/>
-        <result property="isPublic" column="is_public"/>
-        <result property="createdDate" column="created_date"/>
-        <result property="updatedDate" column="updated_date"/>
-        <result property="completedDate" column="completed_date"/>
-        <result property="likeCount" column="like_count"/>
-        <result property="userNo" column="user_no"/>
-        <result property="agencyNo" column="agency_no"/>
-        <result property="agencyName" column="agency_name"/>
-    </resultMap>
-
-    <select id="findAll" resultMap="ComplaintResultMap">
-        WITH OrderedComplaints AS (
-            SELECT c.*, ROW_NUMBER() OVER (ORDER BY c.created_date ASC) as seq_no, a.agency_name
-            FROM complaint c
-            LEFT JOIN agency a ON c.agency_no = a.agency_no
-        )
-        SELECT oc.* FROM OrderedComplaints oc
-        <where>
-            <if test="agencyNo != null">
-                AND oc.agency_no = #{agencyNo}
-            </if>
-            <if test="search != null and search != ''">
-                AND (oc.title LIKE CONCAT('%', #{search}, '%') OR oc.content LIKE CONCAT('%', #{search}, '%'))
-            </if>
-            <if test="category != null and category != '' and category != '전체'">
-                AND oc.category = #{category}
-            </if>
-            <if test="status != null and status != '' and status != '전체'">
-                AND oc.status = #{status}::complaint_status
-            </if>
-            <if test="region != null and region != '' and region != '전체'">
-                AND oc.address LIKE CONCAT(#{region}, '%')
-            </if>
-        </where>
-        ORDER BY
-        <choose>
-            <when test="sort == 'like_count'">oc.like_count</when>
-            <when test="sort == 'complaint_no'">oc.complaint_no</when>
-            <when test="sort == 'seq_no'">oc.seq_no</when>
-            <otherwise>oc.created_date</otherwise>
-        </choose>
-        <choose>
-            <when test="order == 'ASC'">ASC</when>
-            <otherwise>DESC</otherwise>
-        </choose>
-    </select>
-
-    <select id="getStats" resultType="map">
-        SELECT 
-            COUNT(*) as total,
-            COUNT(CASE WHEN c.status = 'IN_PROGRESS' THEN 1 END) as processing,
-            COUNT(CASE WHEN c.status = 'COMPLETED' THEN 1 END) as completed
+    <!-- 민원 목록 -->
+    <select id="findAll" resultType="com.safeguard.dto.ComplaintListItemDto">
+        SELECT
+            c.complaint_no AS complaintNo,
+            c.title,
+            c.category,
+            c.status,
+            c.created_date AS createdAt,
+            COUNT(pl.complaint_no) AS likeCount
         FROM complaint c
+        LEFT JOIN post_like pl
+               ON c.complaint_no = pl.complaint_no
         <where>
+            <if test="category != null and category != '전체'">
+                AND c.category = #{category}
+            </if>
+            <if test="status != null and status != '전체'">
+                AND c.status = #{status}
+            </if>
             <if test="agencyNo != null">
-                c.agency_no = #{agencyNo}
+                AND c.complaint_no IN (
+                    SELECT complaint_no
+                    FROM complaint_agency
+                    WHERE agency_no = #{agencyNo}
+                )
             </if>
         </where>
+        GROUP BY c.complaint_no
+        ORDER BY c.complaint_no ASC
     </select>
 
-    <select id="getTopLiked" resultMap="ComplaintResultMap">
-        SELECT * FROM complaint 
-        ORDER BY like_count DESC, created_date DESC 
+    <!-- 좋아요 TOP -->
+    <select id="getTopLiked"
+            resultType="com.safeguard.dto.ComplaintListItemDto">
+        SELECT
+            c.complaint_no AS complaintNo,
+            c.title,
+            c.category,
+            c.status,
+            c.created_date AS createdAt,
+            COUNT(pl.complaint_no) AS likeCount
+        FROM complaint c
+        LEFT JOIN post_like pl
+               ON c.complaint_no = pl.complaint_no
+        GROUP BY c.complaint_no
+        ORDER BY likeCount DESC
         LIMIT 5
     </select>
 
-    <select id="findByUserNo" resultMap="ComplaintResultMap">
-        SELECT * FROM complaint WHERE user_no = #{userNo} ORDER BY created_date DESC
+    <!-- 통계 -->
+    <select id="getStats" resultType="java.util.Map">
+        SELECT
+            COUNT(*) AS total,
+            COUNT(CASE WHEN status = 'RECEIVED' THEN 1 END) AS received,
+            COUNT(CASE WHEN status = 'IN_PROGRESS' THEN 1 END) AS processing,
+            COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed
+        FROM complaint
     </select>
 
-    <select id="findByComplaintNo" resultMap="ComplaintResultMap">
-        SELECT c.*, a.agency_name 
-        FROM complaint c
-        LEFT JOIN agency a ON c.agency_no = a.agency_no
-        WHERE c.complaint_no = #{complaintNo}
-    </select>
-
-    <insert id="insert" useGeneratedKeys="true" keyProperty="complaintNo" keyColumn="complaint_no">
-        INSERT INTO complaint (
-            title,
-            content,
-            answer,
-            category,
-            address,
-            latitude,
-            longitude,
-            image_path,
-            analysis_result,
-            status,
-            is_public,
-            like_count,
-            created_date,
-            updated_date,
-            user_no,
-            agency_no
-        )
-        VALUES (
-            #{title},
-            #{content},
-            #{answer},
-            #{category},
-            #{address},
-            #{latitude},
-            #{longitude},
-            #{imagePath},
-            #{analysisResult}::jsonb,
-            #{status}::complaint_status,
-            #{isPublic},
-            #{likeCount},
-            #{createdDate},
-            NOW(),
-            #{userNo},
-            #{agencyNo}
-        )
-    </insert>
-
-    <update id="update">
-        UPDATE complaint SET
-            title = #{title},
-            content = #{content},
-            answer = #{answer},
-            category = #{category},
-            address = #{address},
-            latitude = #{latitude},
-            longitude = #{longitude},
-            image_path = #{imagePath},
-            analysis_result = #{analysisResult}::jsonb,
-            status = #{status}::complaint_status,
-            is_public = #{isPublic},
-            updated_date = NOW()
-        WHERE complaint_no = #{complaintNo}
-    </update>
-
-
-    <update id="updateStatus">
-        UPDATE complaint SET status = #{status}::complaint_status, updated_date = NOW()
-        WHERE complaint_no = #{complaintNo}
-    </update>
-
-    <update id="updateAnswer">
-        UPDATE complaint SET answer = #{answer}, updated_date = NOW()
-        WHERE complaint_no = #{complaintNo}
-    </update>
-
-    <delete id="deleteByComplaintNo">
-        DELETE FROM complaint WHERE complaint_no = #{complaintNo}
-    </delete>
-
-    <update id="updateLikeCount">
-        UPDATE complaint SET like_count = like_count + 1 WHERE complaint_no = #{complaintNo}
-    </update>
-
-    <select id="checkUserLike" resultType="int">
-        SELECT COUNT(*) FROM complaint_like WHERE complaint_no = #{complaintNo} AND user_no = #{userNo}
-    </select>
-
-    <select id="isLikedByUser" resultType="boolean">
-        SELECT EXISTS(SELECT 1 FROM complaint_like WHERE complaint_no = #{complaintNo} AND user_no = #{userNo})
-    </select>
-
-    <insert id="insertLike">
-        INSERT INTO complaint_like (complaint_no, user_no) VALUES (#{complaintNo}, #{userNo})
-    </insert>
-
-    <delete id="deleteLike">
-        DELETE FROM complaint_like WHERE complaint_no = #{complaintNo} AND user_no = #{userNo}
-    </delete>
-
-    <update id="decreaseLikeCount">
-        UPDATE complaint SET like_count = like_count - 1 WHERE complaint_no = #{complaintNo} AND like_count > 0
-    </update>
-
-    <delete id="deleteAllLikes">
-        DELETE FROM complaint_like
-    </delete>
-
-    <delete id="deleteAllComplaints">
-        DELETE FROM complaint
-    </delete>
-
-    <!-- From origin/main merge -->
-    <insert id="insertComplaint" useGeneratedKeys="true" keyProperty="complaintNo" keyColumn="complaint_no">
-        INSERT INTO complaint (
-            category, title, content, is_public, status, user_no, created_date, updated_date
-        ) VALUES (
-            #{category}, #{title}, #{content}, #{isPublic}, #{status}::complaint_status, #{userNo}, NOW(), NOW()
-        )
-    </insert>
-
-    <insert id="insertSpatialFeature">
-        INSERT INTO spatial_feature (
-            complaint_no, feature_type, addr_text, geom
-        ) VALUES (
-            #{complaintNo}, #{featureType}, #{addrText}, #{geom}
-        )
-    </insert>
-
-    <update id="insertComplaintAgency">
-        UPDATE complaint SET agency_no = #{agencyNo} WHERE complaint_no = #{complaintNo}
-    </update>
 </mapper>

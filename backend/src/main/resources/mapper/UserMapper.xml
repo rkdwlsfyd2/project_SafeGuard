@@ -1,6 +1,16 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 <mapper namespace="com.safeguard.mapper.UserMapper">
+
+    <!--
+      기준:
+      - DDL 수정 ❌
+      - Entity(AppUser) 사용 ❌ (존재하지 않음)
+      - DTO(UserDTO) 기준 사용 ✅
+    -->
 
     <resultMap id="UserResultMap" type="com.safeguard.dto.UserDTO">
         <id property="userNo" column="user_no"/>
@@ -10,35 +20,81 @@
         <result property="birthDate" column="birth_date"/>
         <result property="addr" column="addr"/>
         <result property="phone" column="phone"/>
-        <result property="email" column="email"/>
         <result property="createdDate" column="created_date"/>
         <result property="role" column="role"/>
         <result property="agencyNo" column="agency_no"/>
     </resultMap>
 
-    <insert id="save" parameterType="com.safeguard.dto.UserDTO" useGeneratedKeys="true" keyProperty="userNo">
-        INSERT INTO app_user (user_id, pw, name, birth_date, addr, phone, email, role, agency_no, created_date)
-        VALUES (#{userId}, #{pw}, #{name}, #{birthDate}, #{addr}, #{phone}, #{email}, #{role}, #{agencyNo}, NOW())
+    <!-- 단건 조회 (PK) -->
+    <select id="findByUserNo" resultMap="UserResultMap">
+        SELECT *
+        FROM app_user
+        WHERE user_no = #{userNo}
+    </select>
+
+    <!-- 단건 조회 (ID) -->
+    <select id="findByUserId" resultMap="UserResultMap">
+        SELECT *
+        FROM app_user
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- ID 중복 여부 -->
+    <select id="existsByUserId" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM app_user
+            WHERE user_id = #{userId}
+        )
+    </select>
+
+    <!-- 회원 생성 -->
+    <insert id="insert"
+            useGeneratedKeys="true"
+            keyProperty="userNo"
+            keyColumn="user_no">
+        INSERT INTO app_user (
+            user_id,
+            pw,
+            name,
+            birth_date,
+            addr,
+            phone,
+            created_date,
+            role,
+            agency_no
+        )
+        VALUES (
+            #{userId},
+            #{pw},
+            #{name},
+            #{birthDate},
+            #{addr},
+            #{phone},
+            CURRENT_TIMESTAMP,
+            #{role}::user_role,
+            #{agencyNo}
+        )
     </insert>
 
-    <update id="updatePassword">
-        UPDATE app_user SET pw = #{password} WHERE user_id = #{userId}
+    <!-- 회원 정보 수정 -->
+    <update id="update">
+        UPDATE app_user
+        SET
+            name = #{name},
+            birth_date = #{birthDate},
+            addr = #{addr},
+            phone = #{phone},
+            role = #{role}::user_role,
+            agency_no = #{agencyNo}
+        WHERE user_no = #{userNo}
     </update>
 
-    <select id="findByUserId" parameterType="string" resultMap="UserResultMap">
-        SELECT * FROM app_user WHERE user_id = #{userId}
-    </select>
-
-    <select id="findByNameAndPhone" resultMap="UserResultMap">
-        SELECT * FROM app_user WHERE name = #{name} AND phone = #{phone}
-    </select>
-
-    <select id="findByUserIdAndPhone" resultMap="UserResultMap">
-        SELECT * FROM app_user WHERE user_id = #{userId} AND phone = #{phone}
-    </select>
-    
-    <select id="existsByUserId" parameterType="string" resultType="boolean">
-        SELECT EXISTS(SELECT 1 FROM app_user WHERE user_id = #{userId})
-    </select>
+    <!-- 회원 삭제 -->
+    <delete id="deleteByUserNo">
+        DELETE
+        FROM app_user
+        WHERE user_no = #{userNo}
+    </delete>
 
 </mapper>

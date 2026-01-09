@@ -26,7 +26,12 @@ const apiRequest = async (endpoint, options = {}) => {
     const data = await response.json();
 
     if (!response.ok) {
-        throw new Error(data.error || data.message || data.detail || '요청 처리 중 오류가 발생했습니다.');
+        throw new Error(
+            data.error ||
+            data.message ||
+            data.detail ||
+            '요청 처리 중 오류가 발생했습니다.'
+        );
     }
 
     return data;
@@ -116,12 +121,16 @@ export const complaintsAPI = {
         method: 'POST',
     }),
 
-//    getMapLocations: () => apiRequest('/complaints/map/locations'),
+    /** ✅ Dashboard에서 호출하는데 없어서 터지던 함수 */
+    getStats: () => apiRequest('/complaints/stats'),
+
+    // GIS
     getMapItems: (params) => {
         const query = new URLSearchParams(params).toString();
         return apiRequest(`/gis/map-items${query ? `?${query}` : ''}`);
     },
-      getComplaints: (params) => {
+
+    getComplaints: (params) => {
         const query = new URLSearchParams(params).toString();
         return apiRequest(`/gis/complaints${query ? `?${query}` : ''}`);
     },
@@ -137,7 +146,7 @@ export const agenciesAPI = {
     },
 };
 
-// Text Analysis API (RAG Service 호출 - Backend Proxy 방식)
+// Text Analysis API
 export const analyzeText = async (text) => {
     return apiRequest('/rag/analyze', {
         method: 'POST',
@@ -173,7 +182,6 @@ export const sttAPI = {
         const response = await fetch(`${API_BASE}/stt/upload_voice`, {
             method: 'POST',
             body: formData,
-            // 'Content-Type'은 FormData 전송 시 브라우저가 자동으로 boundry와 함께 설정하도록 비워둡니다.
             headers: {
                 'Authorization': getToken() ? `Bearer ${getToken()}` : '',
             }
