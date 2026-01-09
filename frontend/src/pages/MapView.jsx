@@ -110,43 +110,66 @@ function MapView() {
   // ====== 마커 렌더링 ======
   const renderMarkers = () => {
     const map = mapRef.current;
+    console.log("[renderMarkers] called", { locationsLen: locations?.length });
+    console.log("[renderMarkers] mapRef", !!map, "kakao", !!window.kakao?.maps);
     if (!map || !window.kakao?.maps) return;
 
+    // 기존 마커 제거
     clearMarkers();
 
-    // locations가 0이어도 이전 마커는 지워야 하므로 여기서 return하지 말고,
-    // clearMarkers() 후에 종료
+    // 클러스터러 내부 마커까지 제거 (핵심)
+    if (clustererRef.current) {
+      clustererRef.current.clear();
+      clustererRef.current.setMap(null);
+    }
+
     if (!locations || locations.length === 0) return;
 
-    // 클러스터러는 한 번만 생성해서 재사용
+    // 클러스터러 생성/재연결
     if (!clustererRef.current) {
       clustererRef.current = new window.kakao.maps.MarkerClusterer({
         map,
         averageCenter: true,
-        minLevel: 5
+        minLevel: 5,
       });
     } else {
       clustererRef.current.setMap(map);
     }
 
-    const markers = locations.map((loc) => {
-      const marker = new window.kakao.maps.Marker({
-        position: new window.kakao.maps.LatLng(loc.lat, loc.lng)
-      });
+    // 좌표 숫자 변환 + invalid 방어
+    const markers = locations
+      .map((loc) => {
+        const lat = Number(loc.lat);
+        const lng = Number(loc.lng);
 
-      window.kakao.maps.event.addListener(marker, 'click', () => {
-        setSelectedComplaint(loc);
-      });
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          console.warn("invalid coord", loc);
+          return null;
+        }
 
-      return marker;
-    });
+        const marker = new window.kakao.maps.Marker({
+          position: new window.kakao.maps.LatLng(lat, lng),
+        });
 
+        window.kakao.maps.event.addListener(marker, "click", () => {
+          setSelectedComplaint(loc);
+        });
+
+        return marker;
+      })
+      .filter(Boolean);
+
+    // add 전에 clear 한번 더 (갱신 안정화)
+    clustererRef.current.clear();
     clustererRef.current.addMarkers(markers);
+
     markersRef.current = markers;
   };
 
+
   // ====== Kakao SDK 로드 & 지도 생성 ======
   useEffect(() => {
+    renderMarkers();
     const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY;
     console.log("KAKAO KEY =", kakaoKey);
     if (!kakaoKey) {
