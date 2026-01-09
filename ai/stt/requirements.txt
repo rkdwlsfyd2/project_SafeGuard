@@ -5,3 +5,4 @@ imageio-ffmpeg
 python-multipart
 ffmpeg-normalize
 requests
+jinja2
