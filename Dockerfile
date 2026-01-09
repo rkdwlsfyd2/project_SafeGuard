@@ -9,6 +9,11 @@ RUN npm install
 
 # 프론트엔드 소스코드 복사
 COPY frontend/ .
+
+ARG VITE_KAKAO_MAP_KEY
+ENV VITE_KAKAO_MAP_KEY=$VITE_KAKAO_MAP_KEY
+
+RUN echo "VITE_KAKAO_MAP_KEY=$VITE_KAKAO_MAP_KEY" > .env
 RUN npm run build
 
 # Serve Stage

@@ -128,7 +128,10 @@ services:
       - safeguard-network
 
   frontend:
-    build: .
+    build:
+      context: .
+      args:
+        VITE_KAKAO_MAP_KEY: eae070c8a9cf812f56e98dfd9e4673a7
     container_name: safeguard-frontend
     ports:
       - "80:80"
