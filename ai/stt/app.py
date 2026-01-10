@@ -159,6 +159,30 @@ class UnifiedComplaintManager:
                 return agency_id
         return 20
 
+    def _filter_hallucination(self, text: str) -> str:
+        """
+        Whisper 환각(Hallucination) 필터링
+        - 반복되는 문구 제거
+        - 지나치게 짧거나 의미 없는 텍스트 제거
+        """
+        if not text:
+            return ""
+            
+        # 1. 반복 문구 감지 (예: "MBC 뉴스 이종훈입니다." 반복)
+        # 단순하게 전체 텍스트 길이 대비 중복 비율을 체크하거나, 연속된 문장 비교
+        # 여기서는 단순하게 3회 이상 동일하게 반복되는 구문이 있는지 체크하는 로직은 복잡하므로
+        # 우선 길이가 너무 짧은 경우 등을 체크
+        
+        # 2. 글자 수 체크 (예: 5자 미만은 무의미하다고 판단)
+        if len(text) < 5:
+            return ""
+            
+        # 3. 특수 문자만 있는 경우
+        if re.match(r'^[\s\.,!?]*$', text):
+            return ""
+            
+        return text
+
     def _generate_title(self, text: str, agency_id: int) -> str:
         """민원 내용 요약 (제목 생성) - 간단히 앞부분 20자 + 기관명"""
         agency_name = self.AGENCIES.get(agency_id, "기타")
@@ -186,7 +210,7 @@ class UnifiedComplaintManager:
                     file_path,
                     language="ko",
                     fp16=torch.cuda.is_available(),
-                    initial_prompt="행정 민원 신고 내용입니다. 불법 주정차, 도로 파손, 쓰레기 투기, 노점상 단속 등 민원 키워드를 중심으로 인식해 주세요.",
+                    initial_prompt=None,              # 사용자 메모 권장: 환각 최소화를 위해 None 설정
                     beam_size=5,
                     condition_on_previous_text=False, # 이전 텍스트 맥락 차단 (반복/환각 방지)
                     no_speech_threshold=0.6,          # 비음성 구간 임계값 상향

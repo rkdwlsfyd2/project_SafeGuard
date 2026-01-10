@@ -5,7 +5,7 @@ function MyPage() {
 
     useEffect(() => {
         // Normally would fetch only current user's reports
-        fetch('http://localhost:5000/api/reports')
+        fetch('/api/reports')
             .then(res => res.json())
             .then(data => setMyReports(data))
             .catch(err => console.error(err));

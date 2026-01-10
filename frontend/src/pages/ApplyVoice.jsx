@@ -25,6 +25,8 @@ function ApplyVoice() {
     // Recording state
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
+    const [previewText, setPreviewText] = useState(''); // 실시간 미리보기용 텍스트
+    const previewTextRef = useRef(''); // onstop 시점 최신 값 참조용
     const mediaRecorderRef = useRef(null);
     const chunksRef = useRef([]);
     const recognitionRef = useRef(null);
@@ -51,13 +53,15 @@ function ApplyVoice() {
         recognition.interimResults = true;
 
         recognition.onresult = (event) => {
-            let transcript = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                transcript += event.results[i][0].transcript;
-            }
+            // 기존 event.resultIndex 방식(부분 업데이트) 대신 전체 텍스트 재조립 방식으로 변경하여 누락 방지
+            const transcript = Array.from(event.results)
+                .map(result => result[0].transcript)
+                .join('');
 
             if (transcript) {
-                setFormData(prev => ({ ...prev, content: transcript }));
+                setPreviewText(transcript); // (선택) 미리보기용 UI 유지
+                setFormData(prev => ({ ...prev, content: transcript })); // ★ Textarea 실시간 업데이트!
+                previewTextRef.current = transcript;
             }
         };
 
@@ -101,17 +105,24 @@ function ApplyVoice() {
                 setError('');
 
                 try {
-                    const result = await sttAPI.transcribe(audioBlob);
+                    // 사용자 요청: Web Speech API 인식 결과(previewText)를 그대로 사용
+                    // 백엔드에는 텍스트를 함께 보내서 Whisper 변환 스킵
+                    const finalTranscript = previewTextRef.current;
+                    const result = await sttAPI.transcribe(audioBlob, finalTranscript);
 
                     // UnifiedComplaintManager response mapping
                     if (result?.original_text) {
                         setFormData(prev => ({
                             ...prev,
-                            content: result.original_text,
+                            // 서버에서 돌아온 original_text (우리가 보낸 텍스트가 그대로 옴)
+                            content: result.original_text || finalTranscript,
                             title: result.title || prev.title
                         }));
-                    } else if (result?.stt_text) { // Fallback for old compatibility
+                    } else if (result?.stt_text) {
                         setFormData(prev => ({ ...prev, content: result.stt_text }));
+                    } else {
+                        // Fallback
+                        setFormData(prev => ({ ...prev, content: finalTranscript }));
                     }
                 } catch (err) {
                     setError('음성 인식에 실패했습니다: ' + err.message);
@@ -128,6 +139,8 @@ function ApplyVoice() {
             }
 
             setRecordingTime(0);
+            setPreviewText('');
+            previewTextRef.current = '';
             setIsRecording(true);
 
         } catch (err) {
@@ -473,8 +486,12 @@ function ApplyVoice() {
                                     <div style={{ fontSize: '1.2rem', fontWeight: '700', color: isRecording ? '#ef4444' : '#1e293b', marginBottom: '12px' }}>
                                         {isRecording ? formatTime(recordingTime) : (isTranscribing ? '음성 변환 중...' : '녹음 시작')}
                                     </div>
-                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                        {isRecording ? '말씀을 하신 후 정지 버튼을 눌러주세요' : (isTranscribing ? '잠시만 기다려주세요...' : '버튼을 눌러 음성 인식을 하세요')}
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b', minHeight: '1.2em' }}>
+                                        {isRecording ? (
+                                            <span>음성인식중....</span>
+                                        ) : (
+                                            isTranscribing ? '잠시만 기다려주세요...' : '버튼을 눌러 음성 인식을 하세요'
+                                        )}
                                     </div>
                                 </div>
                             </div>

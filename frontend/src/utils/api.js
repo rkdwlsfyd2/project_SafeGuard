@@ -175,9 +175,12 @@ export const analyzeImage = async (file) => {
 
 // STT API
 export const sttAPI = {
-    transcribe: async (audioBlob) => {
+    transcribe: async (audioBlob, text) => {
         const formData = new FormData();
         formData.append('file', audioBlob, 'record.wav');
+        if (text) {
+            formData.append('text', text);
+        }
 
         const response = await fetch(`${API_BASE}/stt/upload_voice`, {
             method: 'POST',

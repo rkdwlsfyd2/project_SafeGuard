@@ -8,13 +8,13 @@ function Home() {
 
     React.useEffect(() => {
         // Fetch Stats
-        fetch('http://localhost:5000/api/complaints/stats')
+        fetch('/api/complaints/stats')
             .then(res => res.json())
             .then(data => setStatsData(data))
             .catch(err => console.error('Failed to fetch stats:', err));
 
         // Fetch Top Liked
-        fetch('http://localhost:5000/api/complaints/top-liked')
+        fetch('/api/complaints/top-liked')
             .then(res => res.json())
             .then(data => setTopLiked(data))
             .catch(err => console.error('Failed to fetch top liked:', err));
