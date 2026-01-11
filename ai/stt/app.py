@@ -54,10 +54,10 @@ except Exception as e:
 
 # Whisper STT 모델 로드 ("base" 모델 사용, 필요에 따라 "small", "medium" 등 변경 가능)
 '''
-base모델 사용 이유 : 
-- small 이상부터는 속도가 급격히 느려짐
-- base는 실시간/서버 처리에 가장 균형이 좋음
-- 민원 STT는 '대화 정확도'보다 '키워드 정확도'가 중요
+base모델 사용 이유 (Model Optimization):
+- small/medium 모델 대비 속도와 정확도의 최적 균형점
+- 민원 STT 특성상 '대화 문맥'보다 '핵심 키워드(불법, 주차, 소음 등)' 인식이 더 중요
+- CPU/GPU 리소스 효율성 고려하여 base 모델 선정
 '''
 
 model = whisper.load_model("base")
@@ -65,9 +65,10 @@ model = whisper.load_model("base")
 # --- ** STT 결과 텍스트를 ‘행정 민원 데이터’로 바꾸는 엔진 (핵심 도메인 로직) ** ---
 class UnifiedComplaintManager:
     """
-    민원 텍스트 분석 및 분류 엔진
+    민원 텍스트 분석 및 분류 엔진 (Core Logic)
     - STT로 변환된 텍스트를 분석하여 21개 주요 행정 기관으로 자동 분류
-    - 텍스트 요약(제목 생성) 기능 포함 (위치는 사용자 직접 입력)
+    - RAG(Retrieval-Augmented Generation) 서비스와 연동하여 분류 정확도 확보
+    - 민원 제목 자동 생성 (generate-title) 기능 포함
     """
 
     def __init__(self):
@@ -161,9 +162,9 @@ class UnifiedComplaintManager:
 
     def _filter_hallucination(self, text: str) -> str:
         """
-        Whisper 환각(Hallucination) 필터링
-        - 반복되는 문구 제거
-        - 지나치게 짧거나 의미 없는 텍스트 제거
+        Whisper 환각(Hallucination) 필터링 (Anti-Hallucination)
+        - 모델이 침묵(Silence)을 언어로 오인하여 생성하는 반복/무의미한 텍스트 제거
+        - 지나치게 짧거나 특수문자만 있는 경우 필터링
         """
         if not text:
             return ""
@@ -318,7 +319,9 @@ async def upload_voice(
     processed_path = None
 
     try:
-        # [최적화] 텍스트가 이미 있으면 오디오 처리(Whisper/FFPEG)를 완전히 건너뜀
+        # [Priority Check] 텍스트 우선 처리 (서버 최적화)
+        # 클라이언트가 이미 텍스트를 제공한 경우, 무거운 STT(FFmpeg+Whisper) 과정을 
+        # 완전히 생략하고 즉시 분석 로직으로 직행하여 응답 속도를 극대화함.
         if text and text.strip():
             logging.info(f"--- 텍스트 입력 감지됨 (오디오 처리 건너뜀) ---")
             logging.info(f"Client provided text: {text}")

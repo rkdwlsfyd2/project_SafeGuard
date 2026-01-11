@@ -1,39 +1,28 @@
 '''
-    질문 → 검색 → 답변
+    질문 → 검색 → 답변 (Retrieval Module)
     rag/query.py
-    : 사용자 질문을 받아 Milvus(Vector DB)에서
+    : 사용자 질문을 받아 Vector DB(Milvus)와 Keyword Index(BM25)에서
     관련 법령 텍스트를 검색(Retrieve)하는 모듈
 
     [역할]
     - RAG 파이프라인 중 Retrieve 단계 담당
-    - ingest.py에서 사전에 저장된 벡터 데이터를 조회
-    - 검색 결과를 LLM 프롬프트의 컨텍스트로 제공
+    - 하이브리드 검색 (Hybrid Search) 구현
+    - RRF (Reciprocal Rank Fusion) 알고리즘으로 검색 결과 재정렬
 
     [동작 요약]
-    - 사용자 질문을 임베딩 벡터로 변환
-    - Milvus에서 벡터 유사도 검색 수행
-    - 관련 법령 텍스트와 출처 정보 반환
-
+    - 사용자 질문을 임베딩 벡터로 변환 (Semantic Search)
+    - 사용자 질문을 형태소 분석하여 키워드 매칭 (Lexical Search)
+    - 두 결과를 RRF 알고리즘으로 통합하여 상위 문서 반환
+    
     [동작 순서]
-    1. Milvus 서버(localhost:19530)에 연결
-    2. law_rag 컬렉션 로드
-    3. SentenceTransformer 임베딩 모델 로드
-    4. 사용자 질문 입력
-    5. 질문 문장을 벡터로 변환
-    6. Milvus 벡터 검색 수행 (COSINE 유사도 기준)
-    7. 상위 top_k 개의 검색 결과 반환
-    - 법령 원문 텍스트(text)
-    - 출처 PDF 파일명(source)
-
-    [사용 예시]
-    - ask("불법주정차 신고는 어디에 해야 하나요?")
-    - ask("개인정보 처리 위반 시 처벌 규정은?")
+    1. Milvus 서버 연결 및 컬렉션 로드
+    2. 질문 임베딩 생성 -> Vector Search (Cosine Similarity)
+    3. 질문 토큰화 -> BM25 Search (Keyword Matching)
+    4. RRF로 결과 랭킹 병합
+    5. 상위 top_k 개의 법령 텍스트 반환
 
     [비고]
-    - 본 파일은 검색 테스트 및 RAG 질의 용도로 사용
-    - 실제 서비스 환경에서는
-    검색 결과를 LLM 프롬프트에 전달하여
-    최종 답변 + 근거 법령 설명을 생성
+    - ingest.py로 적재된 데이터가 있어야 동작함
 '''
 
 from pymilvus import connections, Collection

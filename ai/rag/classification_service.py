@@ -7,10 +7,10 @@ classification_service.py
 분류 판단 레이어(Classification Layer)입니다.
 
 - query.py : 벡터 검색 + BM25 검색 (의미 기반 Retrieval)
-- classification_service.py : 검색 결과를 행정 도메인 기준으로 해석 및 보정
+- classification_service.py : 검색 결과를 행정 도메인 기준으로 해석 및 보정 (Rule-based Decision)
 
-이 파일은 검색을 직접 수행하지 않으며,
-RAG 결과를 키워드 및 도메인 규칙으로 보조 판단만 수행합니다.
+이 파일은 단순 검색 결과를 넘어, 
+특정 키워드에 대한 강제 규칙(Hard Rules)과 가중치 로직을 통해 분류 정확도를 보정합니다.
 """
 
 import os
@@ -193,7 +193,7 @@ def classify_complaint(user_query: str) -> dict:
             "agency_name": "경찰청",
             "category": AGENCY_TO_CATEGORY[AGENCY_CODES["경찰청"]],
             "confidence": 1.0,
-            "reasoning": "주정차 단속·불법 주정차는 교통질서 위반으로 경찰청 소관으로 우선 분류됩니다.",
+            "reasoning": "주정차 단속·불법 주정차는 명확한 교통질서 위반 사안이므로, RAG 검색을 거치지 않고 경찰청 소관으로 즉시 분류합니다. (Hard Rule 적용)",
             "sources": []
         }
 

@@ -3,18 +3,18 @@ rag/app.py
 : RAG 서비스 API 서버
 
 [역할]
-- 외부 서비스(STT 등)에서 HTTP 요청을 받아 민원 분류 기능을 제공
-- RAG 로직(classification_service.py)을 래핑하여 FastAPI로 서빙
+- 외부 서비스(STT, Frontend)에서 HTTP 요청을 받아 민원 분류 및 제목 생성 기능을 제공
+- RAG 로직(classification_service.py) 및 유틸리티를 래핑하여 FastAPI로 서빙
 - Docker 환경에서 'ai-rag' 컨테이너로 실행됨
 
 [주요 기능]
 - POST /classify: 텍스트를 입력받아 담당 기관 분류 결과 반환
+- POST /generate-title: 민원 내용과 주소를 기반으로 요약 제목 자동 생성
 - GET /health: 서버 상태 확인
 
 [비고]
 - 8001번 포트 사용
 """
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
