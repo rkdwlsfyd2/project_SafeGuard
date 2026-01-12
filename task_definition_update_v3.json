@@ -173,8 +173,8 @@
                     "value": "19530"
                 }
             ],
-            "memory": 1024,
-            "memoryReservation": 512,
+            "memory": 2048,
+            "memoryReservation": 1024,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -191,7 +191,7 @@
         "FARGATE"
     ],
     "cpu": "4096",
-    "memory": "8192",
+    "memory": "9216",
     "ephemeralStorage": {
         "sizeInGiB": 100
     },
