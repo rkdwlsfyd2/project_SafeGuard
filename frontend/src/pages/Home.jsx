@@ -9,15 +9,34 @@ function Home() {
     React.useEffect(() => {
         // Fetch Stats
         fetch('/api/complaints/stats')
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Network response was not ok');
+                return res.json();
+            })
             .then(data => setStatsData(data))
-            .catch(err => console.error('Failed to fetch stats:', err));
+            .catch(err => {
+                console.error('Failed to fetch stats:', err);
+                setStatsData({ total: 0, processing: 0, completed: 0 }); // Fallback
+            });
 
         // Fetch Top Liked
         fetch('/api/complaints/top-liked')
-            .then(res => res.json())
-            .then(data => setTopLiked(data))
-            .catch(err => console.error('Failed to fetch top liked:', err));
+            .then(res => {
+                if (!res.ok) throw new Error('Network response was not ok');
+                return res.json();
+            })
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setTopLiked(data);
+                } else {
+                    console.error('Expected array for top-liked but got:', data);
+                    setTopLiked([]);
+                }
+            })
+            .catch(err => {
+                console.error('Failed to fetch top liked:', err);
+                setTopLiked([]); // Fallback
+            });
     }, []);
 
     const cards = [

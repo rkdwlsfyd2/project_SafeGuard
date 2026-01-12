@@ -6,13 +6,13 @@
 <mapper namespace="com.safeguard.mapper.ComplaintMapper">
 
     <!-- 민원 목록 -->
-    <select id="findAll" resultType="com.safeguard.dto.ComplaintListItemDto">
+    <select id="findAll" resultType="com.safeguard.dto.ComplaintDTO">
         SELECT
             c.complaint_no AS complaintNo,
             c.title,
             c.category,
             c.status,
-            c.created_date AS createdAt,
+            c.created_date AS createdDate,
             COUNT(pl.complaint_no) AS likeCount
         FROM complaint c
         LEFT JOIN post_like pl
@@ -31,19 +31,22 @@
                     WHERE agency_no = #{agencyNo}
                 )
             </if>
+            <if test="search != null and search != ''">
+                AND (c.title LIKE CONCAT('%', #{search}, '%') OR c.content LIKE CONCAT('%', #{search}, '%'))
+            </if>
         </where>
         GROUP BY c.complaint_no
-        ORDER BY c.complaint_no ASC
+        ORDER BY c.complaint_no DESC
     </select>
 
     <!-- 좋아요 TOP -->
-    <select id="getTopLiked" resultType="com.safeguard.dto.ComplaintListItemDto">
+    <select id="getTopLiked" resultType="com.safeguard.dto.ComplaintDTO">
         SELECT
             c.complaint_no AS complaintNo,
             c.title,
             c.category,
             c.status,
-            c.created_date AS createdAt,
+            c.created_date AS createdDate,
             COUNT(pl.complaint_no) AS likeCount
         FROM complaint c
         LEFT JOIN post_like pl

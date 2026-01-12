@@ -85,6 +85,22 @@
         )
     </select>
 
+    <!-- 이름 + 전화번호로 조회 (아이디 찾기) -->
+    <select id="findByNameAndPhone" resultMap="UserResultMap">
+        SELECT *
+        FROM app_user
+        WHERE name = #{name}
+          AND phone = #{phone}
+    </select>
+
+    <!-- 아이디 + 전화번호로 조회 (비밀번호 찾기) -->
+    <select id="findByUserIdAndPhone" resultMap="UserResultMap">
+        SELECT *
+        FROM app_user
+        WHERE user_id = #{userId}
+          AND phone = #{phone}
+    </select>
+
     <!-- 회원 정보 수정 -->
     <update id="update">
         UPDATE app_user
