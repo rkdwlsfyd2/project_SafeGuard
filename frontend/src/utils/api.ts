@@ -135,12 +135,12 @@ export const complaintsAPI = {
     },
 
     updateStatus: (id: string | number, status: string) => apiRequest(`/complaints/${id}/status`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify({ status }),
     }),
 
     updateAnswer: (id: string | number, answer: string) => apiRequest(`/complaints/${id}/answer`, {
-        method: 'POST', // or PUT depending on backend
+        method: 'PATCH',
         body: JSON.stringify({ answer }),
     }),
 };

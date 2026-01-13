@@ -269,7 +269,7 @@ public class SeedController {
                             throw new RuntimeException("Test user creation failed: " + e.getMessage());
                         }
                     });
-            UserDTO user = userMapper.findByUserId("testuser")
+            user = userMapper.findByUserId("testuser")
                     .orElse(null);
 
             if (user == null) {
