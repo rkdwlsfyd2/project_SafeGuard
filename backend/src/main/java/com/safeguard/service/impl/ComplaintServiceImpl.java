@@ -37,6 +37,7 @@ public class ComplaintServiceImpl implements ComplaintService {
         complaint.setIsPublic((Boolean) data.get("isPublic"));
         complaint.setStatus(ComplaintStatus.UNPROCESSED);
         complaint.setUserNo(userNo);
+        complaint.setImagePath((String) data.get("imagePath"));
 
         complaintMapper.insertComplaint(complaint);
         Long complaintNo = complaint.getComplaintNo();

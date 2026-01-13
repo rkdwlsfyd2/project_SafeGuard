@@ -24,4 +24,5 @@ public class MapItemDto {
     // CLUSTER
     private Integer count;
     private String clusterKey;
+    private String imagePath;
 }

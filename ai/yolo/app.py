@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
 import os
@@ -54,6 +54,19 @@ app.add_middleware(
 
 @app.post("/api/analyze-image")
 async def analyze(image: UploadFile = File(...)):
+    # 1. 파일 형식 검증
+    if not image.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
+
+    # 2. 용량 검증 (5MB 제한)
+    MAX_SIZE = 5 * 1024 * 1024
+    image_data = await image.read()
+    if len(image_data) > MAX_SIZE:
+        raise HTTPException(status_code=400, detail="이미지 용량은 5MB 이하만 업로드 가능합니다.")
+    
+    # read() 이후 파일 포인터를 다시 처음으로 되돌림 (shutil.copyfileobj 사용을 위해)
+    await image.seek(0)
+
     # Frontend sends 'image' as form field name
     file = image 
     temp_file = f"temp_{file.filename}"
