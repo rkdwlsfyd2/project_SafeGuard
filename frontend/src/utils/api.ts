@@ -143,6 +143,29 @@ export const complaintsAPI = {
         method: 'POST', // or PUT depending on backend
         body: JSON.stringify({ answer }),
     }),
+
+    uploadImage: async (file: File) => {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const token = getToken();
+        const headers: HeadersInit = {};
+        if (token) {
+            (headers as any)['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_BASE}/complaints/images`, {
+            method: 'POST',
+            body: formData,
+            headers
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || '이미지 업로드 중 오류가 발생했습니다.');
+        }
+        return data; // { imagePath: '...' } 형태 기대
+    },
 };
 
 // Agencies API
