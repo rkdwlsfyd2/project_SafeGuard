@@ -5,33 +5,6 @@
 
 <mapper namespace="com.safeguard.mapper.ComplaintMapper">
 
-    <!-- 민원 목록 -->
-    <select id="selectComplaintList" resultType="com.safeguard.dto.ComplaintDTO">
-        SELECT
-            c.complaint_no AS complaintNo,
-            c.title,
-            c.content,
-            c.category,
-            c.status,
-            c.created_date AS createdDate,
-            c.address,
-            c.latitude,
-            c.longitude,
-            c.image_path AS imagePath,
-            c.answer,
-            c.is_public AS isPublic,
-            c.like_count AS likeCount,
-            a.agency_name AS agencyName,
-            c.agency_no AS agencyNo
-        FROM complaint c
-        LEFT JOIN agency a ON c.agency_no = a.agency_no
-        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
-        <where>
-            <if test="category != null and category != '전체'">
-                AND c.category = #{category}
-            </if>
-            <if test="status != null and status != '전체'">
-                AND c.status = #{status}
             </if>
             <if test="agencyNo != null">
                 AND ca.agency_no = #{agencyNo}
@@ -41,6 +14,42 @@
             </if>
         </where>
         ORDER BY c.complaint_no DESC
+    </select>
+
+    <select id="findAll" resultType="com.safeguard.dto.ComplaintDTO">
+        SELECT
+            c.complaint_no AS complaintNo,
+            c.title,
+            c.category,
+            c.status,
+            c.created_date AS createdDate,
+            c.address,
+            c.like_count AS likeCount,
+            a.agency_name AS agencyName
+        FROM complaint c
+        LEFT JOIN agency a ON c.agency_no = a.agency_no
+        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
+        <where>
+            <if test="search != null and search != ''">
+                AND (c.title LIKE CONCAT('%', #{search}, '%') OR c.content LIKE CONCAT('%', #{search}, '%'))
+            </if>
+            <if test="category != null and category != '전체'">
+                AND c.category = #{category}
+            </if>
+            <if test="status != null and status != '전체'">
+                AND c.status = #{status}
+            </if>
+            <if test="agencyNo != null">
+                AND ca.agency_no = #{agencyNo}
+            </if>
+        </where>
+        ORDER BY c.complaint_no DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+        <if test="offset != null">
+            OFFSET #{offset}
+        </if>
     </select>
 
     <!-- 민원 상세 -->

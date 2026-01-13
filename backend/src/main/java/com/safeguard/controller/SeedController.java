@@ -263,7 +263,7 @@ public class SeedController {
                                     .role(com.safeguard.enums.UserRole.USER)
                                     .build();
                             userMapper.insertUser(newUser);
-                            return userMapper.selectUserByUserId("testuser").orElseThrow();
+                            return userMapper.findByUserId("testuser").orElseThrow();
                         } catch (Exception e) {
                             log.error("Failed to create test user", e);
                             throw new RuntimeException("Test user creation failed: " + e.getMessage());

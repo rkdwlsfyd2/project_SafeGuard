@@ -63,7 +63,7 @@
     </select>
 
     <!-- 단건 조회 (ID) -->
-    <select id="selectUserByUserId" resultMap="UserResultMap" parameterType="string">
+    <select id="findByUserId" resultMap="UserResultMap" parameterType="string">
         SELECT *
         FROM app_user
         WHERE user_id = #{userId}

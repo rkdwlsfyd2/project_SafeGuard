@@ -20,7 +20,7 @@ public class ComplaintGisController {
                 .getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
             String userId = auth.getName();
-            com.safeguard.dto.UserDTO currentUser = userMapper.selectUserByUserId(userId).orElse(null);
+            com.safeguard.dto.UserDTO currentUser = userMapper.findByUserId(userId).orElse(null);
             if (currentUser != null && currentUser.getRole() == com.safeguard.enums.UserRole.AGENCY) {
                 req.setAgencyNo(currentUser.getAgencyNo());
             }

@@ -52,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public Map<String, Object> login(LoginRequest request) {
-        UserDTO user = userMapper.selectUserByUserId(request.getUserId())
+        UserDTO user = userMapper.findByUserId(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPw())) {
@@ -118,7 +118,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public Map<String, Object> getUserInfo(String userId) {
-        UserDTO user = userMapper.selectUserByUserId(userId)
+        UserDTO user = userMapper.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return Map.of(
