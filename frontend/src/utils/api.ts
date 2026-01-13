@@ -23,7 +23,18 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}): Promise<
         headers,
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+        data = text ? JSON.parse(text) : {};
+    } catch (e) {
+        console.error('JSON Parse Error:', e);
+        // JSON 파싱 실패 시, 텍스트가 있다면 에러 메시지로 사용
+        if (!response.ok) {
+            throw new Error(text || 'Network response was not ok');
+        }
+        return { message: text }; // 성공인데 JSON이 아닌 경우 (거의 없음)
+    }
 
     if (!response.ok) {
         throw new Error(

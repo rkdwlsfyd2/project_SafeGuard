@@ -80,7 +80,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Map<String, Object> login(LoginRequest request) {
         UserDTO user = userMapper.findByUserId(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPw())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
@@ -172,7 +172,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Map<String, Object> getUserInfo(String userId) {
         UserDTO user = userMapper.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
         return Map.of(
                 "userId", user.getUserId(),
