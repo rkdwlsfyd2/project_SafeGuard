@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../utils/api';
 
-// Hardcoded Agency Data (Must match init.sql / database)
-// Hardcoded Agency Data (Must match init.sql / database)
+// 기관 데이터
 const LOCAL_AGENCIES = [
     { id: 1, name: '서울특별시' },
     { id: 2, name: '부산광역시' },
@@ -51,7 +50,7 @@ const CENTRAL_AGENCIES = [
 function Register() {
     const navigate = useNavigate();
 
-    // User Type State: 'INDIVIDUAL' | 'AGENCY_CENTRAL' | 'AGENCY_LOCAL'
+    // 회원 유형 상태: 'INDIVIDUAL' (개인) | 'AGENCY_CENTRAL' (중앙행정) | 'AGENCY_LOCAL' (지자체)
     const [userType, setUserType] = useState('INDIVIDUAL');
 
     const [formData, setFormData] = useState({
@@ -62,33 +61,128 @@ function Register() {
         birthDate: '',
         addr: '',
         phone: '',
-        agencyNo: '' // Will be set if AGENCY
+        agencyNo: '' // 기관 회원일 경우 설정됨
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isIdChecked, setIsIdChecked] = useState(false); // 아이디 중복 확인 상태
+
+    // Daum 우편번호 스크립트 로드
+    useEffect(() => {
+        // Daum Postcode
+        const postcodeScript = document.createElement('script');
+        postcodeScript.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+        postcodeScript.async = true;
+        document.head.appendChild(postcodeScript);
+
+        return () => {
+            if (document.head.contains(postcodeScript)) {
+                document.head.removeChild(postcodeScript);
+            }
+        };
+    }, []);
+
+    const handleSearchAddress = () => {
+        if (!window.daum || !window.daum.Postcode) {
+            alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        new window.daum.Postcode({
+            oncomplete: function (data: any) {
+                const addr = data.roadAddress || data.jibunAddress;
+                setFormData(prev => ({
+                    ...prev,
+                    addr: addr
+                }));
+            }
+        }).open();
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        // 아이디 변경 시 중복 확인 상태 초기화
+        if (name === 'userId') {
+            setIsIdChecked(false);
+        }
     };
 
     const handleUserTypeChange = (e) => {
         const type = e.target.value;
         setUserType(type);
-        // Reset agency selection when type changes
+        // 회원 유형 변경 시 기관 선택 초기화
         setFormData(prev => ({ ...prev, agencyNo: '' }));
+    };
+
+    const handleIdCheck = async () => {
+        if (!formData.userId) {
+            alert('아이디를 입력해주세요.');
+            return;
+        }
+
+        // 아이디 유효성 검사 (영문, 숫자만 허용)
+        const idRegex = /^[a-zA-Z0-9]+$/;
+        if (!idRegex.test(formData.userId)) {
+            alert('아이디는 영문과 숫자만 사용 가능합니다.');
+            return;
+        }
+        try {
+            const response = await authAPI.checkIdDuplicate(formData.userId);
+            if (response.isDuplicate) {
+                alert('이미 사용 중인 아이디입니다.');
+                setIsIdChecked(false);
+            } else {
+                alert('사용 가능한 아이디입니다.');
+                setIsIdChecked(true);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('중복 확인 중 오류가 발생했습니다.');
+            setIsIdChecked(false);
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
+        if (!isIdChecked) {
+            setError('아이디 중복 확인을 해주세요.');
+            return;
+        }
+
         if (formData.password !== formData.passwordConfirm) {
             setError('비밀번호가 일치하지 않습니다.');
             return;
         }
 
-        // Validate Agency Selection
+        // 비밀번호 유효성 검사 규칙
+        const { password } = formData;
+        if (password.length < 8) {
+            setError('비밀번호는 8자 이상이어야 합니다.');
+            return;
+        }
+        if (password.includes(' ')) {
+            setError('비밀번호에 공백을 포함할 수 없습니다.');
+            return;
+        }
+        const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+        if (!specialCharRegex.test(password)) {
+            setError('비밀번호는 특수문자를 최소 1개 이상 포함해야 합니다.');
+            return;
+        }
+
+        // 생년월일 유효성 검사
+        const today = new Date();
+        const selectedDate = new Date(formData.birthDate);
+        if (selectedDate > today) {
+            setError('생년월일은 미래 날짜일 수 없습니다.');
+            return;
+        }
+
+        // 기관 선택 유효성 검사
         if ((userType === 'AGENCY_CENTRAL' || userType === 'AGENCY_LOCAL') && !formData.agencyNo) {
             setError('소속 기관을 선택해주세요.');
             return;
@@ -99,20 +193,20 @@ function Register() {
         try {
             const { passwordConfirm, ...registerData } = formData;
 
-            // Clean up: If INDIVIDUAL, ensure agencyNo is null/undefined just in case
+            // 정리: 개인 회원인 경우 agencyNo가 null/undefined인지 확인
             if (userType === 'INDIVIDUAL') {
-                delete registerData.agencyNo;
+                delete (registerData as any).agencyNo;
             } else {
-                // Ensure agencyNo is Number
+                // agencyNo를 숫자로 변환
                 (registerData as any).agencyNo = Number(registerData.agencyNo);
             }
 
-            console.log("Registering:", registerData); // Debug log
+            console.log("Registering:", registerData); // 디버그 로그
 
             await authAPI.register(registerData);
             alert('회원가입이 완료되었습니다. 로그인해주세요.');
             navigate('/login');
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setError(err.message || '회원가입 중 오류가 발생했습니다.');
         } finally {
@@ -293,7 +387,7 @@ function Register() {
                                 style={{
                                     ...inputStyle,
                                     backgroundColor: 'white',
-                                    backgroundImage: 'none', // Remove default arrow in some browsers if desired, here keeping standard
+                                    backgroundImage: 'none', // 일부 브라우저에서 기본 화살표 제거 가능 (현재는 표준 유지)
                                     cursor: 'pointer'
                                 }}
                             >
@@ -314,42 +408,106 @@ function Register() {
                     {/* 아이디 */}
                     <div style={{ marginBottom: '20px' }}>
                         <label style={labelStyle}>아이디 <span style={{ color: '#ef4444' }}>*</span></label>
-                        <input
-                            type="text"
-                            name="userId"
-                            value={formData.userId}
-                            onChange={handleChange}
-                            required
-                            placeholder="사용할 아이디를 입력하세요"
-                            style={inputStyle}
-                        />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input
+                                type="text"
+                                name="userId"
+                                value={formData.userId}
+                                onChange={handleChange}
+                                required
+                                placeholder="사용할 아이디를 입력하세요"
+                                style={{
+                                    flex: 1,
+                                    padding: '14px',
+                                    borderRadius: '12px',
+                                    border: '2px solid #e2e8f0',
+                                    fontSize: '1rem'
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={handleIdCheck}
+                                style={{
+                                    padding: '0 20px',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: '#3b82f6',
+                                    color: 'white',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                중복 확인
+                            </button>
+                        </div>
+                        {/* 중복 확인 결과 메시지 */}
+                        {formData.userId && (
+                            <div style={{ fontSize: '0.85rem', marginTop: '6px', color: isIdChecked ? '#10b981' : '#f59e0b' }}>
+                                {isIdChecked ? '✅ 사용 가능한 아이디입니다.' : 'ℹ️ 아이디 중복 확인이 필요합니다.'}
+                            </div>
+                        )}
                     </div>
 
-                    {/* 비밀번호 */}
+                    {/* 비밀번호 & 유효성 규칙 위치 변경 */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                         <div>
-                            <label style={labelStyle}>비밀번호 <span style={{ color: '#ef4444' }}>*</span></label>
-                            <input
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                required
-                                placeholder="비밀번호"
-                                style={inputStyle}
-                            />
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={labelStyle}>비밀번호 <span style={{ color: '#ef4444' }}>*</span></label>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="비밀번호"
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>비밀번호 확인 <span style={{ color: '#ef4444' }}>*</span></label>
+                                <input
+                                    type="password"
+                                    name="passwordConfirm"
+                                    value={formData.passwordConfirm}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="비밀번호 확인"
+                                    style={inputStyle}
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <label style={labelStyle}>비밀번호 확인 <span style={{ color: '#ef4444' }}>*</span></label>
-                            <input
-                                type="password"
-                                name="passwordConfirm"
-                                value={formData.passwordConfirm}
-                                onChange={handleChange}
-                                required
-                                placeholder="비밀번호 확인"
-                                style={inputStyle}
-                            />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {/* 레이아웃 간격: 입력 필드 상단과 상자를 맞추기 위한 숨겨진 라벨 */}
+                            <label style={{ ...labelStyle, visibility: 'hidden' }}>비밀번호 생성 규칙</label>
+
+                            {/* 비밀번호 유효성 가이드 */}
+                            <div style={{
+                                fontSize: '0.85rem',
+                                padding: '16px',
+                                backgroundColor: '#f9fafb',
+                                borderRadius: '12px',
+                                border: '1px solid #e2e8f0',
+                                flex: 1,
+                                boxSizing: 'border-box',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'center'
+                            }}>
+                                <div style={{ fontWeight: '600', marginBottom: '8px', color: '#64748b' }}>비밀번호 생성 규칙</div>
+                                <div style={{ color: formData.password.length >= 8 ? '#10b981' : '#94a3b8', display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                                    <span style={{ marginRight: '6px' }}>{formData.password.length >= 8 ? '✓' : '•'}</span>
+                                    8자 이상
+                                </div>
+                                <div style={{ color: !formData.password.includes(' ') && formData.password.length > 0 ? '#10b981' : '#94a3b8', display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                                    <span style={{ marginRight: '6px' }}>{!formData.password.includes(' ') && formData.password.length > 0 ? '✓' : '•'}</span>
+                                    공백 미포함
+                                </div>
+                                <div style={{ color: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? '#10b981' : '#94a3b8', display: 'flex', alignItems: 'center' }}>
+                                    <span style={{ marginRight: '6px' }}>{/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? '✓' : '•'}</span>
+                                    특수문자 포함 (!@#$%^&* 등)
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -375,6 +533,7 @@ function Register() {
                                 value={formData.birthDate}
                                 onChange={handleChange}
                                 required
+                                max={new Date().toISOString().split('T')[0]}
                                 style={inputStyle}
                             />
                         </div>
@@ -383,15 +542,39 @@ function Register() {
                     {/* 주소 */}
                     <div style={{ marginBottom: '20px' }}>
                         <label style={labelStyle}>주소 <span style={{ color: '#ef4444' }}>*</span></label>
-                        <input
-                            type="text"
-                            name="addr"
-                            value={formData.addr}
-                            onChange={handleChange}
-                            required
-                            placeholder="예: 서울시 강남구"
-                            style={inputStyle}
-                        />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input
+                                type="text"
+                                name="addr"
+                                value={formData.addr}
+                                onChange={handleChange}
+                                required
+                                readOnly
+                                placeholder="주소 검색 버튼을 눌러주세요"
+                                style={{
+                                    ...inputStyle,
+                                    cursor: 'pointer',
+                                    backgroundColor: '#f8fafc'
+                                }}
+                                onClick={handleSearchAddress}
+                            />
+                            <button
+                                type="button"
+                                onClick={handleSearchAddress}
+                                style={{
+                                    padding: '0 20px',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: '#3b82f6',
+                                    color: 'white',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                🔍 검색
+                            </button>
+                        </div>
                     </div>
 
                     {/* 휴대전화 */}
@@ -412,17 +595,16 @@ function Register() {
                     <div style={{ display: 'flex', gap: '16px' }}>
                         <button
                             type="submit"
-                            disabled={loading}
                             style={{
                                 flex: 2,
                                 padding: '18px',
-                                background: loading ? '#94a3b8' : 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                                background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '14px',
                                 fontSize: '1.1rem',
                                 fontWeight: '700',
-                                cursor: loading ? 'not-allowed' : 'pointer',
+                                cursor: 'pointer',
                                 boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
                                 transition: 'all 0.3s'
                             }}

@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
         log.error("[Exception] traceId={}, message={}", traceId, e.getMessage(), e);
 
         // Security: Mask potentially sensitive info in response
-        String userMessage = "An internal server error occurred.";
+        String userMessage = "서버 내부 오류가 발생했습니다.";
         String errorCode = "INTERNAL_SERVER_ERROR";
 
         if (e instanceof IllegalArgumentException) {
@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
             errorCode = "RUNTIME_ERROR";
         } else if (e instanceof NoResourceFoundException) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(CommonResponse.fail("NOT_FOUND", "Resource not found"));
+                    .body(CommonResponse.fail("NOT_FOUND", "리소스를 찾을 수 없습니다."));
         }
 
         // Async DB Logging
@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
         }
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(CommonResponse.fail(errorCode, userMessage + " (TraceID: " + traceId + ")"));
+                .body(CommonResponse.fail(errorCode, userMessage));
     }
 
     private void saveErrorLog(Exception e, HttpServletRequest request, String traceId, String errorCode) {

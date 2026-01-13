@@ -23,4 +23,5 @@ public class Complaint {
 
     private Long userNo;
     private Long agencyNo;
+    private String imagePath;
 }

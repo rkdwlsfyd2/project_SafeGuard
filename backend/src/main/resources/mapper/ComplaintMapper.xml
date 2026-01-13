@@ -76,9 +76,9 @@
     <!-- 민원 등록 (Entity) -->
     <insert id="insertComplaint" useGeneratedKeys="true" keyProperty="complaintNo" parameterType="com.safeguard.entity.Complaint">
         INSERT INTO complaint (
-            title, content, category, status, is_public, user_no, created_date, updated_date
+            title, content, category, status, is_public, user_no, image_path, created_date, updated_date
         ) VALUES (
-            #{title}, #{content}, #{category}, #{status}, #{isPublic}, #{userNo}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            #{title}, #{content}, #{category}, #{status}, #{isPublic}, #{userNo}, #{imagePath}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
         )
     </insert>
 

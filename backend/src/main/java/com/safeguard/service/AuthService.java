@@ -5,6 +5,7 @@ import com.safeguard.dto.SignupRequest;
 import java.util.Map;
 
 public interface AuthService {
+
     void signup(SignupRequest request);
 
     Map<String, Object> login(LoginRequest request);
@@ -15,7 +16,7 @@ public interface AuthService {
 
     void updatePassword(String userId, String phone, String newPassword);
 
-    void resetPassword(String userId, String phone);
+    boolean isIdDuplicate(String userId);
 
     Map<String, Object> getUserInfo(String userId);
 }

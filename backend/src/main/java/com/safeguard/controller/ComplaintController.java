@@ -8,6 +8,7 @@ import com.safeguard.mapper.ComplaintMapper;
 import com.safeguard.mapper.UserMapper;
 import com.safeguard.security.CustomUserDetails;
 import com.safeguard.service.ComplaintService;
+import com.safeguard.service.FileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,7 @@ public class ComplaintController {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final ComplaintService complaintService;
+    private final FileService fileService;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getComplaints(
@@ -208,5 +210,17 @@ public class ComplaintController {
         return ResponseEntity.ok(Map.of(
                 "complaintNo", complaintNo,
                 "message", "민원이 성공적으로 접수되었습니다."));
+    }
+
+    @PostMapping("/images")
+    public ResponseEntity<Map<String, String>> uploadImage(@RequestParam("image") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            String fileName = fileService.storeFile(file);
+            String imagePath = "/uploads/" + fileName;
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(Map.of("imagePath", imagePath));
+        } catch (Exception e) {
+            log.error("Image upload failed", e);
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
     }
 }
