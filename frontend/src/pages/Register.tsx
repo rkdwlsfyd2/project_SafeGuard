@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../utils/api';
 
-// Hardcoded Agency Data (Must match init.sql / database)
+// 기관 데이터
 const LOCAL_AGENCIES = [
     { id: 1, name: '서울특별시' },
     { id: 2, name: '부산광역시' },
@@ -50,7 +50,7 @@ const CENTRAL_AGENCIES = [
 function Register() {
     const navigate = useNavigate();
 
-    // User Type State: 'INDIVIDUAL' | 'AGENCY_CENTRAL' | 'AGENCY_LOCAL'
+    // 회원 유형 상태: 'INDIVIDUAL' (개인) | 'AGENCY_CENTRAL' (중앙행정) | 'AGENCY_LOCAL' (지자체)
     const [userType, setUserType] = useState('INDIVIDUAL');
 
     const [formData, setFormData] = useState({
@@ -61,17 +61,49 @@ function Register() {
         birthDate: '',
         addr: '',
         phone: '',
-        agencyNo: '' // Will be set if AGENCY
+        agencyNo: '' // 기관 회원일 경우 설정됨
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [isIdChecked, setIsIdChecked] = useState(false); // ID check status
+    const [isIdChecked, setIsIdChecked] = useState(false); // 아이디 중복 확인 상태
+
+    // Daum 우편번호 스크립트 로드
+    useEffect(() => {
+        // Daum Postcode
+        const postcodeScript = document.createElement('script');
+        postcodeScript.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+        postcodeScript.async = true;
+        document.head.appendChild(postcodeScript);
+
+        return () => {
+            if (document.head.contains(postcodeScript)) {
+                document.head.removeChild(postcodeScript);
+            }
+        };
+    }, []);
+
+    const handleSearchAddress = () => {
+        if (!window.daum || !window.daum.Postcode) {
+            alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        new window.daum.Postcode({
+            oncomplete: function (data: any) {
+                const addr = data.roadAddress || data.jibunAddress;
+                setFormData(prev => ({
+                    ...prev,
+                    addr: addr
+                }));
+            }
+        }).open();
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
 
-        // Reset ID check if userId changes
+        // 아이디 변경 시 중복 확인 상태 초기화
         if (name === 'userId') {
             setIsIdChecked(false);
         }
@@ -80,13 +112,20 @@ function Register() {
     const handleUserTypeChange = (e) => {
         const type = e.target.value;
         setUserType(type);
-        // Reset agency selection when type changes
+        // 회원 유형 변경 시 기관 선택 초기화
         setFormData(prev => ({ ...prev, agencyNo: '' }));
     };
 
     const handleIdCheck = async () => {
         if (!formData.userId) {
             alert('아이디를 입력해주세요.');
+            return;
+        }
+
+        // 아이디 유효성 검사 (영문, 숫자만 허용)
+        const idRegex = /^[a-zA-Z0-9]+$/;
+        if (!idRegex.test(formData.userId)) {
+            alert('아이디는 영문과 숫자만 사용 가능합니다.');
             return;
         }
         try {
@@ -119,7 +158,7 @@ function Register() {
             return;
         }
 
-        // password validation rules
+        // 비밀번호 유효성 검사 규칙
         const { password } = formData;
         if (password.length < 8) {
             setError('비밀번호는 8자 이상이어야 합니다.');
@@ -135,7 +174,15 @@ function Register() {
             return;
         }
 
-        // Validate Agency Selection
+        // 생년월일 유효성 검사
+        const today = new Date();
+        const selectedDate = new Date(formData.birthDate);
+        if (selectedDate > today) {
+            setError('생년월일은 미래 날짜일 수 없습니다.');
+            return;
+        }
+
+        // 기관 선택 유효성 검사
         if ((userType === 'AGENCY_CENTRAL' || userType === 'AGENCY_LOCAL') && !formData.agencyNo) {
             setError('소속 기관을 선택해주세요.');
             return;
@@ -146,15 +193,15 @@ function Register() {
         try {
             const { passwordConfirm, ...registerData } = formData;
 
-            // Clean up: If INDIVIDUAL, ensure agencyNo is null/undefined just in case
+            // 정리: 개인 회원인 경우 agencyNo가 null/undefined인지 확인
             if (userType === 'INDIVIDUAL') {
                 delete (registerData as any).agencyNo;
             } else {
-                // Ensure agencyNo is Number
+                // agencyNo를 숫자로 변환
                 (registerData as any).agencyNo = Number(registerData.agencyNo);
             }
 
-            console.log("Registering:", registerData); // Debug log
+            console.log("Registering:", registerData); // 디버그 로그
 
             await authAPI.register(registerData);
             alert('회원가입이 완료되었습니다. 로그인해주세요.');
@@ -340,7 +387,7 @@ function Register() {
                                 style={{
                                     ...inputStyle,
                                     backgroundColor: 'white',
-                                    backgroundImage: 'none', // Remove default arrow in some browsers if desired, here keeping standard
+                                    backgroundImage: 'none', // 일부 브라우저에서 기본 화살표 제거 가능 (현재는 표준 유지)
                                     cursor: 'pointer'
                                 }}
                             >
@@ -431,7 +478,7 @@ function Register() {
                             </div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            {/* Layout Spacer: Hidden label to align top of box with top of input field */}
+                            {/* 레이아웃 간격: 입력 필드 상단과 상자를 맞추기 위한 숨겨진 라벨 */}
                             <label style={{ ...labelStyle, visibility: 'hidden' }}>비밀번호 생성 규칙</label>
 
                             {/* 비밀번호 유효성 가이드 */}
@@ -486,6 +533,7 @@ function Register() {
                                 value={formData.birthDate}
                                 onChange={handleChange}
                                 required
+                                max={new Date().toISOString().split('T')[0]}
                                 style={inputStyle}
                             />
                         </div>
@@ -494,15 +542,39 @@ function Register() {
                     {/* 주소 */}
                     <div style={{ marginBottom: '20px' }}>
                         <label style={labelStyle}>주소 <span style={{ color: '#ef4444' }}>*</span></label>
-                        <input
-                            type="text"
-                            name="addr"
-                            value={formData.addr}
-                            onChange={handleChange}
-                            required
-                            placeholder="예: 서울시 강남구"
-                            style={inputStyle}
-                        />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input
+                                type="text"
+                                name="addr"
+                                value={formData.addr}
+                                onChange={handleChange}
+                                required
+                                readOnly
+                                placeholder="주소 검색 버튼을 눌러주세요"
+                                style={{
+                                    ...inputStyle,
+                                    cursor: 'pointer',
+                                    backgroundColor: '#f8fafc'
+                                }}
+                                onClick={handleSearchAddress}
+                            />
+                            <button
+                                type="button"
+                                onClick={handleSearchAddress}
+                                style={{
+                                    padding: '0 20px',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: '#3b82f6',
+                                    color: 'white',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                🔍 검색
+                            </button>
+                        </div>
                     </div>
 
                     {/* 휴대전화 */}

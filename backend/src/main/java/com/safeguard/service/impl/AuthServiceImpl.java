@@ -48,6 +48,12 @@ public class AuthServiceImpl implements AuthService {
         // 비밀번호 유효성 검사
         validatePassword(request.getPassword());
 
+        // 아이디 유효성 검사 (한글 제한)
+        validateUserId(request.getUserId());
+
+        // 생년월일 유효성 검사
+        validateBirthDate(request.getBirthDate());
+
         UserDTO user = UserDTO.builder()
                 .userId(request.getUserId())
                 .pw(passwordEncoder.encode(request.getPassword()))
@@ -193,6 +199,30 @@ public class AuthServiceImpl implements AuthService {
         // 특수문자 체크 (!@#$%^&*(),.?":{}|<>)
         if (!password.matches(".*[!@#$%^&*(),.?\":{}|<>].*")) {
             throw new RuntimeException("비밀번호는 특수문자를 최소 1개 이상 포함해야 합니다.");
+        }
+    }
+
+    /**
+     * 아이디 유효성 검사
+     * 영문자와 숫자로만 구성되어야 함
+     *
+     * @param userId 검사할 아이디
+     */
+    private void validateUserId(String userId) {
+        if (userId == null || !userId.matches("^[a-zA-Z0-9]+$")) {
+            throw new RuntimeException("아이디는 영문 및 숫자만 가능합니다.");
+        }
+    }
+
+    /**
+     * 생년월일 유효성 검사
+     * 미래 날짜일 수 없음
+     *
+     * @param birthDate 검사할 생년월일
+     */
+    private void validateBirthDate(java.time.LocalDate birthDate) {
+        if (birthDate != null && birthDate.isAfter(java.time.LocalDate.now())) {
+            throw new RuntimeException("생년월일은 미래 날짜일 수 없습니다.");
         }
     }
 }
