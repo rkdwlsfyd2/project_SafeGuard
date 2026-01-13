@@ -81,7 +81,7 @@ function Detail() {
     if (!report) return <div className="container" style={{ padding: '100px', textAlign: 'center' }}>로딩중...</div>;
 
     const statusMap = {
-        'RECEIVED': '접수 완료',
+        'UNPROCESSED': '미처리',
         'IN_PROGRESS': '처리중',
         'COMPLETED': '처리완료',
         'REJECTED': '반려',
@@ -98,12 +98,12 @@ function Detail() {
     };
 
     const steps = [
-        { key: 'RECEIVED', label: '접수 완료', icon: '📥' },
+        { key: 'UNPROCESSED', label: '미처리', icon: '📥' },
         { key: 'IN_PROGRESS', label: '처리중', icon: '🛠️' },
         { key: 'COMPLETED', label: '처리완료', icon: '✅' }
     ];
 
-    const statusOrder = ['RECEIVED', 'IN_PROGRESS', 'COMPLETED'];
+    const statusOrder = ['UNPROCESSED', 'IN_PROGRESS', 'COMPLETED'];
     const currentIndex = Math.max(statusOrder.indexOf(report.status), 0);
     const progressPercent = (currentIndex / (statusOrder.length - 1)) * 100;
 

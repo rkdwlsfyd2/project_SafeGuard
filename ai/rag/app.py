@@ -24,7 +24,9 @@ from logging_config import setup_logging
 import uvicorn
 import os
 from fastapi import Response
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter, Histogram
+import time
+from fastapi import Request
 
 
 
@@ -33,6 +35,30 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 setup_logging()
 
 app = FastAPI()
+
+# Prometheus Metrics
+REQUEST_COUNT = Counter(
+    "http_requests_total", "Total HTTP requests", ["method", "endpoint", "status"]
+)
+REQUEST_LATENCY = Histogram(
+    "http_request_duration_seconds", "HTTP request latency", ["method", "endpoint"]
+)
+
+@app.middleware("http")
+async def prometheus_middleware(request: Request, call_next):
+    method = request.method
+    endpoint = request.url.path
+    
+    start_time = time.time()
+    response = await call_next(request)
+    latency = time.time() - start_time
+    
+    status_code = response.status_code
+    
+    REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=status_code).inc()
+    REQUEST_LATENCY.labels(method=method, endpoint=endpoint).observe(latency)
+    
+    return response
 
 @app.get("/metrics")
 def metrics():

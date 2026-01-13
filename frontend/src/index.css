@@ -234,6 +234,30 @@ ul {
   padding: 20px;
 }
 
+/* Admin Theme Overrides */
+.admin-theme {
+  --primary-color: #374151; /* Dark Slate Gray */
+  --primary-light: #4b5563;
+  --primary-dark: #1f2937;
+}
+
+.admin-theme .header {
+  background-color: #f8fafc;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.admin-theme .top-bar {
+  background-color: var(--primary-dark);
+}
+
+.admin-theme .logo h1 {
+  color: var(--primary-dark) !important;
+}
+
+.admin-theme .nav__item:hover {
+  color: var(--primary-light);
+}
+
 /* Footer Styles */
 .footer {
   background-color: var(--primary-dark);

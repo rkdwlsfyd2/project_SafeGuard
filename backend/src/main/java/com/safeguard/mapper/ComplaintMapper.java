@@ -21,6 +21,8 @@ public interface ComplaintMapper {
             @Param("order") String order,
             @Param("agencyNo") Long agencyNo);
 
+    List<ComplaintDTO> findAll(Map<String, Object> params);
+
     List<Map<String, Object>> selectComplaintStats(@Param("agencyNo") Long agencyNo);
 
     List<ComplaintDTO> selectTopLikedComplaints();
@@ -29,7 +31,7 @@ public interface ComplaintMapper {
 
     List<ComplaintDTO> selectComplaintListByUserNo(@Param("userNo") Long userNo);
 
-    Optional<ComplaintDTO> selectComplaintByNo(@Param("complaintNo") Long complaintNo);
+    Optional<ComplaintDTO> findByComplaintNo(@Param("complaintNo") Long complaintNo);
 
     void insertComplaintDto(ComplaintDTO complaint);
 

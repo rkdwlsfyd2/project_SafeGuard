@@ -15,13 +15,14 @@ public class MapSearchRequest {
     private Double neLat;
     private Double neLng;
 
-    private Integer zoom;      // kakao level
+    private Integer zoom; // kakao level
     private String category;
-    private String status;     // complaint_status enum string
+    private String status; // complaint_status enum string
     private String adminCode;
 
     private OffsetDateTime from;
     private OffsetDateTime to;
 
     private Integer limit;
+    private Long agencyNo;
 }

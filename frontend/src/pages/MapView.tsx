@@ -29,24 +29,24 @@ function MapView() {
       '환경': { bg: '#dcfce7', color: '#16a34a', icon: '🌿' },
       '안전': { bg: '#fee2e2', color: '#dc2626', icon: '⚠️' },
       '시설': { bg: '#fef3c7', color: '#d97706', icon: '🏗️' }
-//       교통
-//       행정·안전
-//       도로
-//       산업·통상
-//       주택·건축
-//       교육
-//       경찰·검찰
-//       환경
-//       보건
-//       관광
-//       기타
+      //       교통
+      //       행정·안전
+      //       도로
+      //       산업·통상
+      //       주택·건축
+      //       교육
+      //       경찰·검찰
+      //       환경
+      //       보건
+      //       관광
+      //       기타
     };
     return styles[category] || { bg: '#f1f5f9', color: '#64748b', icon: '📋' };
   };
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      'RECEIVED': { text: '접수', bg: '#dbeafe', color: '#2563eb' },
+      'UNPROCESSED': { text: '미처리', bg: '#fee2e2', color: '#dc2626' },
       'IN_PROGRESS': { text: '처리중', bg: '#fef3c7', color: '#d97706' },
       'COMPLETED': { text: '완료', bg: '#dcfce7', color: '#16a34a' }
     };
@@ -116,7 +116,7 @@ function MapView() {
     const map = mapRef.current;
     console.log("[renderMarkers] called", { locationsLen: locations?.length });
     console.log("[renderMarkers] mapRef", !!map, "kakao", !!window.kakao?.maps);
-//     if (!map || !window.kakao?.maps) return;
+    //     if (!map || !window.kakao?.maps) return;
 
     // [수정] mapReady + kakao + map 다 준비된 후에만 진행
     if (!mapReady || !map || !window.kakao?.maps) return;
@@ -199,8 +199,8 @@ function MapView() {
         const map = new window.kakao.maps.Map(container, options);
         mapRef.current = map;
 
-      // [추가] map 생성 완료 플래그
-      setMapReady(true);
+        // [추가] map 생성 완료 플래그
+        setMapReady(true);
 
         // idle 이벤트: 이동/줌 끝날 때마다 bounds 재조회
         // (너희 GIS 요구사항에 맞는 정석 패턴)
@@ -216,7 +216,7 @@ function MapView() {
     // SDK가 이미 로드된 경우
     if (window.kakao && window.kakao.maps) {
       initMap();
-      return () => {};
+      return () => { };
     }
 
     // SDK 로드
@@ -234,7 +234,7 @@ function MapView() {
         if (idleListenerRef.current && mapRef.current) {
           window.kakao.maps.event.removeListener(mapRef.current, 'idle', idleListenerRef.current);
         }
-      } catch (_) {}
+      } catch (_) { }
 
       // script 제거
       if (scriptRef.current) {

@@ -42,7 +42,7 @@
             #{birthDate},
             #{addr},
             #{phone},
-            #{role}::user_role,
+            #{role},
             #{agencyNo},
             NOW()
         )
@@ -63,7 +63,7 @@
     </select>
 
     <!-- 단건 조회 (ID) -->
-    <select id="selectUserByUserId" resultMap="UserResultMap" parameterType="string">
+    <select id="findByUserId" resultMap="UserResultMap" parameterType="string">
         SELECT *
         FROM app_user
         WHERE user_id = #{userId}
@@ -102,7 +102,7 @@
             birth_date = #{birthDate},
             addr = #{addr},
             phone = #{phone},
-            role = #{role}::user_role,
+            role = #{role},
             agency_no = #{agencyNo}
         WHERE user_no = #{userNo}
     </update>

@@ -1,7 +1,7 @@
 package com.safeguard.enums;
 
 public enum ComplaintStatus {
-    RECEIVED,
+    UNPROCESSED,
     IN_PROGRESS,
     COMPLETED,
     REJECTED,

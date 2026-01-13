@@ -38,6 +38,9 @@
             <if test="req.to != null">
                 AND c.created_date <![CDATA[ <= ]]> #{req.to}
             </if>
+            <if test="req.agencyNo != null">
+                AND c.agency_no = #{req.agencyNo}
+            </if>
         </where>
     </sql>
 

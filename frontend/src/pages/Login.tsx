@@ -17,7 +17,12 @@ function Login() {
         try {
             const result = await authAPI.login({ userId, password });
             alert(`환영합니다, ${result.user.name}님!`);
-            window.location.href = '/';
+
+            if (result.user.role === 'AGENCY') {
+                window.location.href = '/admin/dashboard';
+            } else {
+                window.location.href = '/';
+            }
         } catch (err) {
             setError(err.message);
         } finally {

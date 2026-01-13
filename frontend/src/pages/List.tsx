@@ -30,7 +30,8 @@ function List() {
     const fetchComplaints = async () => {
         setLoading(true);
         try {
-            // Agency 관리자인 경우 agencyNo 파라미터 추가
+            // Detect admin mode from URL
+            const isAdminPath = window.location.pathname.startsWith('/admin');
             const role = localStorage.getItem('role');
             const agencyNo = localStorage.getItem('agencyNo');
 
@@ -42,18 +43,19 @@ function List() {
                 status: statusParams,
                 region: regionParams,
                 sort,
-                order
+                order,
+                adminMode: isAdminPath // Send adminMode flag to backend
             };
 
-            // AGENCY 역할이고 agencyNo가 있으면 해당 기관 민원만 필터링
-            if (role === 'AGENCY' && agencyNo) {
+            // If we are in admin view and user is AGENCY, provide agencyNo for security validation (though backend will enforce)
+            if (isAdminPath && role === 'AGENCY' && agencyNo) {
                 params.agencyNo = agencyNo;
             }
 
             const data = await complaintsAPI.getList(params);
             setComplaints(data.complaints);
             setTotalPages(data.pagination.totalPages);
-        } catch (err) {
+        } catch (err: any) {
             setError(err.message);
         } finally {
             setLoading(false);
@@ -97,10 +99,10 @@ function List() {
 
     const getStatusBadge = (status) => {
         const statusMap = {
-            'RECEIVED': { text: '접수', bg: '#dbeafe', color: '#2563eb' },
+            'UNPROCESSED': { text: '미처리', bg: '#fee2e2', color: '#dc2626' }, // 빨간색
             'IN_PROGRESS': { text: '처리중', bg: '#fef3c7', color: '#d97706' }, // 노란색
             'COMPLETED': { text: '완료', bg: '#dcfce7', color: '#16a34a' },
-            'REJECTED': { text: '반려', bg: '#fee2e2', color: '#dc2626' },
+            'REJECTED': { text: '반려', bg: '#f1f5f9', color: '#64748b' },
             'CANCELLED': { text: '취소', bg: '#f1f5f9', color: '#64748b' }
         };
         const s = statusMap[status] || { text: status, bg: '#f1f5f9', color: '#64748b' };
@@ -216,8 +218,8 @@ function List() {
                                 cursor: 'pointer'
                             }}
                         >
-                            {['전체', '접수', '처리중', '완료'].map(s => (
-                                <option key={s} value={s === '전체' ? '전체' : (s === '접수' ? 'RECEIVED' : (s === '처리중' ? 'IN_PROGRESS' : 'COMPLETED'))}>
+                            {['전체', '미처리', '처리중', '완료'].map(s => (
+                                <option key={s} value={s === '전체' ? '전체' : (s === '미처리' ? 'UNPROCESSED' : (s === '처리중' ? 'IN_PROGRESS' : 'COMPLETED'))}>
                                     {s === '전체' ? '접수상태' : s}
                                 </option>
                             ))}

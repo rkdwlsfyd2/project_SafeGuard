@@ -79,8 +79,8 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     public Map<String, Object> login(LoginRequest request) {
-        UserDTO user = userMapper.selectUserByUserId(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
+        UserDTO user = userMapper.findByUserId(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPw())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
@@ -171,8 +171,8 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     public Map<String, Object> getUserInfo(String userId) {
-        UserDTO user = userMapper.selectUserByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        UserDTO user = userMapper.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         return Map.of(
                 "userId", user.getUserId(),

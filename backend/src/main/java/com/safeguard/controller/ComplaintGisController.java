@@ -13,6 +13,19 @@ import java.util.List;
 public class ComplaintGisController {
 
     private final ComplaintGisService complaintGisService;
+    private final com.safeguard.mapper.UserMapper userMapper;
+
+    private void enforceAgency(MapSearchRequest req) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
+            String userId = auth.getName();
+            com.safeguard.dto.UserDTO currentUser = userMapper.findByUserId(userId).orElse(null);
+            if (currentUser != null && currentUser.getRole() == com.safeguard.enums.UserRole.AGENCY) {
+                req.setAgencyNo(currentUser.getAgencyNo());
+            }
+        }
+    }
 
     /**
      * 지도에 그릴 아이템(줌 기준으로 마커/클러스터 자동 분기)
@@ -22,6 +35,7 @@ public class ComplaintGisController {
      */
     @GetMapping("/map-items")
     public List<MapItemDto> mapItems(@ModelAttribute MapSearchRequest req) {
+        enforceAgency(req);
         return complaintGisService.getMapItems(req);
     }
 
@@ -35,8 +49,8 @@ public class ComplaintGisController {
     public PageResponse<ComplaintListItemDto> list(
             @ModelAttribute MapSearchRequest req,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
-    ) {
+            @RequestParam(defaultValue = "20") int size) {
+        enforceAgency(req);
         return complaintGisService.listComplaints(req, page, size);
     }
 }

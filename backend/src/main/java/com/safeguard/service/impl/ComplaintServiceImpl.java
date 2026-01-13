@@ -35,7 +35,7 @@ public class ComplaintServiceImpl implements ComplaintService {
         complaint.setTitle((String) data.get("title"));
         complaint.setContent((String) data.get("content"));
         complaint.setIsPublic((Boolean) data.get("isPublic"));
-        complaint.setStatus(ComplaintStatus.RECEIVED);
+        complaint.setStatus(ComplaintStatus.UNPROCESSED);
         complaint.setUserNo(userNo);
         complaint.setImagePath((String) data.get("imagePath"));
 

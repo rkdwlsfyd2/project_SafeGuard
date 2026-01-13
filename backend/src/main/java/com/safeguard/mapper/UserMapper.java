@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface UserMapper {
     void insertUser(UserDTO user);
 
-    Optional<UserDTO> selectUserByUserId(@Param("userId") String userId);
+    Optional<UserDTO> findByUserId(@Param("userId") String userId);
 
     List<UserDTO> selectUserByNameAndPhone(@Param("name") String name, @Param("phone") String phone); // For find ID
 

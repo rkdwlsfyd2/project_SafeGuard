@@ -19,12 +19,15 @@ import './index.css';
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [role, setRole] = useState(localStorage.getItem('role') || 'USER');
+  const [isAdminView, setIsAdminView] = useState(localStorage.getItem('role') === 'AGENCY');
 
   // localStorage 변경을 다른 탭/창에서도 반영 (선택사항이지만 유용)
   useEffect(() => {
     const onStorage = () => {
       setToken(localStorage.getItem('token'));
       setRole(localStorage.getItem('role') || 'USER');
+      // If role changes, reset admin view state
+      setIsAdminView(localStorage.getItem('role') === 'AGENCY');
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
@@ -41,19 +44,35 @@ function App() {
 
     setToken(null);
     setRole('USER');
+    setIsAdminView(false);
 
     window.location.href = '/login';
   };
 
+  const toggleAdminView = () => {
+    setIsAdminView(!isAdminView);
+  };
+
   return (
     <Router>
-      <div className="app">
+      <div className={`app ${isAdminView ? 'admin-theme' : ''}`}>
         {/* Top Bar */}
         <div className="top-bar">
           <div className="container" style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <div className="top-bar__links">
               {token ? (
                 <>
+                  {role === 'AGENCY' && (
+                    <>
+                      <button
+                        onClick={toggleAdminView}
+                        style={{ background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer', padding: '0 10px', font: 'inherit', fontWeight: 'bold' }}
+                      >
+                        {isAdminView ? '👤 일반유저 모드' : '🛠️ 관리자 모드'}
+                      </button>
+                      <span>|</span>
+                    </>
+                  )}
                   <Link to="/mypage">마이페이지</Link>
                   <span>|</span>
                   <button
@@ -78,13 +97,13 @@ function App() {
         <header className="header">
           <div className="container header__inner">
             <div className="logo">
-              <Link to="/">
+              <Link to={isAdminView ? "/admin/dashboard" : "/"}>
                 <h1 style={{ color: 'var(--primary-color)', fontSize: '1.8rem', fontWeight: '800' }}>모두의 민원</h1>
               </Link>
             </div>
             <nav className="nav">
               <ul className="nav__list">
-                {role === 'AGENCY' ? (
+                {isAdminView ? (
                   <>
                     <li className="nav__item"><Link to="/admin/list">민원 목록(관리자)</Link></li>
                     <li className="nav__item"><Link to="/admin/map">신고현황 지도(관리자)</Link></li>
