@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Filter, Download, Calendar, ArrowUpRight, ArrowDownRight, Search
+    Download
 } from 'lucide-react';
 import { complaintsAPI } from '../utils/api';
-import ChartOne from '../components/Charts/ChartOne';
-import ChartTwo from '../components/Charts/ChartTwo';
+import ComplaintTrendChart from '../components/Charts/ComplaintTrendChart';
+import ComplaintCategoryChart from '../components/Charts/ComplaintCategoryChart';
+
+
+
 
 // --- Mock Data ---
 const MOCK_KEYWORDS = [
@@ -48,13 +51,15 @@ const Dashboard = () => {
         fetchStats();
     }, []);
 
+    const [selectedCategory, setSelectedCategory] = useState('교통');
+
     const received = stats.total - (stats.processing + stats.completed);
 
     return (
         <div className="dash-page">
             <style>{`
             .dash-page { min-height: 100vh; background: #f3f4f6; overflow: auto; }
-            .dash-container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 32px; }
+            .dash-container { width: 100%; max-width: 1600px; margin: 0 auto; padding: 32px; }
             .dash-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; }
             .dash-title { font-size: 24px; font-weight: 800; color:#1f2937; }
             .dash-actions { display:flex; gap: 8px; }
@@ -66,8 +71,8 @@ const Dashboard = () => {
             .dash-kpi-value { font-size: 32px; font-weight: 900; }
 
             .dash-main { display:grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; margin-bottom: 32px; }
-            .dash-left { grid-column: span 4 / span 4; display:flex; flex-direction:column; gap: 24px; }
-            .dash-right { grid-column: span 8 / span 8; }
+            .dash-left { grid-column: span 5 / span 5; display:flex; flex-direction:column; gap: 24px; }
+            .dash-right { grid-column: span 7 / span 7; }
 
             .dash-card { background:#fff; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
             .dash-card-pad-4 { padding: 16px; }
@@ -76,6 +81,7 @@ const Dashboard = () => {
 
             .dash-bottom { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 
+            @media (max-width: 1024px) {
               .dash-right { grid-column: span 12 / span 12; }
               .dash-bottom { grid-template-columns: 1fr; }
             }
@@ -89,105 +95,155 @@ const Dashboard = () => {
                 {/* 상단 타이틀 및 필터 */}
                 <div className="dash-header">
                     <h1 className="dash-title">관리자 대시보드</h1>
-                    <div className="dash-actions">
-                        <button className="dash-btn">일간/주간/월간</button>
-                        <button className="dash-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <Download size={14} /> CSV 저장
-                        </button>
-                    </div>
                 </div>
 
-                {/* 1. KPI Cards Section (Original) */}
-                <div className="dash-kpi-grid">
-                    <KPICard title="전 체" value={stats.total} borderColor="#9ca3af" bg="#f9fafb" />
-                    <KPICard title="접 수" value={received} borderColor="#3b82f6" bg="rgba(59,130,246,0.08)" text="#1e3a8a" />
-                    <KPICard title="처리중" value={stats.processing} borderColor="#ef4444" bg="rgba(239,68,68,0.08)" text="#7f1d1d" />
-                    <KPICard title="처리완료" value={stats.completed} borderColor="#22c55e" bg="rgba(34,197,94,0.08)" text="#14532d" />
-                </div>
+                {/* 나의 민원 현황 (KPI Cards) */}
+                <section style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '12px',
+                    padding: '32px',
+                    marginBottom: '40px',
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                }}>
+                    <div style={{
+                        position: 'absolute', top: 0, left: 0, right: 0, height: '6px',
+                        background: 'linear-gradient(90deg, #A0C4FF 0%, #B2F2BB 50%, #FFB1B1 100%)'
+                    }} />
 
-                {/* 2. Main Content Grid */}
-                <div className="dash-main">
-                    {/* Left: Donut Chart -> Replaced with ChartTwo */}
-                    <div className="dash-left">
-                        <ChartTwo />
+                    <h3 style={{ marginBottom: '28px', color: '#1e293b', fontWeight: '900', fontSize: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '4px', height: '20px', backgroundColor: '#3B82F6', borderRadius: '2px' }}></span>
+                        민원 처리 현황
+                    </h3>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+                        {[
+                            { label: '전 체', count: stats.total, color: '#F1F5F9', textColor: '#334155' },
+                            { label: '접 수', count: received, color: '#EFF6FF', textColor: '#2563EB' },
+                            { label: '처리중', count: stats.processing, color: '#FEF2F2', textColor: '#EF4444' },
+                            { label: '처리완료', count: stats.completed, color: '#F0FDF4', textColor: '#16A34A' }
+                        ].map((stat, idx) => (
+                            <div key={idx} style={{
+                                backgroundColor: stat.color,
+                                padding: '30px',
+                                borderRadius: '12px',
+                                textAlign: 'center',
+                                border: '1px solid #E2E8F0',
+                                transition: 'all 0.2s ease'
+                            }}>
+                                <div style={{ fontSize: '1.2rem', marginBottom: '10px', fontWeight: '600', color: '#64748B' }}>{stat.label}</div>
+                                <div style={{ fontSize: '2.5rem', fontWeight: '800', color: stat.textColor }}>{stat.count}</div>
+                            </div>
+                        ))}
                     </div>
+                </section>
 
-                    {/* Right: Trend Chart -> Replaced with ChartOne */}
-                    <div className="dash-right">
-                        <ChartOne />
+                {/* 2. Main Content Grid (Boxed Layout) */}
+                <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-200 shadow-inner mb-8">
+                    <div className="dash-main !mb-0">
+                        {/* Left: Donut Chart -> Replaced with ChartTwo */}
+                        <div className="dash-left">
+                            <ComplaintCategoryChart selectedCategory={selectedCategory} onSelect={setSelectedCategory} />
+                        </div>
+
+                        {/* Right: Trend Chart -> Replaced with ChartOne */}
+                        <div className="dash-right">
+                            <ComplaintTrendChart selectedCategory={selectedCategory} />
+                        </div>
                     </div>
                 </div>
 
                 {/* 3. Bottom Grid: Keywords & Word Cloud */}
-                <div className="dash-bottom">
-                    {/* Keyword List */}
-                    <div className="dash-card dash-card-pad-6" style={{ height: 400, display: 'flex', flexDirection: 'column' }}>
-                        <div className="flex justify-between items-center mb-4 border-b pb-2 flex-shrink-0">
-                            <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                                <span>🔥 급증 키워드</span>
-                                <span className="text-xs text-gray-400 font-normal">2026.01.12 12:00</span>
-                            </h3>
-                            <span className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded border border-blue-100 font-medium">실시간 분석</span>
+                <div className="dash-bottom" style={{ marginBottom: '40px' }}>
+                    {/* Surging Keyword - Integrated Design */}
+                    <div className="dash-card shadow-2xl" style={{ height: 680, display: 'flex', flexDirection: 'column', border: '1px solid #E2E8F0', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'white' }}>
+                        {/* Integrated Header Block */}
+                        <div style={{ backgroundColor: 'white', borderBottom: 'none', flexShrink: 0 }}>
+                            <div className="flex justify-between items-center" style={{ padding: '24px 32px 16px 32px' }}>
+                                <h3 className="font-bold text-gray-800 flex items-center gap-3">
+                                    <span style={{ fontSize: '20px', fontWeight: '950', letterSpacing: '-0.03em' }}>급증 키워드 분석</span>
+                                    <span style={{ fontSize: '12px', color: '#94A3B8', fontWeight: '600', marginLeft: '4px' }}>2026.01.12 12:00</span>
+                                </h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
+
+                                </div>
+                            </div>
+
+                            {/* Table Header integrated into Header Block */}
+                            <div style={{ padding: '0 32px 12px 32px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: '12px', padding: '12px 0' }}>
+                                    <div style={{ width: '70px', textAlign: 'center', fontSize: '11px', fontWeight: '900', color: '#64748B', textTransform: 'uppercase' }}>Rank</div>
+                                    <div style={{ flex: 1, textAlign: 'left', fontSize: '11px', fontWeight: '900', color: '#64748B', textTransform: 'uppercase', paddingLeft: '8px' }}>주요 키워드</div>
+                                    <div style={{ width: '100px', textAlign: 'right', fontSize: '11px', fontWeight: '900', color: '#64748B', textTransform: 'uppercase' }}>신청량</div>
+                                    <div style={{ width: '90px', textAlign: 'center', fontSize: '11px', fontWeight: '900', color: '#64748B', textTransform: 'uppercase' }}>변동 추이</div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
-                            <ul className="space-y-3">
-                                {MOCK_KEYWORDS.map((item, index) => (
-                                    <li key={item.id} className="group flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-                                        {/* Rank */}
-                                        <div className={`
-                                            flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm
-                                            ${item.rank <= 3 ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500'}
-                                        `}>
-                                            {item.rank}
-                                        </div>
 
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="font-medium text-gray-700 truncate text-sm">{item.text}</span>
-                                                <span className="text-xs text-gray-400">{item.count}건</span>
-                                            </div>
-                                            {/* Progress Bar background */}
-                                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                {/* Progress Bar fill */}
-                                                <div
-                                                    className={`h-full rounded-full ${item.rank <= 3 ? 'bg-blue-400' : 'bg-slate-300'}`}
-                                                    style={{ width: `${(item.count / 1450) * 100}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-
-                                        {/* Change Indicator */}
-                                        <div className="flex-shrink-0 w-12 text-right">
-                                            <div className={`text-xs font-semibold flex items-center justify-end gap-0.5
-                                                ${item.changeType === 'up' ? 'text-red-500' : item.changeType === 'down' ? 'text-blue-500' : 'text-gray-400'}
-                                            `}>
-                                                {item.changeType === 'up' && '▲'}
-                                                {item.changeType === 'down' && '▼'}
-                                                {item.changeType === 'same' && '-'}
-                                                <span>{item.change !== 0 ? Math.abs(item.change) : ''}</span>
-                                            </div>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                        <div className="overflow-y-auto custom-scrollbar flex-1" style={{ padding: '0 32px 24px 32px' }}>
+                            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px' }}>
+                                <tbody>
+                                    {MOCK_KEYWORDS.map((item, index) => (
+                                        <tr key={item.id} className="transition-all hover:bg-slate-50 cursor-default group">
+                                            <td style={{ width: '60px', padding: '10px 0', textAlign: 'center' }}>
+                                                <div style={{
+                                                    margin: '0 auto', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '14px', fontWeight: '950',
+                                                    backgroundColor: item.rank <= 3 ? '#3B82F6' : '#F1F5F9',
+                                                    color: item.rank <= 3 ? 'white' : '#64748B',
+                                                    boxShadow: item.rank <= 3 ? '0 4px 8px rgba(59, 130, 246, 0.2)' : 'none'
+                                                }}>
+                                                    {item.rank}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '10px 8px', fontSize: '15px', fontWeight: '850', color: '#1E293B' }}>
+                                                <span className="group-hover:text-blue-600 transition-colors">{item.text}</span>
+                                            </td>
+                                            <td style={{ width: '90px', padding: '10px 0', textAlign: 'right', fontSize: '15px', fontWeight: '900', color: '#334155' }}>
+                                                {item.count.toLocaleString()}<span style={{ fontSize: '11px', color: '#94A3B8', marginLeft: '3px', fontWeight: '600' }}>건</span>
+                                            </td>
+                                            <td style={{ width: '85px', padding: '10px 0', textAlign: 'center' }}>
+                                                <div style={{
+                                                    fontSize: '12px', fontWeight: '950', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '3px',
+                                                    padding: '4px 10px', borderRadius: '6px',
+                                                    backgroundColor: item.changeType === 'up' ? '#FEF2F2' : item.changeType === 'down' ? '#EFF6FF' : 'rgba(241, 245, 249, 0.5)',
+                                                    color: item.changeType === 'up' ? '#EF4444' : item.changeType === 'down' ? '#3B82F6' : '#94A3B8',
+                                                    minWidth: '55px'
+                                                }}>
+                                                    {item.changeType === 'up' && '▲'}
+                                                    {item.changeType === 'down' && '▼'}
+                                                    {item.changeType === 'same' && '-'}
+                                                    {item.change !== 0 && Math.abs(item.change)}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    {/* Word Cloud */}
-                    <div className="dash-card dash-card-pad-6" style={{ height: 400 }}>
-                        <div className="flex justify-between items-center mb-4 border-b pb-2">
-                            <h3 className="font-bold text-gray-800">키워드 클라우드 <span className="text-xs text-gray-400 font-normal ml-2">2026.01.12 12:00</span></h3>
+                    {/* Word Cloud - Matching Design */}
+                    <div className="dash-card shadow-2xl" style={{ height: 680, border: '1px solid #E2E8F0', borderRadius: '12px', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'white' }}>
+                        <div style={{ backgroundColor: 'white', borderBottom: 'none', padding: '24px 32px', flexShrink: 0 }}>
+                            <h3 className="font-bold text-gray-800 flex items-center gap-3">
+                                <span style={{ fontSize: '20px', fontWeight: '950', letterSpacing: '-0.03em' }}>실시간 키워드 클라우드</span>
+                                <span style={{ fontSize: '12px', color: '#94A3B8', fontWeight: '600', marginLeft: '4px' }}>2026.01.12 12:00</span>
+                            </h3>
                         </div>
-                        <div className="h-[300px] flex flex-wrap content-center justify-center gap-3 overflow-hidden relative">
+                        <div className="flex-1 flex flex-wrap content-center justify-center gap-6 overflow-hidden relative" style={{ padding: '60px' }}>
+                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '90%', height: '90%', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, transparent 75%)', pointerEvents: 'none' }}></div>
                             {WORD_CLOUD_TAGS.map((tag, i) => (
                                 <span
                                     key={i}
-                                    className="inline-block transition-transform hover:scale-110 cursor-default font-bold"
+                                    className="inline-block transition-all hover:scale-125 hover:rotate-3 cursor-default font-black drop-shadow-md"
                                     style={{
-                                        fontSize: `${Math.max(0.8, tag.size / 16)}rem`,
+                                        fontSize: `${Math.max(1.0, tag.size / 13)}rem`,
                                         color: tag.color,
-                                        opacity: 0.9
+                                        opacity: 0.95,
+                                        filter: 'saturate(1.3)'
                                     }}
                                 >
                                     {tag.text}
@@ -197,18 +253,8 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
-
-const KPICard = ({ title, value, borderColor = '#9ca3af', bg = '#ffffff', text = '#111827' }) => (
-    <div
-        className="dash-kpi-card"
-        style={{ borderTopColor: borderColor, background: bg }}
-    >
-        <div className="dash-kpi-title">{title}</div>
-        <div className="dash-kpi-value" style={{ color: text }}>{value}</div>
-    </div>
-);
 
 export default Dashboard;

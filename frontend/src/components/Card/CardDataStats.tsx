@@ -1,6 +1,8 @@
 import React from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 
+// “민원 건수, 처리율, 증가/감소율” 같은 핵심 지표를 카드 형태로 보여주는 UI 컴포넌트입니다.
+
 const CardDataStats = ({ title, total, rate, levelUp, children }) => {
     return (
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">

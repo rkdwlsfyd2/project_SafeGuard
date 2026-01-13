@@ -316,10 +316,10 @@ def classify_complaint(user_query: str) -> dict:
     logger.info("-" * 40)
 
     return {
-        "agency_code": agency_code,
-        "agency_name": best_agency,
-        "category": category,
-        "confidence": confidence,
-        "reasoning": reasoning,
-        "sources": source_details
+        "agency_code": agency_code, # 숫자 담당 기관을 식별하는 고유 번호 0 (경찰청), 1 (국토교통부) 
+        "agency_name": best_agency, # 담당 기관의 실제 이름 "경찰청", "국토교통부", "고용노동부"
+        "category": category, #문자열 (예 유형 교통/환경/경찰검찰)
+        "confidence": confidence, # 분석결과 (유사도)
+        "reasoning": reasoning, # 문자열 판단근거
+        "sources": source_details # 문자열 관련법령 ["도로교통법.pdf (COSINE: 0.85)", "주차장법.txt (BM25: 0.7)"]
     }
