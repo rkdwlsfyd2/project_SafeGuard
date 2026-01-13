@@ -443,7 +443,9 @@ function ApplyVoice() {
 
         try {
             const complaintData = {
-                category: '음성',
+                category: ragResult?.category || '음성',
+                agencyName: ragResult?.agency_name || null,
+                agencyCode: ragResult?.agency_code || null,
                 title: formData.title,
                 content: formData.content,
                 isPublic: formData.isPublic,

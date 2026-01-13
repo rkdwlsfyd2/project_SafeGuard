@@ -210,6 +210,8 @@ public class ComplaintController {
             @RequestPart(value = "file", required = false) MultipartFile file,
             @AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
 
+        log.info("Received Complaint Creation Request. JSON: {}", complaintJson);
+
         Long userNo = (userDetails != null) ? userDetails.getUserNo() : 1L;
 
         @SuppressWarnings("unchecked")

@@ -187,13 +187,14 @@ function ApplyImage() {
             }
 
             const complaintData = {
-                category: '이미지',
+                category: aiResult?.type || '이미지',
                 title: formData.title,
                 content: formData.content,
                 isPublic: formData.isPublic,
                 location: formData.location,
                 imagePath: imagePath, // 저장된 경로 전달
-                agencyCode: agencyCode
+                agencyCode: agencyCode,
+                agencyName: aiResult?.agency || null
             };
 
             const submitData = new FormData();

@@ -33,7 +33,7 @@
     </select>
 
     <select id="selectAgencyByName" resultMap="AgencyResultMap">
-        SELECT * FROM agency WHERE agency_name = #{agencyName} LIMIT 1
+        SELECT * FROM agency WHERE agency_name LIKE CONCAT(#{agencyName}, '%') LIMIT 1
     </select>
 
 </mapper>

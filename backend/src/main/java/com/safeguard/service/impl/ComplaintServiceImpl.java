@@ -16,6 +16,11 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Service
@@ -32,7 +37,8 @@ public class ComplaintServiceImpl implements ComplaintService {
     @Transactional
     public Long createComplaint(Map<String, Object> data, org.springframework.web.multipart.MultipartFile file,
             Long userNo) {
-        log.info("Creating complaint for user: {}", userNo);
+        logToFile("DEBUG: [ComplaintService] Start creating complaint for user: " + userNo);
+        logToFile("DEBUG: [ComplaintService] Incoming Data Map: " + data);
 
         String imagePath = (String) data.get("imagePath");
         if (file != null && !file.isEmpty()) {
@@ -41,8 +47,6 @@ public class ComplaintServiceImpl implements ComplaintService {
                 imagePath = "/uploads/" + fileName;
             } catch (Exception e) {
                 log.error("Failed to upload file during complaint creation", e);
-                // 파일 업로드 실패해도 민원은 접수? 아니면 에러?
-                // 여기서는 로그만 남기고 진행하거나 throw new RuntimeException("Image upload failed");
             }
         }
 
@@ -60,78 +64,115 @@ public class ComplaintServiceImpl implements ComplaintService {
         @SuppressWarnings("unchecked")
         Map<String, Object> location = (Map<String, Object>) data.get("location");
         if (location != null) {
-            if (location.containsKey("address")) {
-                complaint.setAddress((String) location.get("address"));
-            }
+            String addr = (String) location.get("address");
+            complaint.setAddress(addr);
+            logToFile("DEBUG: [ComplaintService] Address set: " + addr);
+
             if (location.containsKey("lat") && location.containsKey("lng")) {
                 complaint.setLatitude(Double.parseDouble(location.get("lat").toString()));
                 complaint.setLongitude(Double.parseDouble(location.get("lng").toString()));
             }
         }
 
-        // 기관 정보 설정
-        if (data.containsKey("agencyCode")) {
-            Object agencyCodeObj = data.get("agencyCode");
-            if (agencyCodeObj != null) {
-                Long parsedAgencyNo = null;
-                if (agencyCodeObj instanceof Integer) {
-                    parsedAgencyNo = ((Integer) agencyCodeObj).longValue();
-                } else if (agencyCodeObj instanceof Long) {
-                    parsedAgencyNo = (Long) agencyCodeObj;
-                } else if (agencyCodeObj instanceof String) {
-                    try {
-                        parsedAgencyNo = Long.parseLong((String) agencyCodeObj);
-                    } catch (NumberFormatException e) {
-                        log.warn("Invalid agencyCode format: {}", agencyCodeObj);
-                    }
-                }
+        // 기관 정보 설정 (AI 결과)
+        // agencyCode(ApplyImage) 또는 agency_code(ApplyText)
+        Long aiAgencyNo = null;
+        Object codeObj = data.getOrDefault("agencyCode", data.get("agency_code"));
 
-                if (parsedAgencyNo != null && parsedAgencyNo > 0) {
-                    complaint.setAgencyNo(parsedAgencyNo);
+        if (codeObj != null) {
+            try {
+                long val = Long.parseLong(codeObj.toString());
+                if (val > 0)
+                    aiAgencyNo = val;
+            } catch (Exception e) {
+                logToFile("DEBUG: [ComplaintService] Failed to parse agency code: " + codeObj);
+            }
+        }
+
+        // 코드가 없으면 이름으로 백엔드에서 다시 찾아보기 (agencyName, agency_name, agency)
+        if (aiAgencyNo == null) {
+            Object nameObj = data.getOrDefault("agencyName", data.getOrDefault("agency_name", data.get("agency")));
+            if (nameObj != null && !nameObj.toString().isEmpty()) {
+                String searchName = nameObj.toString();
+                logToFile("DEBUG: [ComplaintService] Finding AI Agency by Name fallback: " + searchName);
+                Agency match = agencyMapper.selectAgencyByName(searchName);
+                if (match != null) {
+                    aiAgencyNo = match.getAgencyNo();
+                    logToFile("DEBUG: [ComplaintService] AI Agency Match Found: " + match.getAgencyName()
+                            + " (ID: " + aiAgencyNo + ")");
                 }
             }
         }
 
+        if (aiAgencyNo != null) {
+            complaint.setAgencyNo(aiAgencyNo);
+            logToFile("DEBUG: [ComplaintService] Final AI Agency No: " + aiAgencyNo);
+        }
+
         complaintMapper.insertComplaint(complaint);
         Long complaintNo = complaint.getComplaintNo();
+        logToFile("DEBUG: [ComplaintService] Complaint inserted with No: " + complaintNo);
 
         // 2. Spatial Feature 저장
-        if (location != null) {
-            SpatialFeature sf = new SpatialFeature();
-            sf.setComplaintNo(complaintNo);
-            sf.setFeatureType("POINT");
-            sf.setAddrText((String) location.get("address"));
-
-            double lat = Double.parseDouble(location.get("lat").toString());
-            double lng = Double.parseDouble(location.get("lng").toString());
-            sf.setGeom(geometryFactory.createPoint(new Coordinate(lng, lat)));
-
-            complaintMapper.insertSpatialFeature(sf);
+        if (location != null && location.containsKey("lat") && location.containsKey("lng")) {
+            try {
+                SpatialFeature sf = new SpatialFeature();
+                sf.setComplaintNo(complaintNo);
+                sf.setFeatureType("POINT");
+                sf.setAddrText((String) location.get("address"));
+                double lat = Double.parseDouble(location.get("lat").toString());
+                double lng = Double.parseDouble(location.get("lng").toString());
+                sf.setGeom(geometryFactory.createPoint(new Coordinate(lng, lat)));
+                complaintMapper.insertSpatialFeature(sf);
+            } catch (Exception e) {
+                logToFile("DEBUG: [ComplaintService] Spatial feature insert failed: " + e.getMessage());
+            }
         }
 
         // 3. 기관 매핑 (Multi-Agency Assignment)
         // A. 소관 부처 (AI 결과)
-        if (complaint.getAgencyNo() != null) {
-            complaintMapper.insertComplaintAgency(complaintNo, complaint.getAgencyNo());
+        if (aiAgencyNo != null) {
+            complaintMapper.insertComplaintAgency(complaintNo, aiAgencyNo);
+            logToFile("DEBUG: [ComplaintService] Inserted AI Agency Relationship: " + aiAgencyNo);
         }
 
         // B. 관할 지자체 (주소 기반)
-        if (complaint.getAddress() != null) {
+        if (complaint.getAddress() != null && !complaint.getAddress().isEmpty()) {
             String[] addrParts = complaint.getAddress().split(" ");
             if (addrParts.length > 0) {
-                String regionName = addrParts[0]; // e.g., "서울특별시"
+                String regionName = addrParts[0];
+                logToFile("DEBUG: [ComplaintService] Region lookup start: " + regionName);
+
                 Agency regionAgency = agencyMapper.selectAgencyByName(regionName);
 
-                // 중복 방지: 이미 AI 결과로 들어간 기관이 지자체와 같다면 skip
                 if (regionAgency != null) {
-                    if (complaint.getAgencyNo() == null
-                            || !complaint.getAgencyNo().equals(regionAgency.getAgencyNo())) {
-                        complaintMapper.insertComplaintAgency(complaintNo, regionAgency.getAgencyNo());
+                    Long regionNo = regionAgency.getAgencyNo();
+                    logToFile("DEBUG: [ComplaintService] Found Region Agency: " + regionAgency.getAgencyName()
+                            + "(" + regionNo + ")");
+
+                    // 중복 방지
+                    if (aiAgencyNo == null || !aiAgencyNo.equals(regionNo)) {
+                        complaintMapper.insertComplaintAgency(complaintNo, regionNo);
+                        logToFile("DEBUG: [ComplaintService] Inserted Regional Agency Relationship: " + regionNo);
+                    } else {
+                        logToFile("DEBUG: [ComplaintService] Regional Agency skipped (same as AI Agency)");
                     }
+                } else {
+                    logToFile("DEBUG: [ComplaintService] Region lookup failed for: " + regionName);
                 }
             }
         }
 
         return complaintNo;
+    }
+
+    private void logToFile(String message) {
+        String logPath = "c:\\project_SafeGuard\\backend_debug.log";
+        try (FileWriter fw = new FileWriter(logPath, true);
+                PrintWriter pw = new PrintWriter(fw)) {
+            pw.println("[" + LocalDateTime.now() + "] " + message);
+        } catch (IOException e) {
+            log.error("Failed to write to debug log file", e);
+        }
     }
 }
