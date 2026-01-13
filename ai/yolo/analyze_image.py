@@ -26,7 +26,14 @@ def analyze_image(image_path):
     
     # 2. 이미지 분석 (Inference)
     log_korean("객체 탐지 및 이미지 분석을 수행 중입니다...")
-    results = model(image_path, conf=0.1, verbose=False) # 신뢰도 0.1 이상만 탐지, 로그 억제
+    # results = model(image_path, conf=0.1, verbose=False) # 신뢰도 0.1 이상만 탐지, 로그 억제
+    results = model.predict(
+        source=image_path,
+        conf=0.1,
+        iou=0.5,
+        imgsz=640,
+        verbose=False
+    )
     
     # 기관 매핑 정보
     AGENCY_MAP = {
