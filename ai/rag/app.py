@@ -23,11 +23,21 @@ from milvus_client import connect_milvus
 from logging_config import setup_logging
 import uvicorn
 import os
+from fastapi import Response
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+
+
+
 
 # Initialize logging
 setup_logging()
 
 app = FastAPI()
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 # CORS settings
 app.add_middleware(

@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Merged permissions from HEAD and origin/main
                         .requestMatchers("/api/auth/**", "/api/seed/**", "/api/complaints/**", "/api/classify",
-                                "/api/check", "/api/**", "/error")
+                                "/api/check", "/api/**", "/error", "/actuator/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(browserRequestFilter, UsernamePasswordAuthenticationFilter.class)

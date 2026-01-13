@@ -20,6 +20,11 @@ import traceback
 import os
 import shutil
 import tempfile
+from fastapi import Response
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+
+
+
 
 # 기본 로깅 설정 (INFO 레벨 이상 출력, stdout으로 전송)
 logging.basicConfig(
@@ -267,6 +272,11 @@ class UnifiedComplaintManager:
 
 # --- FastAPI 앱 설정 ---
 app = FastAPI()
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 # CORS 설정 (React 프론트엔드 등에서의 접근 허용)
 app.add_middleware(

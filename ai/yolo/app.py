@@ -4,8 +4,18 @@ import shutil
 import os
 import json
 from analyze_image import analyze_image
+from fastapi import Response
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+
+
+
 
 app = FastAPI()
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 # CORS 설정 (모든 도메인 허용 - 개발/배포 편의)
 app.add_middleware(
