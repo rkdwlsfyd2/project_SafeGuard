@@ -41,11 +41,14 @@ function List() {
                 search,
                 category,
                 status: statusParams,
-                region: regionParams,
                 sort,
                 order,
                 adminMode: isAdminPath // Send adminMode flag to backend
             };
+
+            if (regionParams && regionParams !== '전체') {
+                params.region = regionParams;
+            }
 
             // If we are in admin view and user is AGENCY, provide agencyNo for security validation (though backend will enforce)
             if (isAdminPath && role === 'AGENCY' && agencyNo) {
@@ -389,7 +392,7 @@ function List() {
                                                     borderRadius: '6px',
                                                     fontSize: '0.8rem',
                                                     color: c.regionName ? '#0369a1' : '#94a3b8'
-                                                }}>{c.regionName || '-'}</span>
+                                                }}>{c.regionName || ''}</span>
                                             </td>
                                             <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>{getStatusBadge(c.status)}</td>
                                             <td style={{ padding: '18px 20px', color: '#94a3b8', fontSize: '0.9rem', borderBottom: '1px solid #f1f5f9' }}>{formatDate(c.createdDate)}</td>

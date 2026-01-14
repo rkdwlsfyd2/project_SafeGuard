@@ -44,7 +44,8 @@ public class ComplaintController {
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String region) {
 
         /*
          * ===============================
@@ -75,6 +76,7 @@ public class ComplaintController {
         params.put("search", search);
         params.put("category", category);
         params.put("status", status);
+        params.put("region", region);
         params.put("agencyNo", agencyNo);
         params.put("limit", limit);
         params.put("offset", offset);

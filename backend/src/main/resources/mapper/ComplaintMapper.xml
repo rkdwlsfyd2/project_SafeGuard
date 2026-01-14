@@ -193,13 +193,16 @@
     </select>
 
     <!-- 페이징 total count -->
-    <select id="countAll" resultType="long">
-        SELECT COUNT(*)
-        FROM complaint c
-        LEFT JOIN complaint_agency ca
-            ON c.complaint_no = ca.complaint_no
-        <include refid="SharedWhere"/>
-    </select>
+<select id="countAll" resultType="long">
+    SELECT COUNT(*)
+    FROM complaint c
+    LEFT JOIN complaint_agency ca
+        ON c.complaint_no = ca.complaint_no
+    LEFT JOIN agency a
+        ON ca.agency_no = a.agency_no
+    <include refid="SharedWhere"/>
+</select>
+
 
     <!-- 좋아요 여부 -->
     <select id="isLikedByUser" resultType="boolean">
