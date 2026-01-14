@@ -70,7 +70,19 @@
             c.image_path AS imagePath,
             c.answer,
             c.is_public AS isPublic,
-            c.like_count AS likeCount,
+            (
+                SELECT COUNT(*) FROM complaint_like cl 
+                WHERE cl.complaint_no = c.complaint_no AND cl.type = 'LIKE'
+            ) AS likeCount,
+            (
+                SELECT COUNT(*) FROM complaint_like cl 
+                WHERE cl.complaint_no = c.complaint_no AND cl.type = 'DISLIKE'
+            ) AS dislikeCount,
+            (
+                SELECT cl.type FROM complaint_like cl 
+                WHERE cl.complaint_no = c.complaint_no AND cl.user_no = #{userNo}
+            ) AS myReaction,
+            CASE WHEN c.user_no = #{userNo} THEN TRUE ELSE FALSE END AS isMyPost,
             MAX(ca.agency_no) AS agencyNo,
             MAX(a.agency_name) AS agencyName,
             MAX(a.region_code) AS regionCode,
@@ -265,6 +277,39 @@
     <update id="decreaseLikeCount">
         UPDATE complaint
         SET like_count = GREATEST(COALESCE(like_count, 0) - 1, 0)
+        WHERE complaint_no = #{complaintNo}
+    </update>
+
+    <!-- Reaction Queries -->
+    <select id="findReactionByUser" resultType="string">
+        SELECT type
+        FROM complaint_like
+        WHERE complaint_no = #{complaintNo} AND user_no = #{userNo}
+    </select>
+    
+    <insert id="insertReaction">
+        INSERT INTO complaint_like (complaint_no, user_no, type)
+        VALUES (#{complaintNo}, #{userNo}, #{type})
+    </insert>
+
+    <update id="updateReaction">
+        UPDATE complaint_like
+        SET type = #{type}
+        WHERE complaint_no = #{complaintNo} AND user_no = #{userNo}
+    </update>
+
+    <delete id="deleteReaction">
+        DELETE FROM complaint_like
+        WHERE complaint_no = #{complaintNo} AND user_no = #{userNo}
+    </delete>
+    
+    <!-- Update legacy like_count column for list view compatibility (only likes) -->
+    <update id="updateComplaintLikeCount">
+        UPDATE complaint
+        SET like_count = (
+            SELECT COUNT(*) FROM complaint_like 
+            WHERE complaint_no = #{complaintNo} AND type = 'LIKE'
+        )
         WHERE complaint_no = #{complaintNo}
     </update>
 

@@ -13,12 +13,12 @@ import java.util.Optional;
 @Mapper
 public interface ComplaintMapper {
     List<ComplaintDTO> selectComplaintList(@Param("search") String search,
-                                           @Param("category") String category,
-                                           @Param("status") String status,
-                                           @Param("region") String region,
-                                           @Param("sort") String sort,
-                                           @Param("order") String order,
-                                           @Param("agencyNo") Long agencyNo);
+            @Param("category") String category,
+            @Param("status") String status,
+            @Param("region") String region,
+            @Param("sort") String sort,
+            @Param("order") String order,
+            @Param("agencyNo") Long agencyNo);
 
     List<ComplaintDTO> findAll(Map<String, Object> params);
 
@@ -30,7 +30,7 @@ public interface ComplaintMapper {
 
     boolean isLikedByUser(@Param("complaintNo") Long complaintNo, @Param("userNo") Long userNo);
 
-    Optional<ComplaintDTO> findByComplaintNo(@Param("complaintNo") Long complaintNo);
+    Optional<ComplaintDTO> findByComplaintNo(@Param("complaintNo") Long complaintNo, @Param("userNo") Long userNo);
 
     void insertComplaintDto(ComplaintDTO complaint);
 
@@ -64,4 +64,19 @@ public interface ComplaintMapper {
     void insertComplaintAgency(@Param("complaintNo") Long complaintNo, @Param("agencyNo") Long agencyNo);
 
     List<ComplaintDTO> selectComplaintListByUserNo(Map<String, Object> params);
+
+    // Reaction Methods
+    String findReactionByUser(@Param("complaintNo") Long complaintNo, @Param("userNo") Long userNo);
+
+    void insertReaction(@Param("complaintNo") Long complaintNo, @Param("userNo") Long userNo,
+            @Param("type") String type);
+
+    void updateReaction(@Param("complaintNo") Long complaintNo, @Param("userNo") Long userNo,
+            @Param("type") String type);
+
+    void deleteReaction(@Param("complaintNo") Long complaintNo, @Param("userNo") Long userNo);
+
+    void updateComplaintLikeCount(@Param("complaintNo") Long complaintNo);
+
+    List<Map<String, Object>> selectComplaintStatusCounts(@Param("agencyNo") Long agencyNo);
 }

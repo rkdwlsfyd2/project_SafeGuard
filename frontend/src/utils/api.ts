@@ -131,8 +131,9 @@ export const complaintsAPI = {
         method: 'DELETE',
     }),
 
-    toggleLike: (id: string | number) => apiRequest(`/complaints/${id}/like`, {
+    toggleReaction: (id: string | number, type: 'LIKE' | 'DISLIKE') => apiRequest(`/complaints/${id}/reaction`, {
         method: 'POST',
+        body: JSON.stringify({ type }),
     }),
 
     /** ✅ Dashboard에서 호출하는데 없어서 터지던 함수 */

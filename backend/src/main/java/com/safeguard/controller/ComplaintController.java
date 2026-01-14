@@ -13,12 +13,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -129,10 +131,13 @@ public class ComplaintController {
      * ===============================
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getComplaintDetail(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> getComplaintDetail(@PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        ComplaintDTO c = complaintMapper.findByComplaintNo(id)
-                .orElseThrow(() -> new RuntimeException("Complaint not found"));
+        Long userNo = (userDetails != null) ? userDetails.getUserNo() : 0L;
+
+        ComplaintDTO c = complaintMapper.findByComplaintNo(id, userNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Complaint not found"));
 
         Map<String, Object> result = new HashMap<>();
         result.put("complaintNo", c.getComplaintNo());
@@ -140,53 +145,76 @@ public class ComplaintController {
         result.put("content", c.getContent());
         result.put("category", c.getCategory());
         result.put("status", c.getStatus());
+        result.put("createdDate", c.getCreatedDate());
         result.put("address", c.getAddress());
         result.put("latitude", c.getLatitude());
         result.put("longitude", c.getLongitude());
         result.put("imagePath", c.getImagePath());
-        result.put("createdDate", c.getCreatedDate());
-        result.put("authorName", "익명사용자");
-        result.put("likeCount", c.getLikeCount() != null ? c.getLikeCount() : 0);
+        result.put("likeCount", c.getLikeCount());
+        result.put("dislikeCount", c.getDislikeCount());
+        result.put("isPublic", c.getIsPublic());
+        result.put("regionName", c.getRegionName());
+        result.put("agencyName", c.getAgencyName());
+        result.put("authorName", c.getUserNo() != null ? "익명" : "익명"); // Assuming simple
         result.put("answer", c.getAnswer());
         result.put("assignedAgencyText", c.getAssignedAgencyText());
-
-        Long userNo = userMapper.findByUserId("testuser")
-                .map(UserDTO::getUserNo)
-                .orElse(1L);
-
-        result.put("liked", complaintMapper.isLikedByUser(id, userNo));
+        result.put("myReaction", c.getMyReaction());
+        result.put("isMyPost", c.getIsMyPost());
 
         return ResponseEntity.ok(result);
     }
 
     /*
      * ===============================
-     * 좋아요 토글
+     * 좋아요/싫어요 토글 (Reaction)
      * ===============================
      */
-    @PostMapping("/{id}/like")
-    public ResponseEntity<Map<String, Object>> toggleLike(@PathVariable Long id) {
+    @PostMapping("/{id}/reaction")
+    public ResponseEntity<Map<String, Object>> toggleReaction(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        Long userNo = userMapper.findByUserId("testuser")
-                .map(UserDTO::getUserNo)
-                .orElse(1L);
-
-        boolean liked = complaintMapper.checkUserLike(id, userNo) > 0;
-
-        if (liked) {
-            complaintMapper.deleteLike(id, userNo);
-            complaintMapper.decreaseLikeCount(id);
-        } else {
-            complaintMapper.insertLike(id, userNo);
-            complaintMapper.updateLikeCount(id);
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        ComplaintDTO c = complaintMapper.findByComplaintNo(id).orElseThrow();
+        Long userNo = userDetails.getUserNo();
+        String type = body.getOrDefault("type", "LIKE"); // "LIKE" or "DISLIKE"
 
-        return ResponseEntity.ok(Map.of(
-                "message", "success",
-                "likeCount", c.getLikeCount(),
-                "liked", !liked));
+        // Check if self-post
+        ComplaintDTO c = complaintMapper.findByComplaintNo(id, userNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (Boolean.TRUE.equals(c.getIsMyPost())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "본인 글에는 반응할 수 없습니다."));
+        }
+
+        String currentReaction = complaintMapper.findReactionByUser(id, userNo);
+
+        if (currentReaction == null) {
+            // New reaction
+            complaintMapper.insertReaction(id, userNo, type);
+        } else if (currentReaction.equals(type)) {
+            // Toggle off (delete)
+            complaintMapper.deleteReaction(id, userNo);
+        } else {
+            // Change reaction type (View -> Update)
+            complaintMapper.updateReaction(id, userNo, type);
+        }
+
+        // Update counts and re-fetch
+        complaintMapper.updateComplaintLikeCount(id); // updates complaint.like_count for list view
+        ComplaintDTO updated = complaintMapper.findByComplaintNo(id, userNo).orElseThrow();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "success");
+        response.put("likeCount", updated.getLikeCount());
+        response.put("dislikeCount", updated.getDislikeCount());
+        response.put("myReaction", updated.getMyReaction());
+
+        return ResponseEntity.ok(response);
     }
 
     /*
