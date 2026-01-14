@@ -10,7 +10,8 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory }) => {
     const [visibility, setVisibility] = useState({
         received: true,
         completed: true,
-        growth: true
+        growth: true,
+        backlog: true
     });
 
     // 데이터 생성 로직
