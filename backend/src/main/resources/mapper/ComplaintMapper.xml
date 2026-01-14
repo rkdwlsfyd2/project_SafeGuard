@@ -22,7 +22,12 @@
             c.is_public AS isPublic,
             c.like_count AS likeCount,
             ca.agency_no AS agencyNo,
-            a.agency_name AS agencyName
+            a.agency_name AS agencyName,
+            a.region_code AS regionCode,
+            CASE 
+                WHEN a.agency_type = 'LOCAL' THEN a.agency_name
+                ELSE NULL
+            END AS regionName
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
@@ -37,6 +42,10 @@
             </if>
             <if test="agencyNo != null">
                 AND ca.agency_no = #{agencyNo}
+            </if>
+            <!-- [수정] 지역 필터: region_code 사용 -->
+            <if test="region != null and region != '전체'">
+                AND a.region_code = #{region}
             </if>
             <if test="search != null and search != ''">
                 AND (c.title ILIKE CONCAT('%', #{search}, '%')
@@ -63,7 +72,12 @@
             c.is_public AS isPublic,
             c.like_count AS likeCount,
             ca.agency_no AS agencyNo,
-            a.agency_name AS agencyName
+            a.agency_name AS agencyName,
+            a.region_code AS regionCode,
+            CASE 
+                WHEN a.agency_type = 'LOCAL' THEN a.agency_name
+                ELSE NULL
+            END AS regionName
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
@@ -133,6 +147,11 @@
             <if test="agencyNo != null">
                 AND ca.agency_no = #{agencyNo}
             </if>
+            <!-- [수정] 지역 필터: region_code 사용 -->
+            <if test="region != null and region != '전체'">
+                AND a.agency_type = 'LOCAL'
+                AND a.region_code = #{region}
+            </if>
         </where>
     </sql>
 
@@ -148,7 +167,12 @@
             c.is_public AS isPublic,
             c.like_count AS likeCount,
             ca.agency_no AS agencyNo,
-            a.agency_name AS agencyName
+            a.agency_name AS agencyName,
+            a.region_code AS regionCode,
+            CASE 
+                WHEN a.agency_type = 'LOCAL' THEN a.agency_name
+                ELSE NULL
+            END AS regionName
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no

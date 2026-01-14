@@ -202,8 +202,29 @@ function List() {
                                 cursor: 'pointer'
                             }}
                         >
-                            {['전체', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'].map(r => (
-                                <option key={r} value={r}>{r === '전체' ? '지역' : r}</option>
+                            {[
+                                { label: '지역', value: '전체' },
+                                { label: '서울', value: '11' },
+                                { label: '부산', value: '26' },
+                                { label: '대구', value: '27' },
+                                { label: '인천', value: '28' },
+                                { label: '광주', value: '29' },
+                                { label: '대전', value: '30' },
+                                { label: '울산', value: '31' },
+                                { label: '세종', value: '50' },
+                                { label: '경기', value: '41' },
+                                { label: '강원', value: '42' },
+                                { label: '충북', value: '43' },
+                                { label: '충남', value: '44' },
+                                { label: '전북', value: '45' },
+                                { label: '전남', value: '46' },
+                                { label: '경북', value: '47' },
+                                { label: '경남', value: '48' },
+                                { label: '제주', value: '49' }
+                            ].map(r => (
+                                <option key={r.value} value={r.value}>
+                                    {r.label}
+                                </option>
                             ))}
                         </select>
                         <select
@@ -323,7 +344,7 @@ function List() {
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr style={{ backgroundColor: '#f8fafc' }}>
-                                        {['번호', '분류', '제목', '발송기관', '상태', '등록일', '좋아요'].map(h => (
+                                        {['번호', '분류', '제목', '지역', '상태', '등록일', '좋아요'].map(h => (
                                             <th key={h} style={{
                                                 padding: '16px 20px',
                                                 textAlign: 'left',
@@ -364,11 +385,11 @@ function List() {
                                             <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>
                                                 <span style={{
                                                     padding: '4px 10px',
-                                                    backgroundColor: c.agencyName && c.agencyName !== '미지정' ? '#e0f2fe' : '#f1f5f9',
+                                                    backgroundColor: c.regionName ? '#e0f2fe' : 'transparent',
                                                     borderRadius: '6px',
                                                     fontSize: '0.8rem',
-                                                    color: c.agencyName && c.agencyName !== '미지정' ? '#0369a1' : '#94a3b8'
-                                                }}>{c.agencyName}</span>
+                                                    color: c.regionName ? '#0369a1' : '#94a3b8'
+                                                }}>{c.regionName || '-'}</span>
                                             </td>
                                             <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>{getStatusBadge(c.status)}</td>
                                             <td style={{ padding: '18px 20px', color: '#94a3b8', fontSize: '0.9rem', borderBottom: '1px solid #f1f5f9' }}>{formatDate(c.createdDate)}</td>
