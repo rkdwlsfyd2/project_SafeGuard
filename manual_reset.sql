@@ -53,7 +53,6 @@ CREATE TABLE complaint (
     updated_date TIMESTAMPTZ,
     completed_date TIMESTAMPTZ,
     user_no BIGINT NOT NULL REFERENCES app_user(user_no),
-    agency_no BIGINT REFERENCES agency(agency_no),
     like_count INTEGER DEFAULT 0,
     answer TEXT
 );
@@ -144,5 +143,10 @@ INSERT INTO agency (agency_type, agency_name, region_code) VALUES
   ('CENTRAL', '소방청', NULL),
   ('CENTRAL', '인사혁신처', NULL),
   ('CENTRAL', '기타', NULL);
+
+-- 4. 기초 데이터 삽입 (Default User)
+INSERT INTO app_user (user_id, pw, name, role) VALUES
+('testuser', 'password', '테스트유저', 'USER');
+
 
 SELECT 'Reset Complete' as status;

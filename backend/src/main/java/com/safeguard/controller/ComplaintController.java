@@ -11,10 +11,14 @@ import com.safeguard.service.ComplaintService;
 import com.safeguard.service.FileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +36,7 @@ public class ComplaintController {
     private final PasswordEncoder passwordEncoder;
     private final ComplaintService complaintService;
     private final FileService fileService;
+    private final ObjectMapper objectMapper;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getComplaints(
@@ -79,7 +84,9 @@ public class ComplaintController {
          * 3. DB 조회 (페이징 포함)
          * ===============================
          */
-        List<ComplaintDTO> complaints = complaintMapper.selectComplaintList(params);
+        List<ComplaintDTO> complaints = complaintMapper.findAll(params);
+        long totalCount = complaintMapper.countAll(params);
+        int totalPages = (int) Math.ceil((double) totalCount / limit);
 
         /*
          * ===============================
@@ -92,7 +99,8 @@ public class ComplaintController {
         Map<String, Object> pagination = new HashMap<>();
         pagination.put("currentPage", page);
         pagination.put("limit", limit);
-        pagination.put("count", complaints.size());
+        pagination.put("totalCount", totalCount);
+        pagination.put("totalPages", totalPages);
 
         response.put("pagination", pagination);
 
@@ -174,10 +182,15 @@ public class ComplaintController {
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
 
-        ComplaintStatus status = ComplaintStatus.valueOf(body.get("status"));
-        complaintMapper.updateStatus(id, status);
-
-        return ResponseEntity.ok(Map.of("message", "Status updated"));
+        try {
+            ComplaintStatus status = ComplaintStatus.valueOf(body.get("status"));
+            complaintMapper.updateStatus(id, status.name());
+            return ResponseEntity.ok(Map.of("message", "Status updated"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status value: " + body.get("status")));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Update failed: " + e.getMessage()));
+        }
     }
 
     /*
@@ -190,8 +203,12 @@ public class ComplaintController {
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
 
-        complaintMapper.updateAnswer(id, body.get("answer"));
-        return ResponseEntity.ok(Map.of("message", "Answer updated"));
+        try {
+            complaintMapper.updateAnswer(id, body.get("answer"));
+            return ResponseEntity.ok(Map.of("message", "Answer updated"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Update failed: " + e.getMessage()));
+        }
     }
 
     /*
@@ -199,13 +216,20 @@ public class ComplaintController {
      * 민원 생성
      * ===============================
      */
-    @PostMapping
+    @PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<Map<String, Object>> createComplaint(
-            @RequestBody Map<String, Object> data,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @RequestPart("complaint") String complaintJson,
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
+
+        log.info("Received Complaint Creation Request. JSON: {}", complaintJson);
 
         Long userNo = (userDetails != null) ? userDetails.getUserNo() : 1L;
-        Long complaintNo = complaintService.createComplaint(data, userNo);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = objectMapper.readValue(complaintJson, Map.class);
+
+        Long complaintNo = complaintService.createComplaint(data, file, userNo);
 
         return ResponseEntity.ok(Map.of(
                 "complaintNo", complaintNo,
@@ -220,24 +244,27 @@ public class ComplaintController {
     @GetMapping("/mypage")
     public ResponseEntity<List<ComplaintDTO>> getMyComplaints(@AuthenticationPrincipal CustomUserDetails userDetails) {
         Long userNo = (userDetails != null) ? userDetails.getUserNo() : 1L;
-        
+
         Map<String, Object> params = new HashMap<>();
         params.put("userNo", userNo);
-        
+
         List<ComplaintDTO> myComplaints = complaintMapper.selectComplaintList(params);
         return ResponseEntity.ok(myComplaints);
     }
 
     // 이미지 업로드
     @PostMapping("/images")
-    public ResponseEntity<Map<String, String>> uploadImage(@RequestParam("image") org.springframework.web.multipart.MultipartFile file) {
+    public ResponseEntity<Map<String, String>> uploadImage(
+            @RequestParam("image") org.springframework.web.multipart.MultipartFile file) {
         try {
             String fileName = fileService.storeFile(file);
             String imagePath = "/uploads/" + fileName;
-            return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(Map.of("imagePath", imagePath));
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                    .body(Map.of("imagePath", imagePath));
         } catch (Exception e) {
             log.error("Image upload failed", e);
-            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 }

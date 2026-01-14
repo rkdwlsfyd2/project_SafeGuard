@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { complaintsAPI, getToken } from '../utils/api';
+import { complaintsAPI, getToken, agenciesAPI } from '../utils/api';
 
 function ApplyImage() {
     const navigate = useNavigate();
@@ -23,8 +23,26 @@ function ApplyImage() {
     const [previewUrl, setPreviewUrl] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [aiResult, setAiResult] = useState({ type: '-', agency: '-' });
+    const [agencies, setAgencies] = useState<any[]>([]);
 
     const [loading, setLoading] = useState(false);
+
+    // 기관 목록 불러오기
+    useEffect(() => {
+        const fetchAgencies = async () => {
+            try {
+                const response = await agenciesAPI.getList();
+                if (response && Array.isArray(response)) {
+                    setAgencies(response);
+                } else if (response && response.agencies) {
+                    setAgencies(response.agencies);
+                }
+            } catch (error) {
+                console.error("Failed to fetch agencies:", error);
+            }
+        };
+        fetchAgencies();
+    }, []);
     const [error, setError] = useState('');
     const [currentStep, setCurrentStep] = useState(1);
 
@@ -139,7 +157,7 @@ function ApplyImage() {
         fileInputRef.current.click();
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!getToken()) {
             alert('로그인이 필요합니다.');
@@ -159,18 +177,34 @@ function ApplyImage() {
             const uploadResult = await complaintsAPI.uploadImage(selectedImage);
             const imagePath = uploadResult.imagePath; // 서버에서 반환한 경로
 
-            // 2. 업로드된 경로를 포함하여 민원 생성 전송
-            const result = await complaintsAPI.create({
-                category: '이미지',
+            // 2. 업로드된 경로를 포함하여 민원 생성 전송 (FormData로 변환)
+            let agencyCode = null;
+            if (aiResult?.agency && agencies.length > 0) {
+                const found = agencies.find((a: any) => a.agencyName === aiResult.agency);
+                if (found) {
+                    agencyCode = found.agencyNo;
+                }
+            }
+
+            const complaintData = {
+                category: aiResult?.type || '이미지',
                 title: formData.title,
                 content: formData.content,
                 isPublic: formData.isPublic,
                 location: formData.location,
-                imagePath: imagePath // 저장된 경로 전달
-            });
+                imagePath: imagePath, // 저장된 경로 전달
+                agencyCode: agencyCode,
+                agencyName: aiResult?.agency || null
+            };
+
+            const submitData = new FormData();
+            submitData.append('complaint', JSON.stringify(complaintData));
+            // 이미지는 이미 업로드되었으므로 file 파트는 보내지 않음 (null 처리 or 생략)
+
+            const result = await complaintsAPI.create(submitData);
             alert(`이미지 민원이 접수되었습니다. (접수번호: ${result.complaintNo})`);
             navigate('/list');
-        } catch (err) {
+        } catch (err: any) {
             setError(err.message);
         } finally {
             setLoading(false);

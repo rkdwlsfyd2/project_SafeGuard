@@ -3,7 +3,6 @@ package com.safeguard.mapper;
 import com.safeguard.dto.ComplaintDTO;
 import com.safeguard.entity.Complaint;
 import com.safeguard.entity.SpatialFeature;
-import com.safeguard.enums.ComplaintStatus;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -14,6 +13,8 @@ import java.util.Optional;
 @Mapper
 public interface ComplaintMapper {
     List<ComplaintDTO> selectComplaintList(Map<String, Object> params);
+
+    long countAll(Map<String, Object> params);
 
     List<Map<String, Object>> selectComplaintStats(@Param("agencyNo") Long agencyNo);
 
@@ -27,7 +28,7 @@ public interface ComplaintMapper {
 
     void updateComplaint(ComplaintDTO complaint);
 
-    void updateStatus(@Param("complaintNo") Long complaintNo, @Param("status") ComplaintStatus status);
+    void updateStatus(@Param("complaintNo") Long complaintNo, @Param("status") String status);
 
     void updateAnswer(@Param("complaintNo") Long complaintNo, @Param("answer") String answer);
 

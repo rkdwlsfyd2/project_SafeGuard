@@ -9,7 +9,10 @@ import ComplaintCategoryChart from '../components/Charts/ComplaintCategoryChart'
 
 
 
-// --- Mock Data ---
+
+
+
+// --- 임시 데이터 (Mock) ---
 const MOCK_KEYWORDS = [
     { id: 1, text: '불법주차 신고', rank: 1, count: 1450, change: 120, changeType: 'up' },
     { id: 2, text: '친환경차 충전구역', rank: 2, count: 980, change: 45, changeType: 'up' },
@@ -65,7 +68,7 @@ const Dashboard = () => {
             .dash-actions { display:flex; gap: 8px; }
             .dash-btn { padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 8px; background:#fff; font-size: 13px; cursor:pointer; }
             .dash-btn:hover { background:#f9fafb; }
-            .dash-kpi-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 32px; }
+            .dash-kpi-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin-bottom: 24px; }
             .dash-kpi-card { border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); height: 112px; display:flex; flex-direction:column; align-items:center; justify-content:center; border: 1px solid #e5e7eb; border-top-width: 4px; }
             .dash-kpi-title { color:#6b7280; font-weight: 800; margin-bottom: 8px; }
             .dash-kpi-value { font-size: 32px; font-weight: 900; }

@@ -4,10 +4,11 @@ import { complaintsAPI, sttAPI, getToken, analyzeText, generateTitle } from '../
 
 function ApplyVoice() {
     const navigate = useNavigate();
-    const mapRef = useRef(null);
-    const mapInstance = useRef(null);
-    const markerInstance = useRef(null);
+    const mapRef = useRef<HTMLDivElement>(null);
+    const mapInstance = useRef<any>(null);
+    const markerInstance = useRef<any>(null);
     const accumulatedTextRef = useRef(''); // STT 누적 텍스트 저장을 위한 Ref 추가
+    const titleInputRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -302,12 +303,13 @@ function ApplyVoice() {
     }, []);
 
     /** 단계 업데이트 */
-    /** 단계 업데이트 */
+    // 단계 업데이트
     useEffect(() => {
-        if (formData.title) setCurrentStep(2);
-        if (formData.title && formData.content) setCurrentStep(3);
-        if (formData.title && formData.content && formData.location) setCurrentStep(4);
-    }, [formData]);
+        if (formData.title && currentStep < 2) setCurrentStep(2);
+        if (formData.title && formData.content && currentStep < 3) setCurrentStep(3);
+        if (formData.title && formData.content && ragResult && currentStep < 4) setCurrentStep(4);
+        if (formData.title && formData.content && ragResult && formData.location && currentStep < 5) setCurrentStep(5);
+    }, [formData, ragResult]);
 
 
     // Update map when location changes programmatically
@@ -318,6 +320,25 @@ function ApplyVoice() {
             markerInstance.current.setPosition(loc);
         }
     }, [formData.location]);
+
+    const handleStepClick = (stepNum: number) => {
+        switch (stepNum) {
+            case 1:
+                titleInputRef.current?.focus();
+                break;
+            case 2:
+                // Focus or scroll to recording section if needed
+                break;
+            case 3:
+                handleAnalyze();
+                break;
+            case 4:
+                handleSearchAddress();
+                break;
+            default:
+                break;
+        }
+    };
 
     const handleSearchAddress = () => {
         if (!window.daum || !window.daum.Postcode) {
@@ -361,8 +382,49 @@ function ApplyVoice() {
         }
     };
 
+    const [file, setFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.target.files?.[0];
+        if (selectedFile) {
+            // 1. 이미지 파일 검증
+            if (!selectedFile.type.startsWith('image/')) {
+                alert("이미지 파일만 업로드 가능합니다.");
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
+            }
+
+            // 2. 용량 체크 (5MB)
+            const MAX_SIZE = 5 * 1024 * 1024;
+            if (selectedFile.size > MAX_SIZE) {
+                alert("이미지 용량은 5MB 이하만 업로드 가능합니다.");
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
+            }
+
+            setFile(selectedFile);
+
+            // 이미지일 경우 미리보기 생성
+            const url = URL.createObjectURL(selectedFile);
+            setPreviewUrl(url);
+        }
+    };
+
+    const handleRemoveFile = () => {
+        setFile(null);
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            setPreviewUrl(null);
+        }
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     /** 민원 제출 */
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!getToken()) {
@@ -380,17 +442,27 @@ function ApplyVoice() {
         setError('');
 
         try {
-            const res = await complaintsAPI.create({
-                category: '음성',
+            const complaintData = {
+                category: ragResult?.category || '음성',
+                agencyName: ragResult?.agency_name || null,
+                agencyCode: ragResult?.agency_code || null,
                 title: formData.title,
                 content: formData.content,
                 isPublic: formData.isPublic,
                 location: formData.location
-            });
+            };
+
+            const submitData = new FormData();
+            submitData.append('complaint', JSON.stringify(complaintData));
+            if (file) {
+                submitData.append('file', file);
+            }
+
+            const res = await complaintsAPI.create(submitData);
 
             alert(`음성 민원이 접수되었습니다. (접수번호: ${res.complaintNo})`);
             navigate('/list');
-        } catch (err) {
+        } catch (err: any) {
             setError(err.message);
         } finally {
             setLoading(false);
@@ -400,8 +472,9 @@ function ApplyVoice() {
     const steps = [
         { num: 1, label: '제목 입력', done: !!formData.title },
         { num: 2, label: '음성 녹음', done: !!formData.content },
-        { num: 3, label: '위치 선택', done: !!formData.location },
-        { num: 4, label: '접수 완료', done: false }
+        { num: 3, label: 'AI 분석', done: !!ragResult },
+        { num: 4, label: '위치 선택', done: !!formData.location },
+        { num: 5, label: '접수 완료', done: false }
     ];
 
     return (
@@ -430,7 +503,16 @@ function ApplyVoice() {
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             {steps.map((step) => (
-                                <div key={step.num} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div
+                                    key={step.num}
+                                    onClick={() => handleStepClick(step.num)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
                                     <div style={{
                                         width: '36px',
                                         height: '36px',
@@ -497,6 +579,7 @@ function ApplyVoice() {
                                 </label>
                                 <input
                                     type="text"
+                                    ref={titleInputRef}
                                     value={formData.title}
                                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                                     placeholder="민원 제목을 입력하세요"
@@ -593,6 +676,100 @@ function ApplyVoice() {
                                 />
 
 
+                            </div>
+
+                            {/* 파일 첨부 */}
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                    파일 첨부
+                                </label>
+                                <div style={{
+                                    padding: '10px 14px',
+                                    backgroundColor: '#f8fafc',
+                                    borderRadius: '8px',
+                                    marginBottom: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    border: '1px solid #e2e8f0'
+                                }}>
+                                    <span style={{ fontSize: '1.1rem' }}>📷</span>
+                                    <input
+                                        type="text"
+                                        value={file ? file.name : ''}
+                                        readOnly
+                                        placeholder="현장 사진을 첨부해주세요"
+                                        style={{
+                                            border: 'none',
+                                            background: 'transparent',
+                                            width: '100%',
+                                            fontSize: '1rem',
+                                            color: '#1e293b',
+                                            fontWeight: '500',
+                                            outline: 'none',
+                                            cursor: 'default',
+                                            flex: 1
+                                        }}
+                                    />
+                                    {file && (
+                                        <button
+                                            type="button"
+                                            onClick={handleRemoveFile}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: '#ef4444',
+                                                cursor: 'pointer',
+                                                fontSize: '1.1rem',
+                                                padding: '0 4px',
+                                                marginRight: '4px'
+                                            }}
+                                            title="파일 삭제"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileChange}
+                                        style={{ display: 'none' }}
+                                        id="file-upload"
+                                        accept="image/*"
+                                    />
+                                    <label
+                                        htmlFor="file-upload"
+                                        style={{
+                                            padding: '8px 12px',
+                                            backgroundColor: '#3b82f6',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            fontSize: '0.85rem',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            whiteSpace: 'nowrap',
+                                            margin: 0
+                                        }}
+                                    >
+                                        📂 파일 선택
+                                    </label>
+                                </div>
+                                {previewUrl && (
+                                    <div style={{ marginTop: '12px' }}>
+                                        <img
+                                            src={previewUrl}
+                                            alt="Preview"
+                                            style={{
+                                                width: '100%',
+                                                height: '220px',
+                                                objectFit: 'cover',
+                                                borderRadius: '8px',
+                                                border: '1px solid #e2e8f0'
+                                            }}
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             {/* 위치 선택 */}

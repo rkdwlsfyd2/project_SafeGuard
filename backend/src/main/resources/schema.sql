@@ -53,7 +53,6 @@ CREATE TABLE complaint (
     updated_date TIMESTAMPTZ,
     completed_date TIMESTAMPTZ,
     user_no BIGINT NOT NULL REFERENCES app_user(user_no),
-    agency_no BIGINT REFERENCES agency(agency_no),
     like_count INTEGER DEFAULT 0,
     answer TEXT
 );

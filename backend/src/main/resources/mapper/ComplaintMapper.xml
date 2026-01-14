@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.safeguard.mapper.ComplaintMapper">
 
-    <!-- 민원 목록 -->
+    <!-- 민원 목록 조회 (필터/검색/기관 포함) -->
     <select id="selectComplaintList" resultType="com.safeguard.dto.ComplaintDTO">
         SELECT
             c.complaint_no AS complaintNo,
@@ -21,37 +21,33 @@
             c.answer,
             c.is_public AS isPublic,
             c.like_count AS likeCount,
-            a.agency_name AS agencyName,
-            c.agency_no AS agencyNo
+            ca.agency_no AS agencyNo,
+            a.agency_name AS agencyName
         FROM complaint c
-        LEFT JOIN agency a ON c.agency_no = a.agency_no
+        LEFT JOIN complaint_agency ca
+            ON c.complaint_no = ca.complaint_no
+        LEFT JOIN agency a
+            ON ca.agency_no = a.agency_no
         <where>
-            <if test="userNo != null">
-                AND c.user_no = #{userNo}
-            </if>
-            <if test="category != null and category != '전체' and category != ''">
+            <if test="category != null and category != '전체'">
                 AND c.category = #{category}
             </if>
-            <if test="status != null and status != '전체' and status != ''">
+            <if test="status != null and status != '전체'">
                 AND c.status = #{status}
             </if>
             <if test="agencyNo != null">
-                AND (c.agency_no = #{agencyNo} OR c.complaint_no IN (
-                    SELECT complaint_no FROM complaint_agency WHERE agency_no = #{agencyNo}
-                ))
+                AND ca.agency_no = #{agencyNo}
             </if>
             <if test="search != null and search != ''">
-                AND (c.title LIKE CONCAT('%', #{search}, '%') OR c.content LIKE CONCAT('%', #{search}, '%'))
+                AND (c.title ILIKE CONCAT('%', #{search}, '%')
+                 OR c.content ILIKE CONCAT('%', #{search}, '%'))
             </if>
         </where>
         ORDER BY c.complaint_no DESC
-        <if test="limit != null and offset != null">
-            LIMIT #{limit} OFFSET #{offset}
-        </if>
     </select>
 
     <!-- 민원 상세 -->
-    <select id="selectComplaintByNo" resultType="com.safeguard.dto.ComplaintDTO">
+    <select id="findByComplaintNo" resultType="com.safeguard.dto.ComplaintDTO">
         SELECT
             c.complaint_no AS complaintNo,
             c.title,
@@ -66,107 +62,216 @@
             c.answer,
             c.is_public AS isPublic,
             c.like_count AS likeCount,
-            c.agency_no AS agencyNo
+            ca.agency_no AS agencyNo,
+            a.agency_name AS agencyName
         FROM complaint c
+        LEFT JOIN complaint_agency ca
+            ON c.complaint_no = ca.complaint_no
+        LEFT JOIN agency a
+            ON ca.agency_no = a.agency_no
         WHERE c.complaint_no = #{complaintNo}
     </select>
 
-    <!-- 민원 등록 (Entity) -->
-    <insert id="insertComplaint" useGeneratedKeys="true" keyProperty="complaintNo" parameterType="com.safeguard.entity.Complaint">
+    <!-- 민원 등록 (Entity) : 서비스(createComplaint)에서 호출 -->
+    <insert id="insertComplaint" useGeneratedKeys="true" keyProperty="complaintNo" keyColumn="complaint_no">
         INSERT INTO complaint (
-            title, content, category, status, is_public, user_no, image_path, created_date, updated_date
-        ) VALUES (
-            #{title}, #{content}, #{category}, #{status}, #{isPublic}, #{userNo}, #{imagePath}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            title, content, category, status, is_public, user_no, image_path, created_date, updated_date,
+            address, latitude, longitude
+        )
+        VALUES (
+            #{title}, #{content}, #{category}, #{status}, #{isPublic}, #{userNo}, #{imagePath},
+            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+            #{address}, #{latitude}, #{longitude}
         )
     </insert>
 
-    <!-- 공간 정보 등록 -->
-    <insert id="insertSpatialFeature" useGeneratedKeys="true" keyProperty="featureId" parameterType="com.safeguard.entity.SpatialFeature">
+    <!-- 공간 정보 등록 : 서비스(createComplaint)에서 호출 -->
+    <insert id="insertSpatialFeature" useGeneratedKeys="true" keyProperty="featureId"
+            parameterType="com.safeguard.entity.SpatialFeature">
         INSERT INTO spatial_feature (
             feature_type, geom, addr_text, complaint_no, created_at
         ) VALUES (
-            #{featureType}, ST_GeomFromText(#{geom, typeHandler=com.safeguard.config.GeometryTypeHandler}, 4326), #{addrText}, #{complaintNo}, CURRENT_TIMESTAMP
+            #{featureType},
+            ST_GeomFromText(#{geom, typeHandler=com.safeguard.config.GeometryTypeHandler}, 4326),
+            #{addrText},
+            #{complaintNo},
+            CURRENT_TIMESTAMP
         )
     </insert>
 
     <!-- 기관 매핑 등록 -->
     <insert id="insertComplaintAgency">
-        INSERT INTO complaint_agency (complaint_no, agency_no) VALUES (#{complaintNo}, #{agencyNo})
+        INSERT INTO complaint_agency (complaint_no, agency_no)
+        VALUES (#{complaintNo}, #{agencyNo})
     </insert>
 
-    <!-- 시드용 DTO 등록 -->
-    <insert id="insertComplaintDto" useGeneratedKeys="true" keyProperty="complaintNo" parameterType="com.safeguard.dto.ComplaintDTO">
+    <!-- 시드용 DTO 등록 (데이터 초기화/테스트용) -->
+    <insert id="insertComplaintDto" useGeneratedKeys="true" keyProperty="complaintNo"
+            parameterType="com.safeguard.dto.ComplaintDTO">
         INSERT INTO complaint (
-            title, content, category, status, is_public, user_no, created_date, address, latitude, longitude, image_path, agency_no, like_count
+            title, content, category, status, is_public, user_no, created_date,
+            address, latitude, longitude, image_path, like_count
         ) VALUES (
-            #{title}, #{content}, #{category}, #{status}, #{isPublic}, #{userNo}, #{createdDate}, #{address}, #{latitude}, #{longitude}, #{imagePath}, #{agencyNo}, #{likeCount}
+            #{title}, #{content}, #{category}, #{status}, #{isPublic}, #{userNo}, #{createdDate},
+            #{address}, #{latitude}, #{longitude}, #{imagePath}, #{likeCount}
         )
     </insert>
 
-    <!-- 좋아요 TOP -->
-    <select id="selectTopLikedComplaints" resultType="com.safeguard.dto.ComplaintDTO">
+    <!-- Shared Where Clause (대시보드/목록 공용) -->
+    <sql id="SharedWhere">
+        <where>
+            <if test="search != null and search != ''">
+                AND (c.title ILIKE CONCAT('%', #{search}, '%')
+                 OR c.content ILIKE CONCAT('%', #{search}, '%'))
+            </if>
+            <if test="category != null and category != '전체'">
+                AND c.category = #{category}
+            </if>
+            <if test="status != null and status != '전체'">
+                AND c.status = #{status}
+            </if>
+            <if test="agencyNo != null">
+                AND ca.agency_no = #{agencyNo}
+            </if>
+        </where>
+    </sql>
+
+    <!-- 대시보드/목록 페이징 조회 -->
+    <select id="findAll" resultType="com.safeguard.dto.ComplaintDTO">
         SELECT
             c.complaint_no AS complaintNo,
             c.title,
             c.category,
             c.status,
             c.created_date AS createdDate,
-            COUNT(cl.complaint_no) AS likeCount
+            c.address,
+            c.is_public AS isPublic,
+            c.like_count AS likeCount,
+            ca.agency_no AS agencyNo,
+            a.agency_name AS agencyName
         FROM complaint c
-        LEFT JOIN complaint_like cl ON c.complaint_no = cl.complaint_no
-        GROUP BY c.complaint_no
-        ORDER BY likeCount DESC
-        LIMIT 5
+        LEFT JOIN complaint_agency ca
+            ON c.complaint_no = ca.complaint_no
+        LEFT JOIN agency a
+            ON ca.agency_no = a.agency_no
+        <include refid="SharedWhere"/>
+        ORDER BY
+        <choose>
+            <when test="sort == 'like_count'">c.like_count</when>
+            <when test="sort == 'complaint_no'">c.complaint_no</when>
+            <otherwise>c.created_date</otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'ASC'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
     </select>
 
-    <!-- 통계 -->
-    <select id="selectComplaintStats" resultType="java.util.Map">
-        SELECT
-            COUNT(*) AS total,
-            COUNT(CASE WHEN status = 'RECEIVED' THEN 1 END) AS received,
-            COUNT(CASE WHEN status = 'IN_PROGRESS' THEN 1 END) AS processing,
-            COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed
-        FROM complaint
+    <!-- 페이징 total count -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM complaint c
+        LEFT JOIN complaint_agency ca
+            ON c.complaint_no = ca.complaint_no
+        <include refid="SharedWhere"/>
     </select>
 
-    <!-- 좋아요 확인 -->
+    <!-- 좋아요 여부 -->
     <select id="isLikedByUser" resultType="boolean">
         SELECT EXISTS (
-            SELECT 1 FROM complaint_like WHERE complaint_no = #{complaintNo} AND user_no = #{userNo}
+            SELECT 1 FROM complaint_like
+            WHERE complaint_no = #{complaintNo} AND user_no = #{userNo}
         )
     </select>
 
+    <update id="updateStatus">
+        UPDATE complaint
+        SET status = #{status}
+        WHERE complaint_no = #{complaintNo}
+    </update>
+
+    <update id="updateAnswer">
+        UPDATE complaint
+        SET answer = #{answer}
+        WHERE complaint_no = #{complaintNo}
+    </update>
+
     <select id="checkUserLike" resultType="int">
-        SELECT COUNT(*) FROM complaint_like WHERE complaint_no = #{complaintNo} AND user_no = #{userNo}
+        SELECT COUNT(*)::int
+        FROM complaint_like
+        WHERE complaint_no = #{complaintNo} AND user_no = #{userNo}
     </select>
 
+    <!-- 좋아요 등록: 중복 클릭/동시 요청 방지 -->
     <insert id="insertLike">
-        INSERT INTO complaint_like (complaint_no, user_no) VALUES (#{complaintNo}, #{userNo})
+        INSERT INTO complaint_like (complaint_no, user_no)
+        VALUES (#{complaintNo}, #{userNo})
         ON CONFLICT (complaint_no, user_no) DO NOTHING
     </insert>
 
     <delete id="deleteLike">
-        DELETE FROM complaint_like WHERE complaint_no = #{complaintNo} AND user_no = #{userNo}
+        DELETE FROM complaint_like
+        WHERE complaint_no = #{complaintNo} AND user_no = #{userNo}
     </delete>
 
     <update id="updateLikeCount">
-        UPDATE complaint SET like_count = (SELECT COUNT(*) FROM complaint_like WHERE complaint_no = #{complaintNo})
+        UPDATE complaint
+        SET like_count = COALESCE(like_count, 0) + 1
         WHERE complaint_no = #{complaintNo}
     </update>
 
     <update id="decreaseLikeCount">
-        UPDATE complaint SET like_count = (SELECT COUNT(*) FROM complaint_like WHERE complaint_no = #{complaintNo})
+        UPDATE complaint
+        SET like_count = GREATEST(COALESCE(like_count, 0) - 1, 0)
         WHERE complaint_no = #{complaintNo}
     </update>
 
-    <update id="updateStatus">
-        UPDATE complaint SET status = #{status} WHERE complaint_no = #{complaintNo}
-    </update>
+    <select id="selectTopLikedComplaints" resultType="com.safeguard.dto.ComplaintDTO">
+        SELECT *
+        FROM complaint
+        ORDER BY like_count DESC
+        LIMIT 5
+    </select>
 
-    <update id="updateAnswer">
-        UPDATE complaint SET answer = #{answer} WHERE complaint_no = #{complaintNo}
-    </update>
-    
+    <!-- 통계(요약): total/상태별 카운트 -->
+    <select id="selectComplaintStats" resultType="java.util.Map">
+        SELECT
+            COUNT(*) AS total,
+            COUNT(CASE WHEN c.status = 'RECEIVED' THEN 1 END) AS received,
+            COUNT(CASE WHEN c.status = 'IN_PROGRESS' THEN 1 END) AS processing,
+            COUNT(CASE WHEN c.status = 'COMPLETED' THEN 1 END) AS completed
+        FROM complaint c
+        LEFT JOIN complaint_agency ca
+            ON c.complaint_no = ca.complaint_no
+        <where>
+            <if test="agencyNo != null">
+                AND ca.agency_no = #{agencyNo}
+            </if>
+        </where>
+    </select>
+
+    <!-- 통계(분포): status별 count (기존 중복 id였던 부분은 id 변경) -->
+    <select id="selectComplaintStatusCounts" resultType="map">
+        SELECT c.status, COUNT(*) as count
+        FROM complaint c
+        LEFT JOIN complaint_agency ca
+            ON c.complaint_no = ca.complaint_no
+        <where>
+            <if test="agencyNo != null">
+                AND ca.agency_no = #{agencyNo}
+            </if>
+        </where>
+        GROUP BY c.status
+    </select>
+
+    <select id="selectComplaintListByUserNo" resultType="com.safeguard.dto.ComplaintDTO">
+        SELECT *
+        FROM complaint
+        WHERE user_no = #{userNo}
+        ORDER BY created_date DESC
+    </select>
+
     <delete id="deleteAllLikes">
         DELETE FROM complaint_like
     </delete>

@@ -9,8 +9,9 @@ export const removeToken = (): void => localStorage.removeItem('token');
 // API 요청 헬퍼
 const apiRequest = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
     const token = getToken();
+    const isFormData = options.body instanceof FormData;
     const headers: HeadersInit = {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(options.headers as any),
     };
 
@@ -113,10 +114,13 @@ export const complaintsAPI = {
 
     getDetail: (id: string | number) => apiRequest(`/complaints/${id}`),
 
-    create: (complaintData: any) => apiRequest('/complaints', {
-        method: 'POST',
-        body: JSON.stringify(complaintData),
-    }),
+    create: (complaintData: any) => {
+        const isFormData = complaintData instanceof FormData;
+        return apiRequest('/complaints', {
+            method: 'POST',
+            body: isFormData ? complaintData : JSON.stringify(complaintData),
+        });
+    },
 
     update: (id: string | number, complaintData: any) => apiRequest(`/complaints/${id}`, {
         method: 'PUT',
@@ -148,12 +152,12 @@ export const complaintsAPI = {
     },
 
     updateStatus: (id: string | number, status: string) => apiRequest(`/complaints/${id}/status`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify({ status }),
     }),
 
     updateAnswer: (id: string | number, answer: string) => apiRequest(`/complaints/${id}/answer`, {
-        method: 'POST', // or PUT depending on backend
+        method: 'PATCH',
         body: JSON.stringify({ answer }),
     }),
 

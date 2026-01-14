@@ -15,4 +15,6 @@ public interface AgencyMapper {
     Agency selectAgencyByNo(@Param("agencyNo") Long agencyNo);
 
     boolean existsByNameAndRegion(@Param("agencyName") String agencyName, @Param("regionCode") String regionCode);
+
+    Agency selectAgencyByName(@Param("agencyName") String agencyName);
 }

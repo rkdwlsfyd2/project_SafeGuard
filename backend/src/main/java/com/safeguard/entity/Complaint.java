@@ -24,4 +24,8 @@ public class Complaint {
     private Long userNo;
     private Long agencyNo;
     private String imagePath;
+
+    private String address;
+    private Double latitude;
+    private Double longitude;
 }

@@ -269,6 +269,30 @@ public class SeedController {
                             throw new RuntimeException("Test user creation failed: " + e.getMessage());
                         }
                     });
+            user = userMapper.findByUserId("testuser")
+                    .orElse(null);
+
+            if (user == null) {
+                try {
+                    log.info("Creating default test user for seeding...");
+                    UserDTO newUser = UserDTO.builder()
+                            .userId("testuser")
+                            .pw(passwordEncoder.encode("testuser123"))
+                            .name("테스트유저")
+                            .birthDate(java.time.LocalDate.of(1990, 1, 1))
+                            .addr("서울시 강남구")
+                            .phone("010-0000-0000")
+                            .role(com.safeguard.enums.UserRole.USER)
+                            .build();
+
+                    userMapper.insertUser(newUser);
+                    user = userMapper.findByUserId("testuser")
+                            .orElseThrow(() -> new IllegalStateException("Seed user creation failed"));
+                } catch (Exception e) {
+                    log.error("Failed to create test user", e);
+                    throw new RuntimeException("Test user creation failed: " + e.getMessage());
+                }
+            }
 
             ComplaintDTO complaint = ComplaintDTO.builder()
                     .title(request.getTitle())
