@@ -111,33 +111,19 @@ public class ComplaintController {
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         Long userNo = (userDetails != null) ? userDetails.getUserNo() : 0L;
+        String role = null;
+        Long agencyNo = null;
 
-        ComplaintDTO c = complaintMapper.findByComplaintNo(id, userNo)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Complaint not found"));
+        if (userDetails != null) {
+            UserDTO userDto = userMapper.findByUserId(userDetails.getUsername()).orElse(null);
+            if (userDto != null) {
+                role = (userDto.getRole() != null) ? userDto.getRole().name() : null;
+                agencyNo = userDto.getAgencyNo();
+            }
+        }
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("complaintNo", c.getComplaintNo());
-        result.put("title", c.getTitle());
-        result.put("content", c.getContent());
-        result.put("category", c.getCategory());
-        result.put("status", c.getStatus());
-        result.put("createdDate", c.getCreatedDate());
-        result.put("address", c.getAddress());
-        result.put("latitude", c.getLatitude());
-        result.put("longitude", c.getLongitude());
-        result.put("imagePath", c.getImagePath());
-        result.put("likeCount", c.getLikeCount());
-        result.put("dislikeCount", c.getDislikeCount());
-        result.put("isPublic", c.getIsPublic());
-        result.put("regionName", c.getRegionName());
-        result.put("agencyName", c.getAgencyName());
-        result.put("authorName", "익명");
-        result.put("answer", c.getAnswer());
-        result.put("assignedAgencyText", c.getAssignedAgencyText());
-
-        // feature/agency-admin-fix 기능 유지
-        result.put("myReaction", c.getMyReaction()); // "LIKE"/"DISLIKE"/null
-        result.put("isMyPost", c.getIsMyPost());     // true/false
+        // [Strict] Service 계층에서 데이터 조회 및 권한 검사 수행
+        Map<String, Object> result = complaintService.getComplaintDetail(id, userNo, role, agencyNo);
 
         return ResponseEntity.ok(result);
     }
@@ -161,7 +147,7 @@ public class ComplaintController {
         String type = body.getOrDefault("type", "LIKE"); // "LIKE" or "DISLIKE"
 
         // self-post 방지 포함 조회
-        ComplaintDTO c = complaintMapper.findByComplaintNo(id, userNo)
+        ComplaintDTO c = complaintMapper.findByComplaintNo(id, userNo, null)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Complaint not found"));
 
         if (Boolean.TRUE.equals(c.getIsMyPost())) {
@@ -184,7 +170,7 @@ public class ComplaintController {
 
         // 카운트 최신화 및 재조회
         complaintMapper.updateComplaintLikeCount(id);
-        ComplaintDTO updated = complaintMapper.findByComplaintNo(id, userNo)
+        ComplaintDTO updated = complaintMapper.findByComplaintNo(id, userNo, null)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Complaint not found"));
 
         Map<String, Object> response = new HashMap<>();
@@ -257,8 +243,7 @@ public class ComplaintController {
 
         return ResponseEntity.ok(Map.of(
                 "complaintNo", complaintNo,
-                "message", "민원이 성공적으로 접수되었습니다."
-        ));
+                "message", "민원이 성공적으로 접수되었습니다."));
     }
 
     /**

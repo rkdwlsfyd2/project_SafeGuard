@@ -16,6 +16,7 @@
         <result property="createdDate" column="created_date"/>
         <result property="role" column="role"/>
         <result property="agencyNo" column="agency_no"/>
+        <result property="agencyName" column="agency_name"/>
     </resultMap>
 
     <!-- 회원 생성 (main 기준) -->
@@ -57,16 +58,18 @@
 
     <!-- 단건 조회 (PK) -->
     <select id="selectUserByUserNo" resultMap="UserResultMap">
-        SELECT *
-        FROM app_user
-        WHERE user_no = #{userNo}
+        SELECT u.*, a.agency_name
+        FROM app_user u
+        LEFT JOIN agency a ON u.agency_no = a.agency_no
+        WHERE u.user_no = #{userNo}
     </select>
 
     <!-- 단건 조회 (ID) -->
     <select id="findByUserId" resultMap="UserResultMap" parameterType="string">
-        SELECT *
-        FROM app_user
-        WHERE user_id = #{userId}
+        SELECT u.*, a.agency_name
+        FROM app_user u
+        LEFT JOIN agency a ON u.agency_no = a.agency_no
+        WHERE u.user_id = #{userId}
     </select>
 
     <!-- ID 중복 여부 -->

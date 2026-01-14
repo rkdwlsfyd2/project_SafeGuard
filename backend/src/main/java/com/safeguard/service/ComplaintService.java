@@ -18,4 +18,9 @@ public interface ComplaintService {
      * @return 통계 데이터 맵
      */
     java.util.Map<String, Object> getDashboardStats(Long agencyNo, String category);
+
+    /**
+     * 민원 상세 조회 (접근 권한 엄격 제어)
+     */
+    java.util.Map<String, Object> getComplaintDetail(Long complaintNo, Long userNo, String role, Long agencyNo);
 }

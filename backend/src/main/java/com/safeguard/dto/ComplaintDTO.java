@@ -37,5 +37,6 @@ public class ComplaintDTO {
     // Reaction fields
     private String myReaction;
     private Boolean isMyPost;
+    private Boolean isAssignedToMe;
     private Integer dislikeCount;
 }

@@ -22,4 +22,5 @@ public class UserDTO {
     private OffsetDateTime createdDate;
     private com.safeguard.enums.UserRole role; // USER, ADMIN, AGENCY
     private Long agencyNo;
+    private String agencyName;
 }

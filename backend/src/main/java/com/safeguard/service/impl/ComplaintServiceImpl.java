@@ -207,4 +207,61 @@ public class ComplaintServiceImpl implements ComplaintService {
             log.error("로그 파일 쓰기 실패", e);
         }
     }
+
+    /**
+     * 민원 상세 조회 (접근 권한 엄격 제어)
+     */
+    @Override
+    public Map<String, Object> getComplaintDetail(Long complaintNo, Long userNo, String role, Long agencyNo) {
+        // AGENCY 권한인 경우에만 viewerAgencyNo 전달하여 권한 여부(isAssignedToMe) 판단
+        Long viewerAgencyNo = (role != null && role.equals("AGENCY")) ? agencyNo : null;
+        Long safeUserNo = (userNo != null) ? userNo : 0L;
+
+        com.safeguard.dto.ComplaintDTO c = complaintMapper.findByComplaintNo(complaintNo, safeUserNo, viewerAgencyNo)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Complaint not found"));
+
+        // [Strict Access Control] 비공개 민원 접근 제어
+        if (Boolean.FALSE.equals(c.getIsPublic())) {
+            boolean isWriter = Boolean.TRUE.equals(c.getIsMyPost());
+            boolean isAssigned = Boolean.TRUE.equals(c.getIsAssignedToMe());
+            boolean isAdmin = role != null && role.equals("ADMIN");
+
+            // 작성자, 담당자, 관리자 중 어느 하나도 해당하지 않으면 차단
+            if (!isWriter && !isAssigned && !isAdmin) {
+                // 요구사항: HTTP 200 OK, Body: { "message": "비공개된 게시물입니다" }
+                // 실제 데이터 노출 없이 메시지만 포함된 Map 반환
+                Map<String, Object> masked = new HashMap<>();
+                masked.put("message", "비공개된 게시물입니다");
+                return masked;
+            }
+        }
+
+        // 권한이 있는 경우 전체 데이터 반환 (DTO -> Map 변환)
+        Map<String, Object> result = new HashMap<>();
+        result.put("complaintNo", c.getComplaintNo());
+        result.put("seqNo", c.getSeqNo());
+        result.put("title", c.getTitle());
+        result.put("content", c.getContent());
+        result.put("category", c.getCategory());
+        result.put("status", c.getStatus());
+        result.put("createdDate", c.getCreatedDate());
+        result.put("isPublic", c.getIsPublic());
+        result.put("regionName", c.getRegionName());
+        result.put("agencyName", c.getAgencyName());
+        result.put("authorName", "익명");
+        result.put("answer", c.getAnswer());
+        result.put("assignedAgencyText", c.getAssignedAgencyText());
+        result.put("myReaction", c.getMyReaction());
+        result.put("isMyPost", c.getIsMyPost());
+        result.put("likeCount", c.getLikeCount());
+        result.put("dislikeCount", c.getDislikeCount());
+        result.put("imagePath", c.getImagePath());
+        result.put("address", c.getAddress());
+        result.put("latitude", c.getLatitude());
+        result.put("longitude", c.getLongitude());
+        result.put("analysisResult", c.getAnalysisResult());
+
+        return result;
+    }
 }

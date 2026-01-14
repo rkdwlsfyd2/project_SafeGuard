@@ -18,12 +18,12 @@ public interface ComplaintMapper {
     // 목록/검색/페이징
     // =========================
     List<ComplaintDTO> selectComplaintList(@Param("search") String search,
-                                          @Param("category") String category,
-                                          @Param("status") String status,
-                                          @Param("region") String region,
-                                          @Param("sort") String sort,
-                                          @Param("order") String order,
-                                          @Param("agencyNo") Long agencyNo);
+            @Param("category") String category,
+            @Param("status") String status,
+            @Param("region") String region,
+            @Param("sort") String sort,
+            @Param("order") String order,
+            @Param("agencyNo") Long agencyNo);
 
     List<ComplaintDTO> findAll(Map<String, Object> params);
 
@@ -35,16 +35,17 @@ public interface ComplaintMapper {
     ComplaintStatsDTO selectComplaintStats(@Param("agencyNo") Long agencyNo);
 
     List<ComplaintDTO> selectTopLikedComplaints(@Param("status") String status,
-                                               @Param("agencyNo") Long agencyNo);
+            @Param("agencyNo") Long agencyNo);
 
     boolean isLikedByUser(@Param("complaintNo") Long complaintNo,
-                          @Param("userNo") Long userNo);
+            @Param("userNo") Long userNo);
 
     /**
      * 상세 조회 (내 반응/내 글 여부 포함을 위해 userNo 파라미터 유지)
      */
     Optional<ComplaintDTO> findByComplaintNo(@Param("complaintNo") Long complaintNo,
-                                            @Param("userNo") Long userNo);
+            @Param("userNo") Long userNo,
+            @Param("viewerAgencyNo") Long viewerAgencyNo);
 
     // =========================
     // CUD
@@ -54,10 +55,10 @@ public interface ComplaintMapper {
     void updateComplaint(ComplaintDTO complaint);
 
     void updateStatus(@Param("complaintNo") Long complaintNo,
-                      @Param("status") String status);
+            @Param("status") String status);
 
     void updateAnswer(@Param("complaintNo") Long complaintNo,
-                      @Param("answer") String answer);
+            @Param("answer") String answer);
 
     void deleteComplaintByNo(@Param("complaintNo") Long complaintNo);
 
@@ -68,13 +69,13 @@ public interface ComplaintMapper {
     void updateLikeCount(@Param("complaintNo") Long complaintNo);
 
     int checkUserLike(@Param("complaintNo") Long complaintNo,
-                      @Param("userNo") Long userNo);
+            @Param("userNo") Long userNo);
 
     void insertLike(@Param("complaintNo") Long complaintNo,
-                    @Param("userNo") Long userNo);
+            @Param("userNo") Long userNo);
 
     void deleteLike(@Param("complaintNo") Long complaintNo,
-                    @Param("userNo") Long userNo);
+            @Param("userNo") Long userNo);
 
     void decreaseLikeCount(@Param("complaintNo") Long complaintNo);
 
@@ -90,7 +91,7 @@ public interface ComplaintMapper {
     void insertSpatialFeature(SpatialFeature spatialFeature);
 
     void insertComplaintAgency(@Param("complaintNo") Long complaintNo,
-                               @Param("agencyNo") Long agencyNo);
+            @Param("agencyNo") Long agencyNo);
 
     /**
      * 사용자가 작성한 민원 목록 조회 (마이페이지용)
@@ -104,18 +105,18 @@ public interface ComplaintMapper {
     // Reaction (LIKE/DISLIKE) - feature/agency-admin-fix 채택
     // =========================
     String findReactionByUser(@Param("complaintNo") Long complaintNo,
-                              @Param("userNo") Long userNo);
+            @Param("userNo") Long userNo);
 
     void insertReaction(@Param("complaintNo") Long complaintNo,
-                        @Param("userNo") Long userNo,
-                        @Param("type") String type);
+            @Param("userNo") Long userNo,
+            @Param("type") String type);
 
     void updateReaction(@Param("complaintNo") Long complaintNo,
-                        @Param("userNo") Long userNo,
-                        @Param("type") String type);
+            @Param("userNo") Long userNo,
+            @Param("type") String type);
 
     void deleteReaction(@Param("complaintNo") Long complaintNo,
-                        @Param("userNo") Long userNo);
+            @Param("userNo") Long userNo);
 
     /**
      * 민원 테이블의 like_count/dislike_count 등 집계 갱신용
