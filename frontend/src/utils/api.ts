@@ -151,6 +151,11 @@ export const complaintsAPI = {
         return apiRequest(`/gis/complaints${query ? `?${query}` : ''}`);
     },
 
+    getHotspots: (params: any) => {
+        const query = new URLSearchParams(params).toString();
+        return apiRequest(`/gis/hotspots${query ? `?${query}` : ''}`);
+    },
+
     updateStatus: (id: string | number, status: string) => apiRequest(`/complaints/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),

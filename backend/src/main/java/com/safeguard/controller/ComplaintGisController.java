@@ -40,6 +40,15 @@ public class ComplaintGisController {
     }
 
     /**
+     * PostGIS ST_HexagonGrid 기반 핫스팟 데이터
+     */
+    @GetMapping("/hotspots")
+    public List<MapHotspotDto> hotspots(@ModelAttribute MapSearchRequest req) {
+        enforceAgency(req);
+        return complaintGisService.getHotspots(req);
+    }
+
+    /**
      * 오른쪽 목록(페이지네이션)
      *
      * 호출 예:

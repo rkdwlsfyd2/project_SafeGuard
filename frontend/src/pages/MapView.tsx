@@ -13,7 +13,6 @@ function MapView() {
   const markersRef = useRef([]);          // current markers
   const idleListenerRef = useRef(null);   // listener cleanup
   const scriptRef = useRef(null);         // script element
-  const fetchSeqRef = useRef(0);          // latest request guard
 
   const [loading, setLoading] = useState(true);
   const [locations, setLocations] = useState([]);
@@ -21,6 +20,15 @@ function MapView() {
 
   // [추가] map이 실제로 생성되었는지 (초기 렌더/StrictMode에서 renderMarkers가 먼저 호출되는 문제 방지)
   const [mapReady, setMapReady] = useState(false);
+
+  // [속성 추가] 뷰 모드 및 핫스팟 데이터
+  const [viewMode, setViewMode] = useState('marker'); // 'marker' | 'hotspot'
+  const [hotspots, setHotspots] = useState([]);
+  const polygonsRef = useRef([]);
+
+  // [수정] fetchLocations를 Ref로 관리하여 지도 리스너가 항상 최신 상태를 참조하게 함
+  const fetchSeqRef = useRef(0);
+  const fetchLocationsRef = useRef(null);
 
   // ====== UI Helpers ======
   const getCategoryStyle = (category) => {
@@ -77,6 +85,9 @@ function MapView() {
     if (clustererRef.current) {
       clustererRef.current.clear();
     }
+
+    polygonsRef.current.forEach((p) => p.setMap(null));
+    polygonsRef.current = [];
   };
 
   // ====== 데이터 로드 (bounds 기반) ======
@@ -89,20 +100,21 @@ function MapView() {
 
     try {
       const params = buildMapParams(map);
-      const data = await complaintsAPI.getMapItems(params);
 
-      // 최신 요청만 반영 (idle 연속 호출로 레이스 방지)
+      // 항상 민원 목록을 위해 데이터를 가져옴 (사이드바 리스트 동기화)
+      const markerData = await complaintsAPI.getMapItems(params);
       if (mySeq !== fetchSeqRef.current) return;
+      setLocations(Array.isArray(markerData) ? markerData : []);
 
-      setLocations(Array.isArray(data) ? data : []);
-      // 선택된 민원이 화면에서 사라졌으면 선택 해제
-      setSelectedComplaint((prev) => {
-        if (!prev) return prev;
-        const stillExists = (Array.isArray(data) ? data : []).some(
-          (x) => x.complaintNo === prev.complaintNo
-        );
-        return stillExists ? prev : null;
-      });
+      // 핫스팟 모드일 경우 추가로 핫스팟 데이터 가져옴
+      if (viewMode === 'hotspot') {
+        const hotspotData = await complaintsAPI.getHotspots(params);
+        if (mySeq !== fetchSeqRef.current) return;
+        console.log('Hotspot Data Received:', hotspotData?.length);
+        setHotspots(Array.isArray(hotspotData) ? hotspotData : []);
+      }
+
+      // 선택된 민원이 화면에서 사라졌으면 선택 해제 (마커 모드일 때만 적용하기엔 모호하므로 일단 유지)
     } catch (err) {
       console.error('위치 데이터 로드 실패:', err);
     } finally {
@@ -110,6 +122,19 @@ function MapView() {
       if (mySeq === fetchSeqRef.current) setLoading(false);
     }
   };
+
+  // Ref 업데이트
+  useEffect(() => {
+    fetchLocationsRef.current = fetchLocations;
+  }, [fetchLocations]);
+
+  // [추가] 뷰 모드가 바뀌면 즉시 데이터를 다시 불러옴
+  useEffect(() => {
+    if (mapReady) {
+      fetchLocations();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode]);
 
   // ====== 마커 렌더링 ======
   const renderMarkers = () => {
@@ -143,8 +168,9 @@ function MapView() {
       clustererRef.current.setMap(map);
     }
 
-    // 좌표 숫자 변환 + invalid 방어
+    // 처리 완료된 민원은 지도에서 제외 + 상태별 마커 색상 변경
     const markers = locations
+      .filter((loc) => loc.status !== 'COMPLETED')
       .map((loc) => {
         const lat = Number(loc.lat);
         const lng = Number(loc.lng);
@@ -154,8 +180,24 @@ function MapView() {
           return null;
         }
 
+        // 상태별 마커 이미지 설정 (SVG 데이터 URI 활용)
+        const markerColor = loc.status === 'IN_PROGRESS' ? '#d97706' : '#dc2626'; // 처리중: 주황/노랑, 미처리: 빨강
+        const markerImageSrc = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+          <svg width="36" height="36" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0C10.5 0 6 4.5 6 10c0 7.5 10 22 10 22s10-14.5 10-22c0-5.5-4.5-10-10-10z" fill="${markerColor}" stroke="white" stroke-width="1.5"/>
+            <circle cx="16" cy="10" r="4" fill="white"/>
+          </svg>
+        `)}`;
+
+        const markerImage = new window.kakao.maps.MarkerImage(
+          markerImageSrc,
+          new window.kakao.maps.Size(36, 36),
+          { offset: new window.kakao.maps.Point(18, 36) }
+        );
+
         const marker = new window.kakao.maps.Marker({
           position: new window.kakao.maps.LatLng(lat, lng),
+          image: markerImage
         });
 
         window.kakao.maps.event.addListener(marker, "click", () => {
@@ -176,9 +218,56 @@ function MapView() {
   // [추가] locations가 바뀌면 마커를 다시 그림
   // 단, mapReady가 false면 renderMarkers 내부에서 return 됨
   useEffect(() => {
-    renderMarkers();
+    if (viewMode === 'marker') {
+      renderMarkers();
+    } else {
+      renderHotspots();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, locations]);
+  }, [mapReady, locations, hotspots, viewMode]);
+
+  // ====== 핫스팟 렌더링 ======
+  const renderHotspots = () => {
+    const map = mapRef.current;
+    if (!mapReady || !map || !window.kakao?.maps) return;
+
+    clearMarkers();
+
+    if (!hotspots || hotspots.length === 0) return;
+
+    // 밀도에 따른 스펙트럼 색상 계산 함수 (낮음: 파랑 -> 높음: 빨강)
+    const getSpectrumColor = (count) => {
+      if (count >= 10) return '#ef4444'; // 진한 빨강 (Danger)
+      if (count >= 7) return '#f97316';  // 주황
+      if (count >= 5) return '#fbbf24';  // 노랑
+      if (count >= 3) return '#84cc16';  // 연두
+      if (count >= 2) return '#22c55e';  // 초록
+      return '#3b82f6';                // 파랑 (상대적 낮음)
+    };
+
+    const polygons = hotspots.map((hs) => {
+      if (!hs.points || hs.points.length === 0) return null;
+
+      const path = hs.points.map(p => new window.kakao.maps.LatLng(p.lat, p.lng));
+      const color = getSpectrumColor(hs.count);
+
+      // 참고 이미지처럼 테두리 없이 부드럽게 렌더링
+      const opacity = Math.min(0.4 + (hs.count * 0.05), 0.85);
+
+      const polygon = new window.kakao.maps.Polygon({
+        path: path,
+        strokeWeight: 0, // 테두리 제거 (부드러운 연결)
+        fillColor: color,
+        fillOpacity: opacity,
+        zIndex: 10
+      });
+
+      polygon.setMap(map);
+      return polygon;
+    }).filter(p => p !== null);
+
+    polygonsRef.current = polygons;
+  };
 
   // ====== Kakao SDK 로드 & 지도 생성 ======
   useEffect(() => {
@@ -203,9 +292,11 @@ function MapView() {
         setMapReady(true);
 
         // idle 이벤트: 이동/줌 끝날 때마다 bounds 재조회
-        // (너희 GIS 요구사항에 맞는 정석 패턴)
+        // [수정] 리스너 내에서 직접 fetchLocations를 호출하면 클로저 문제가 생기므로 Ref 사용
         idleListenerRef.current = window.kakao.maps.event.addListener(map, 'idle', () => {
-          fetchLocations();
+          if (fetchLocationsRef.current) {
+            fetchLocationsRef.current();
+          }
         });
 
         // 최초 1회 로드
@@ -380,6 +471,54 @@ function MapView() {
                 🔄
               </button>
             </div>
+
+            {/* 뷰 모드 토글 */}
+            <div style={{
+              position: 'absolute',
+              top: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: 'white',
+              padding: '6px',
+              borderRadius: '16px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+              display: 'flex',
+              gap: '4px',
+              zIndex: 100
+            }}>
+              <button
+                onClick={() => setViewMode('marker')}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  backgroundColor: viewMode === 'marker' ? '#7c3aed' : 'transparent',
+                  color: viewMode === 'marker' ? 'white' : '#64748b',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  fontSize: '0.9rem'
+                }}
+              >
+                📍 마커 모드
+              </button>
+              <button
+                onClick={() => setViewMode('hotspot')}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  backgroundColor: viewMode === 'hotspot' ? '#7c3aed' : 'transparent',
+                  color: viewMode === 'hotspot' ? 'white' : '#64748b',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  fontSize: '0.9rem'
+                }}
+              >
+                🔥 핫스팟 모드
+              </button>
+            </div>
           </div>
 
           {/* 사이드바 */}
@@ -550,6 +689,17 @@ function MapView() {
                         fontWeight: '600'
                       }}>
                         {loc.category}
+                      </span>
+                      <span style={{
+                        marginLeft: 'auto',
+                        fontSize: '0.7rem',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        backgroundColor: getStatusBadge(loc.status).bg,
+                        color: getStatusBadge(loc.status).color,
+                        fontWeight: '600'
+                      }}>
+                        {getStatusBadge(loc.status).text}
                       </span>
                     </div>
 

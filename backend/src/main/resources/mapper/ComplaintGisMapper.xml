@@ -26,10 +26,11 @@
                 AND c.status = #{req.status}
             </if>
 
-            <!-- adminCode (필요하면 사용: 컬럼명은 실제 DB에 맞춰 수정) -->
+            <!-- adminCode (민원 테이블에 컬럼이 없으므로 주석 처리)
             <if test="req.adminCode != null and req.adminCode != ''">
                 AND c.admin_code = #{req.adminCode}
             </if>
+            -->
 
             <!-- date range: OffsetDateTime from/to -->
             <if test="req.from != null">
@@ -98,6 +99,60 @@
         <include refid="CommonWhere"/>
         ORDER BY c.created_date DESC
         LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- hotspots (ST_HexagonGrid) -->
+    <resultMap id="HotspotResultMap" type="com.safeguard.dto.MapHotspotDto" >
+        <id property="cellId" column="cell_id"/>
+        <result property="count" column="count"/>
+        <collection property="points" ofType="com.safeguard.dto.MapHotspotDto$PointDto">
+            <result property="lat" column="lat"/>
+            <result property="lng" column="lng"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectHotspots" resultMap="HotspotResultMap">
+        WITH grid AS (
+            SELECT ST_SquareGrid(#{gridDeg}, ST_SetSRID(ST_MakeEnvelope(
+                #{req.swLng}, #{req.swLat}, #{req.neLng}, #{req.neLat}
+            ), 4326)) AS cell
+        ),
+        squares AS (
+            SELECT (grid.cell).geom AS geom, (grid.cell).i, (grid.cell).j
+            FROM grid
+        ),
+        counts AS (
+            SELECT s.geom, s.i, s.j, COUNT(c.complaint_no) AS cnt
+            FROM squares s
+            JOIN spatial_feature sf ON ST_Intersects(s.geom, sf.geom)
+            JOIN complaint c ON c.complaint_no = sf.complaint_no
+            <where>
+                <if test="req.category != null and req.category != ''">
+                    AND c.category = #{req.category}
+                </if>
+                <if test="req.status != null and req.status != ''">
+                    AND c.status = #{req.status}
+                </if>
+                <if test="req.agencyNo != null">
+                    AND c.agency_no = #{req.agencyNo}
+                </if>
+                <!-- 처리 완료 제외 -->
+                AND c.status != 'COMPLETED'
+            </where>
+            GROUP BY s.geom, s.i, s.j
+            HAVING COUNT(c.complaint_no) > 0
+        ),
+        points AS (
+            SELECT cnt, i, j, (ST_DumpPoints(geom)).geom AS pt
+            FROM counts
+        )
+        SELECT
+            i || '_' || j AS cell_id,
+            cnt           AS "count",
+            ST_Y(pt)      AS "lat",
+            ST_X(pt)      AS "lng"
+        FROM points
+        ORDER BY cell_id
     </select>
 
     <!-- count -->
