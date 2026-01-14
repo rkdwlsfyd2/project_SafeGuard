@@ -34,4 +34,8 @@ public class ComplaintDTO {
     private String assignedAgencyText;
     private String regionName;
     private String regionCode;
+    // Reaction fields
+    private String myReaction;
+    private Boolean isMyPost;
+    private Integer dislikeCount;
 }

@@ -17,6 +17,7 @@ export const removeToken = (): void => localStorage.removeItem('token');
 const apiRequest = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
     const token = getToken();
     const isFormData = options.body instanceof FormData;
+
     const headers: HeadersInit = {
         ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(options.headers as any),
@@ -32,7 +33,8 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}): Promise<
     });
 
     const text = await response.text();
-    let data;
+    let data: any;
+
     try {
         data = text ? JSON.parse(text) : {};
     } catch (e) {
@@ -71,6 +73,7 @@ export const authAPI = {
             method: 'POST',
             body: JSON.stringify(credentials),
         });
+
         if (data.token) {
             setToken(data.token);
             if (data.user) {
@@ -83,6 +86,7 @@ export const authAPI = {
                 }
             }
         }
+
         return data;
     },
 
@@ -144,17 +148,48 @@ export const complaintsAPI = {
         method: 'DELETE',
     }),
 
-    // 민원 좋아요 토글
-    toggleLike: (id: string | number) => apiRequest(`/complaints/${id}/like`, {
-        method: 'POST',
-    }),
+    /**
+     * 좋아요/싫어요 반응 토글 (권장)
+     * - 백엔드: POST /api/complaints/{id}/reaction
+     * - body: { type: "LIKE" | "DISLIKE" }
+     */
+    toggleReaction: (id: string | number, type: 'LIKE' | 'DISLIKE') =>
+        apiRequest(`/complaints/${id}/reaction`, {
+            method: 'POST',
+            body: JSON.stringify({ type }),
+        }),
 
     /**
-     * 대시보드 통계 데이터 가져오기 (고도화된 차트 연동용)
+     * (호환용) 예전 좋아요 토글
+     * - 백엔드에 /{id}/like 를 남겨둔 경우에만 사용
+     * - 컨트롤러에서 toggleReaction(type=LIKE)로 위임하도록 구성 권장
+     */
+    toggleLike: (id: string | number) =>
+        apiRequest(`/complaints/${id}/like`, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'LIKE' }),
+        }),
+
+    /**
+     * 대시보드 통계 데이터 가져오기
+     * - 주의: 백엔드에서 /complaints/stats 가 2개였던 경우,
+     *   현재 컨트롤러 기준으로
+     *   1) 요약: /complaints/stats
+     *   2) 고도화(Map): /complaints/stats/dashboard
+     *   로 분리된 상태를 가정합니다.
      */
     getStats: (category?: string) => {
         const query = category ? `?category=${encodeURIComponent(category)}` : '';
         return apiRequest(`/complaints/stats${query}`);
+    },
+
+    /**
+     * (고도화 통계) 대시보드 Map 형태 통계
+     * - 백엔드: GET /api/complaints/stats/dashboard?category=...
+     */
+    getDashboardStats: (category?: string) => {
+        const query = category ? `?category=${encodeURIComponent(category)}` : '';
+        return apiRequest(`/complaints/stats/dashboard${query}`);
     },
 
     // 내가 쓴 민원 목록 가져오기
@@ -194,6 +229,7 @@ export const complaintsAPI = {
     uploadImage: async (file: File) => {
         const formData = new FormData();
         formData.append('image', file);
+
         const token = getToken();
         const headers: HeadersInit = {};
         if (token) (headers as any)['Authorization'] = `Bearer ${token}`;
@@ -269,10 +305,12 @@ export const generateTitle = async (text: string, address: string, type: string)
 export const analyzeImage = async (file: File) => {
     const formData = new FormData();
     formData.append('image', file);
+
     const response = await fetch(`${API_BASE}/analyze-image`, {
         method: 'POST',
         body: formData,
     });
+
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'AI 이미지 분석 오류');
     return data;
