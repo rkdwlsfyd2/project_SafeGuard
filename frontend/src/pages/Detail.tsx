@@ -175,13 +175,10 @@ function Detail() {
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                     <span>🏛️</span>
                                     <span style={{
-                                        padding: '2px 10px',
-                                        backgroundColor: report.agencyName ? '#e0f2fe' : '#f1f5f9',
-                                        borderRadius: '6px',
-                                        color: report.agencyName ? '#0369a1' : '#94a3b8',
-                                        fontWeight: '600'
+                                        fontWeight: '600',
+                                        color: '#334155'
                                     }}>
-                                        {report.agencyName || '미지정'}
+                                        {report.assignedAgencyText || '-'}
                                     </span>
                                 </div>
                             </div>

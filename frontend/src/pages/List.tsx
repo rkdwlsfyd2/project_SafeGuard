@@ -14,6 +14,7 @@ function List() {
     const order = searchParams.get('order') || 'ASC';
     const statusParams = searchParams.get('status') || '전체';
     const regionParams = searchParams.get('region') || '전체';
+    const myAgencyOnly = searchParams.get('myAgencyOnly') === 'true';
 
     const [complaints, setComplaints] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -25,7 +26,7 @@ function List() {
 
     useEffect(() => {
         fetchComplaints();
-    }, [page, search, category, statusParams, regionParams, sort, order]);
+    }, [page, search, category, statusParams, regionParams, sort, order, myAgencyOnly]);
 
     const fetchComplaints = async () => {
         setLoading(true);
@@ -43,7 +44,8 @@ function List() {
                 status: statusParams,
                 sort,
                 order,
-                adminMode: isAdminPath // Send adminMode flag to backend
+                adminMode: isAdminPath, // Send adminMode flag to backend
+                myAgencyOnly // Add implicit check
             };
 
             if (regionParams && regionParams !== '전체') {
@@ -67,19 +69,19 @@ function List() {
 
     // Fix handleSearch
     const handleSearch = () => {
-        setSearchParams({ page: '1', search: searchInput, category, status: statusParams, region: regionParams, sort, order });
+        setSearchParams({ page: '1', search: searchInput, category, status: statusParams, region: regionParams, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
     const handleCategoryChange = (e: any) => {
-        setSearchParams({ page: '1', search, category: e.target.value, status: statusParams, region: regionParams, sort, order });
+        setSearchParams({ page: '1', search, category: e.target.value, status: statusParams, region: regionParams, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
     const handleStatusChange = (e: any) => {
-        setSearchParams({ page: '1', search, category, status: e.target.value, region: regionParams, sort, order });
+        setSearchParams({ page: '1', search, category, status: e.target.value, region: regionParams, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
     const handleRegionChange = (e: any) => {
-        setSearchParams({ page: '1', search, category, status: statusParams, region: e.target.value, sort, order });
+        setSearchParams({ page: '1', search, category, status: statusParams, region: e.target.value, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
     const handleSortChange = (e: any) => {
@@ -90,14 +92,14 @@ function List() {
         if (val === 'old') {
             newOrder = 'ASC';
         } else if (val === 'likes') {
-            newSort = 'like_count';
+            newSort = 'likeCount';
         }
 
-        setSearchParams({ page: '1', search, category, status: statusParams, region: regionParams, sort: newSort, order: newOrder });
+        setSearchParams({ page: '1', search, category, status: statusParams, region: regionParams, sort: newSort, order: newOrder, myAgencyOnly: String(myAgencyOnly) });
     };
 
     const setPage = (newPage: number) => {
-        setSearchParams({ page: String(newPage), search, category, status: statusParams, region: regionParams, sort, order });
+        setSearchParams({ page: String(newPage), search, category, status: statusParams, region: regionParams, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
     const getStatusBadge = (status) => {
@@ -177,23 +179,6 @@ function List() {
                         alignItems: 'center'
                     }}>
                         <select
-                            value={category}
-                            onChange={handleCategoryChange}
-                            style={{
-                                padding: '12px 16px',
-                                border: '2px solid #e2e8f0',
-                                borderRadius: '10px',
-                                fontSize: '0.95rem',
-                                backgroundColor: 'white',
-                                cursor: 'pointer'
-                            }}
-
-                        >
-                            {['전체', '교통', '행정·안전', '도로', '산업·통상', '주택·건축', '교육', '경찰·검찰', '환경', '보건', '관광', '기타'].map(cat => (
-                                <option key={cat} value={cat}>{cat === '전체' ? '민원유형' : cat}</option>
-                            ))}
-                        </select>
-                        <select
                             value={regionParams}
                             onChange={handleRegionChange}
                             style={{
@@ -231,6 +216,23 @@ function List() {
                             ))}
                         </select>
                         <select
+                            value={category}
+                            onChange={handleCategoryChange}
+                            style={{
+                                padding: '12px 16px',
+                                border: '2px solid #e2e8f0',
+                                borderRadius: '10px',
+                                fontSize: '0.95rem',
+                                backgroundColor: 'white',
+                                cursor: 'pointer'
+                            }}
+
+                        >
+                            {['전체', '교통', '행정·안전', '도로', '산업·통상', '주택·건축', '교육', '경찰·검찰', '환경', '보건', '관광', '기타'].map(cat => (
+                                <option key={cat} value={cat}>{cat === '전체' ? '민원유형' : cat}</option>
+                            ))}
+                        </select>
+                        <select
                             value={statusParams}
                             onChange={handleStatusChange}
                             style={{
@@ -248,6 +250,30 @@ function List() {
                                 </option>
                             ))}
                         </select>
+
+                        {localStorage.getItem('role') === 'AGENCY' && (
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', fontWeight: '600', color: '#475569', cursor: 'pointer', padding: '0 8px' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={searchParams.get('myAgencyOnly') === 'true'}
+                                    onChange={(e) => {
+                                        const isChecked = e.target.checked;
+                                        setSearchParams({
+                                            page: '1',
+                                            search,
+                                            category,
+                                            status: statusParams,
+                                            region: regionParams,
+                                            sort,
+                                            order,
+                                            myAgencyOnly: isChecked ? 'true' : 'false'
+                                        });
+                                    }}
+                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                />
+                                내 담당민원
+                            </label>
+                        )}
                         <input
                             type="text"
                             value={searchInput}

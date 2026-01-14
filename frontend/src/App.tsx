@@ -19,15 +19,12 @@ import './index.css';
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [role, setRole] = useState(localStorage.getItem('role') || 'USER');
-  const [isAdminView, setIsAdminView] = useState(localStorage.getItem('role') === 'AGENCY');
 
   // localStorage 변경을 다른 탭/창에서도 반영 (선택사항이지만 유용)
   useEffect(() => {
     const onStorage = () => {
       setToken(localStorage.getItem('token'));
       setRole(localStorage.getItem('role') || 'USER');
-      // If role changes, reset admin view state
-      setIsAdminView(localStorage.getItem('role') === 'AGENCY');
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
@@ -41,38 +38,26 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('userId');
+    localStorage.removeItem('agencyNo');
 
     setToken(null);
     setRole('USER');
-    setIsAdminView(false);
 
     window.location.href = '/login';
   };
 
-  const toggleAdminView = () => {
-    setIsAdminView(!isAdminView);
-  };
+  // Determine view mode based on role
+  const isAdminUser = role === 'AGENCY';
 
   return (
     <Router>
-      <div className={`app ${isAdminView ? 'admin-theme' : ''}`}>
+      <div className={`app ${isAdminUser ? 'admin-theme' : ''}`}>
         {/* Top Bar */}
         <div className="top-bar">
           <div className="container" style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <div className="top-bar__links">
               {token ? (
                 <>
-                  {role === 'AGENCY' && (
-                    <>
-                      <button
-                        onClick={toggleAdminView}
-                        style={{ background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer', padding: '0 10px', font: 'inherit', fontWeight: 'bold' }}
-                      >
-                        {isAdminView ? '👤 일반유저 모드' : '🛠️ 관리자 모드'}
-                      </button>
-                      <span>|</span>
-                    </>
-                  )}
                   <Link to="/mypage">마이페이지</Link>
                   <span>|</span>
                   <button
@@ -97,13 +82,13 @@ function App() {
         <header className="header">
           <div className="container header__inner">
             <div className="logo">
-              <Link to={isAdminView ? "/admin/dashboard" : "/"}>
+              <Link to={isAdminUser ? "/admin/dashboard" : "/"}>
                 <h1 style={{ color: 'var(--primary-color)', fontSize: '1.8rem', fontWeight: '800' }}>모두의 민원</h1>
               </Link>
             </div>
             <nav className="nav">
               <ul className="nav__list">
-                {isAdminView ? (
+                {isAdminUser ? (
                   <>
                     <li className="nav__item"><Link to="/admin/list">민원 목록(관리자)</Link></li>
                     <li className="nav__item"><Link to="/admin/map">신고현황 지도(관리자)</Link></li>
@@ -111,7 +96,14 @@ function App() {
                   </>
                 ) : (
                   <>
-                    <li className="nav__item"><Link to="/apply-text">신고 하기</Link></li>
+                    <li className="nav__item nav-dropdown">
+                      <span>민원접수 ▾</span>
+                      <div className="nav-dropdown-content">
+                        <Link to="/apply-text">텍스트 민원</Link>
+                        <Link to="/apply-voice">음성 민원</Link>
+                        <Link to="/apply-image">이미지 민원</Link>
+                      </div>
+                    </li>
                     <li className="nav__item"><Link to="/about">서비스 소개</Link></li>
                     <li className="nav__item"><Link to="/list">민원 목록</Link></li>
                     <li className="nav__item"><Link to="/map">신고현황 지도</Link></li>
@@ -131,12 +123,16 @@ function App() {
           <Route path="/apply-voice" element={<ApplyVoice />} />
           <Route path="/apply-image" element={<ApplyImage />} />
           <Route path="/about" element={<About />} />
+
+          {/* Admin Routes */}
           <Route path="/list" element={<List />} />
           <Route path="/admin/list" element={<List />} />
           <Route path="/reports/:id" element={<Detail />} />
           <Route path="/map" element={<MapView />} />
           <Route path="/admin/map" element={<MapView />} />
           <Route path="/admin/dashboard" element={<Dashboard />} />
+
+          {/* User Account Routes */}
           <Route path="/mypage" element={<MyPage />} />
           <Route path="/find-account" element={<FindAccount />} />
           <Route path="/reset-password" element={<ResetPassword />} />

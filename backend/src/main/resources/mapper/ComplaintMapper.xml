@@ -77,7 +77,18 @@
             MAX(CASE 
                 WHEN a.agency_type = 'LOCAL' THEN a.agency_name
                 ELSE NULL
-            END) AS regionName
+            END) AS regionName,
+            (
+                SELECT
+                    CASE
+                        WHEN COUNT(*) > 1 THEN CONCAT(MIN(a2.agency_name), ' 외 ', COUNT(*) - 1, '곳')
+                        WHEN COUNT(*) = 1 THEN MIN(a2.agency_name)
+                        ELSE NULL
+                    END
+                FROM agency a2
+                JOIN complaint_agency ca2 ON ca2.agency_no = a2.agency_no
+                WHERE ca2.complaint_no = c.complaint_no
+            ) AS assignedAgencyText
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
@@ -184,9 +195,9 @@
         GROUP BY c.complaint_no
         ORDER BY
         <choose>
-            <when test="sort == 'like_count'">c.like_count</when>
-            <when test="sort == 'complaint_no'">c.complaint_no</when>
-            <otherwise>c.created_date</otherwise>
+            <when test="sort == 'created_date'">c.created_date</when>
+            <when test="sort == 'likeCount'">c.like_count</when>
+            <otherwise>c.complaint_no</otherwise>
         </choose>
         <choose>
             <when test="order == 'ASC'">ASC</when>
