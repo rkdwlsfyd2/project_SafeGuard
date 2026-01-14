@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getToken } from '../utils/api';
 
 function Home() {
     const navigate = useNavigate();
@@ -131,7 +132,14 @@ function Home() {
                         {cards.map(card => (
                             <div
                                 key={card.path}
-                                onClick={() => navigate(card.path)}
+                                onClick={() => {
+                                    if (!getToken()) {
+                                        alert('로그인이 필요합니다.');
+                                        navigate('/login');
+                                    } else {
+                                        navigate(card.path);
+                                    }
+                                }}
                                 style={{
                                     backgroundColor: 'white',
                                     borderRadius: '20px',
@@ -245,6 +253,9 @@ function Home() {
 
             {/* 민원 피드 섹션 */}
             <div style={{
+                maxWidth: '1200px',
+                margin: '40px auto 80px',
+                padding: '0 20px',
                 display: 'grid',
                 gridTemplateColumns: 'repeat(2, 1fr)',
                 gap: '24px'

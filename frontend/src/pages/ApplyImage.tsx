@@ -4,8 +4,14 @@ import { complaintsAPI, getToken, agenciesAPI } from '../utils/api';
 
 function ApplyImage() {
     const navigate = useNavigate();
-    const mapRef = useRef(null);
-    const fileInputRef = useRef(null);
+    const mapRef = useRef<HTMLDivElement>(null);
+    const mapInstance = useRef<any>(null);
+    const markerInstance = useRef<any>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const titleInputRef = useRef<HTMLInputElement>(null);
+    const imageRef = useRef<HTMLDivElement>(null);
+    const locationRef = useRef<HTMLDivElement>(null);
+    const submitButtonRef = useRef<HTMLButtonElement>(null);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -57,11 +63,36 @@ function ApplyImage() {
                         level: 3
                     };
                     const newMap = new window.kakao.maps.Map(container, options);
+                    mapInstance.current = newMap;
 
                     const marker = new window.kakao.maps.Marker({
                         position: newMap.getCenter(),
                         map: newMap
                     });
+                    markerInstance.current = marker;
+
+                    // 현재 위치 자동 감지
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((position) => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            const locPosition = new window.kakao.maps.LatLng(lat, lng);
+
+                            newMap.setCenter(locPosition);
+                            marker.setPosition(locPosition);
+
+                            const geocoder = new window.kakao.maps.services.Geocoder();
+                            geocoder.coord2Address(lng, lat, (result, status) => {
+                                if (status === window.kakao.maps.services.Status.OK) {
+                                    const addr = result[0].address.address_name;
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        location: { lat, lng, address: addr }
+                                    }));
+                                }
+                            });
+                        });
+                    }
 
                     window.kakao.maps.event.addListener(newMap, 'click', (mouseEvent) => {
                         const latlng = mouseEvent.latLng;
@@ -89,8 +120,18 @@ function ApplyImage() {
             script.async = true;
             script.onload = loadKakaoMap;
             document.head.appendChild(script);
+
+            // Daum Postcode Script
+            const postcodeScript = document.createElement('script');
+            postcodeScript.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+            postcodeScript.async = true;
+            document.head.appendChild(postcodeScript);
+
             return () => {
                 document.head.removeChild(script);
+                if (document.head.contains(postcodeScript)) {
+                    document.head.removeChild(postcodeScript);
+                }
             };
         }
     }, []);
@@ -213,10 +254,81 @@ function ApplyImage() {
 
     const steps = [
         { num: 1, label: '제목 입력', done: !!formData.title },
-        { num: 2, label: '사진 첨부', done: !!selectedImage },
-        { num: 3, label: '위치 선택', done: true },
+        { num: 2, label: '사진 첨부(AI)', done: !!selectedImage },
+        { num: 3, label: '위치 선택', done: !!formData.location },
         { num: 4, label: '접수 완료', done: false }
     ];
+
+    const handleStepClick = (stepNum: number) => {
+        const offset = 100;
+        let targetRef = null;
+
+        switch (stepNum) {
+            case 1:
+                titleInputRef.current?.focus();
+                // 스크롤도 같이 이동
+                targetRef = titleInputRef;
+                break;
+            case 2:
+                targetRef = imageRef;
+                fileInputRef.current?.click();
+                break;
+            case 3:
+                targetRef = locationRef;
+                handleSearchAddress();
+                break;
+            case 4:
+                submitButtonRef.current?.focus();
+                targetRef = submitButtonRef;
+                break;
+            default: break;
+        }
+
+        if (targetRef && targetRef.current) {
+            const element = targetRef.current;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+        }
+    };
+
+    const handleSearchAddress = () => {
+        if (!window.daum || !window.daum.Postcode) {
+            alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        new window.daum.Postcode({
+            oncomplete: function (data) {
+                const addr = data.roadAddress || data.jibunAddress;
+
+                // 주소로 좌표 검색
+                const geocoder = new window.kakao.maps.services.Geocoder();
+                geocoder.addressSearch(addr, function (result, status) {
+                    if (status === window.kakao.maps.services.Status.OK) {
+                        const lat = parseFloat(result[0].y);
+                        const lng = parseFloat(result[0].x);
+
+                        setFormData(prev => ({
+                            ...prev,
+                            location: { lat, lng, address: addr }
+                        }));
+
+                        // 지도 이동
+                        if (mapInstance.current && markerInstance.current) {
+                            const moveLatLon = new window.kakao.maps.LatLng(lat, lng);
+                            mapInstance.current.setCenter(moveLatLon);
+                            markerInstance.current.setPosition(moveLatLon);
+                        }
+                    }
+                });
+            }
+        }).open();
+    };
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '40px 20px' }}>
@@ -245,7 +357,16 @@ function ApplyImage() {
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             {steps.map((step, idx) => (
-                                <div key={step.num} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div
+                                    key={step.num}
+                                    onClick={() => handleStepClick(step.num)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
                                     <div style={{
                                         width: '36px',
                                         height: '36px',
@@ -311,6 +432,7 @@ function ApplyImage() {
                                     민원 제목 <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                                 <input
+                                    ref={titleInputRef}
                                     type="text"
                                     value={formData.title}
                                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
@@ -331,7 +453,7 @@ function ApplyImage() {
                             </div>
 
                             {/* 이미지 업로드 섹션 */}
-                            <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+                            <div ref={imageRef} style={{ marginBottom: '30px', textAlign: 'center' }}>
                                 <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '16px', textAlign: 'left' }}>
                                     현장 사진 첨부 <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
@@ -423,7 +545,7 @@ function ApplyImage() {
                             </div>
 
                             {/* 위치 선택 */}
-                            <div style={{ marginBottom: '24px' }}>
+                            <div ref={locationRef} style={{ marginBottom: '24px' }}>
                                 <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
                                     발생 위치
                                     <span style={{ fontWeight: '400', color: '#94a3b8', marginLeft: '8px' }}>지도를 클릭하여 선택</span>
@@ -438,7 +560,39 @@ function ApplyImage() {
                                     gap: '8px'
                                 }}>
                                     <span style={{ fontSize: '1.1rem' }}>📍</span>
-                                    <span style={{ color: '#16a34a', fontWeight: '500' }}>{formData.location.address}</span>
+                                    <input
+                                        type="text"
+                                        value={formData.location?.address || ''}
+                                        readOnly
+                                        placeholder="주소 검색 버튼을 눌러주세요"
+                                        style={{
+                                            border: 'none',
+                                            background: 'transparent',
+                                            width: '100%',
+                                            fontSize: '1rem',
+                                            color: '#1e293b',
+                                            fontWeight: '500',
+                                            outline: 'none',
+                                            cursor: 'default'
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleSearchAddress}
+                                        style={{
+                                            padding: '8px 12px',
+                                            backgroundColor: '#3b82f6',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            fontSize: '0.85rem',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                    >
+                                        🔍 주소 검색
+                                    </button>
                                 </div>
                                 <div
                                     ref={mapRef}
@@ -490,6 +644,7 @@ function ApplyImage() {
 
                             {/* 제출 버튼 */}
                             <button
+                                ref={submitButtonRef}
                                 type="submit"
                                 disabled={loading}
                                 style={{
@@ -528,7 +683,7 @@ function ApplyImage() {
                             textAlign: 'center'
                         }}>
                             <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🤖</div>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>AI 이미지 분석</h3>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>AI 분석 결과</h3>
                         </div>
                         <div style={{ padding: '24px' }}>
                             <div style={{
