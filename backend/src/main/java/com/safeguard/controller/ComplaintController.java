@@ -137,7 +137,7 @@ public class ComplaintController {
 
         // feature/agency-admin-fix 기능 유지
         result.put("myReaction", c.getMyReaction()); // "LIKE"/"DISLIKE"/null
-        result.put("isMyPost", c.getIsMyPost());     // true/false
+        result.put("isMyPost", c.getIsMyPost()); // true/false
 
         return ResponseEntity.ok(result);
     }
@@ -257,8 +257,7 @@ public class ComplaintController {
 
         return ResponseEntity.ok(Map.of(
                 "complaintNo", complaintNo,
-                "message", "민원이 성공적으로 접수되었습니다."
-        ));
+                "message", "민원이 성공적으로 접수되었습니다."));
     }
 
     /**
@@ -305,8 +304,9 @@ public class ComplaintController {
     public ResponseEntity<Map<String, String>> uploadImage(
             @RequestParam("image") MultipartFile file) {
         try {
-            String fileName = fileService.storeFile(file);
-            String imagePath = "/uploads/" + fileName;
+            String imagePath = fileService.storeFile(file);
+            // String imagePath = "/uploads/" + fileName; // S3 Migration: storeFile returns
+            // full URL
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(Map.of("imagePath", imagePath));
         } catch (Exception e) {

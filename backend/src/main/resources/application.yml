@@ -32,6 +32,15 @@ ai:
   stt:
     url: ${AI_STT_URL:http://127.0.0.1:8000}
 
+  cloud:
+    aws:
+      s3:
+        bucket: ${AWS_S3_BUCKET:safeguard-uploads}
+        region: ${AWS_REGION:ap-northeast-2}
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+
 # JWT Configuration
 jwt:
   secret: "YourSuperSecretKeyForJWTTokenGenerationMustBe256BitsLong"
