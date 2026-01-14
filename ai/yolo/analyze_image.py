@@ -17,7 +17,7 @@ def analyze_image(image_path):
     log_korean(f"이미지 분석을 시작합니다. 대상 파일: {image_path}")
     
     # 1. 모델 로드
-    model_path = os.path.join(os.path.dirname(__file__), '5k_each.pt')
+    model_path = os.path.join(os.path.dirname(__file__), 'infer_image_complaint.pt')
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"모델 파일(best.pt)을 찾을 수 없습니다: {model_path}")
     
