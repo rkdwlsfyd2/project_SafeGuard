@@ -1,6 +1,7 @@
 package com.safeguard.mapper;
 
 import com.safeguard.dto.ComplaintDTO;
+import com.safeguard.dto.ComplaintStatsDTO;
 import com.safeguard.entity.Complaint;
 import com.safeguard.entity.SpatialFeature;
 import org.apache.ibatis.annotations.Mapper;
@@ -24,9 +25,9 @@ public interface ComplaintMapper {
 
     long countAll(Map<String, Object> params);
 
-    List<Map<String, Object>> selectComplaintStats(@Param("agencyNo") Long agencyNo);
+    ComplaintStatsDTO selectComplaintStats(@Param("agencyNo") Long agencyNo);
 
-    List<ComplaintDTO> selectTopLikedComplaints();
+    List<ComplaintDTO> selectTopLikedComplaints(@Param("status") String status, @Param("agencyNo") Long agencyNo);
 
     boolean isLikedByUser(@Param("complaintNo") Long complaintNo, @Param("userNo") Long userNo);
 

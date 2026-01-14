@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { complaintsAPI, usersAPI } from '../utils/api';
 
 function MyPage() {
+    const navigate = useNavigate();
     const [myReports, setMyReports] = useState<any[]>([]);
     const [userInfo, setUserInfo] = useState<any>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState({ name: '', addr: '', phone: '' });
     const [isChangingPw, setIsChangingPw] = useState(false);
     const [pwData, setPwData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    const [filterStatus, setFilterStatus] = useState('ALL');
 
     const getStatusText = (status: string) => {
         switch (status) {
-            case 'UNPROCESSED': return '접수완료';
+            case 'UNPROCESSED': return '미처리';
             case 'IN_PROGRESS': return '처리중';
             case 'COMPLETED': return '처리완료';
             case 'REJECTED': return '반려';
@@ -19,6 +22,20 @@ function MyPage() {
             default: return status;
         }
     };
+
+    // Daum 우편번호 스크립트 로드
+    useEffect(() => {
+        const postcodeScript = document.createElement('script');
+        postcodeScript.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+        postcodeScript.async = true;
+        document.head.appendChild(postcodeScript);
+
+        return () => {
+            if (document.head.contains(postcodeScript)) {
+                document.head.removeChild(postcodeScript);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         // 민원 목록 가져오기
@@ -34,6 +51,23 @@ function MyPage() {
             })
             .catch(err => console.error(err));
     }, []);
+
+    const handleSearchAddress = () => {
+        if (!(window as any).daum || !(window as any).daum.Postcode) {
+            alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        new (window as any).daum.Postcode({
+            oncomplete: function (data: any) {
+                const addr = data.roadAddress || data.jibunAddress;
+                setEditData(prev => ({
+                    ...prev,
+                    addr: addr
+                }));
+            }
+        }).open();
+    };
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -82,11 +116,15 @@ function MyPage() {
     };
 
     const statsCards = [
-        { label: '전 체', count: myReports.length, color: '#F1F5F9', textColor: '#334155' },
-        { label: '접 수', count: myReports.filter(r => r.status === 'UNPROCESSED').length, color: '#EFF6FF', textColor: '#2563EB' },
-        { label: '처리중', count: myReports.filter(r => r.status === 'IN_PROGRESS').length, color: '#FEF2F2', textColor: '#EF4444' },
-        { label: '처리완료', count: myReports.filter(r => r.status === 'COMPLETED').length, color: '#F0FDF4', textColor: '#16A34A' }
+        { label: '전체', count: myReports.length, color: '#F1F5F9', textColor: '#334155', status: 'ALL' },
+        { label: '미처리', count: myReports.filter(r => r.status === 'UNPROCESSED').length, color: '#EFF6FF', textColor: '#2563EB', status: 'UNPROCESSED' },
+        { label: '처리중', count: myReports.filter(r => r.status === 'IN_PROGRESS').length, color: '#FEF2F2', textColor: '#EF4444', status: 'IN_PROGRESS' },
+        { label: '처리완료', count: myReports.filter(r => r.status === 'COMPLETED').length, color: '#F0FDF4', textColor: '#16A34A', status: 'COMPLETED' }
     ];
+
+    const filteredReports = filterStatus === 'ALL'
+        ? myReports
+        : myReports.filter(r => r.status === filterStatus);
 
     return (
         <div className="mypage" style={{ padding: '60px 0', backgroundColor: '#F0F2F5', minHeight: '100vh' }}>
@@ -142,10 +180,21 @@ function MyPage() {
                         {/* Stats Cards */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
                             {statsCards.map((stat, idx) => (
-                                <div key={idx} style={{
-                                    backgroundColor: stat.color, padding: '30px', borderRadius: '12px',
-                                    textAlign: 'center', border: '1px solid #E2E8F0'
-                                }}>
+                                <div
+                                    key={idx}
+                                    onClick={() => setFilterStatus(stat.status)}
+                                    style={{
+                                        backgroundColor: stat.color,
+                                        padding: '30px',
+                                        borderRadius: '20px',
+                                        textAlign: 'center',
+                                        border: filterStatus === stat.status ? '2px solid var(--primary-color)' : '1px solid #E2E8F0',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        transform: filterStatus === stat.status ? 'translateY(-5px)' : 'none',
+                                        boxShadow: filterStatus === stat.status ? '0 10px 20px rgba(0,0,0,0.1)' : 'none'
+                                    }}
+                                >
                                     <div style={{ fontSize: '1.2rem', marginBottom: '10px', fontWeight: '600', color: '#64748B' }}>{stat.label}</div>
                                     <div style={{ fontSize: '2.5rem', fontWeight: '800', color: stat.textColor }}>{stat.count}</div>
                                 </div>
@@ -167,10 +216,21 @@ function MyPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {myReports && myReports.length > 0 ? myReports.map((report) => (
-                                            <tr key={report.complaintNo} style={{ textAlign: 'center', borderBottom: '1px solid #EEE' }}>
+                                        {filteredReports && filteredReports.length > 0 ? filteredReports.map((report) => (
+                                            <tr
+                                                key={report.complaintNo}
+                                                style={{
+                                                    textAlign: 'center',
+                                                    borderBottom: '1px solid #EEE',
+                                                    cursor: 'pointer',
+                                                    transition: 'background-color 0.2s'
+                                                }}
+                                                onClick={() => navigate(`/reports/${report.complaintNo}`)}
+                                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
+                                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                            >
                                                 <td style={{ padding: '15px' }}>{report.complaintNo}</td>
-                                                <td style={{ padding: '15px', textAlign: 'left' }}>{report.title}</td>
+                                                <td style={{ padding: '15px', textAlign: 'left', fontWeight: '600' }}>{report.title}</td>
                                                 <td style={{ padding: '15px' }}>{report.address}</td>
                                                 <td style={{ padding: '15px' }}>{new Date(report.createdDate).toLocaleDateString()}</td>
                                                 <td style={{ padding: '15px', color: report.status === 'IN_PROGRESS' ? '#EF4444' : (report.status === 'COMPLETED' ? '#16A34A' : '#2563EB'), fontWeight: 'bold' }}>
@@ -179,7 +239,7 @@ function MyPage() {
                                             </tr>
                                         )) : (
                                             <tr>
-                                                <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#AAA' }}>내역이 없습니다.</td>
+                                                <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#AAA' }}>내역이 없습니다. {filterStatus !== 'ALL'}</td>
                                             </tr>
                                         )}
                                     </tbody>
@@ -202,7 +262,37 @@ function MyPage() {
                             </div>
                             <div style={inputGroupStyle}>
                                 <label style={inputLabelStyle}>주소</label>
-                                <input type="text" value={editData.addr} onChange={e => setEditData({ ...editData, addr: e.target.value })} style={inputStyle} />
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <input
+                                        type="text"
+                                        value={editData.addr}
+                                        readOnly
+                                        placeholder="주소 검색 버튼을 눌러주세요"
+                                        onClick={handleSearchAddress}
+                                        style={{
+                                            ...inputStyle,
+                                            flex: 1,
+                                            cursor: 'pointer',
+                                            backgroundColor: '#f8fafc'
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleSearchAddress}
+                                        style={{
+                                            padding: '0 15px',
+                                            borderRadius: '12px',
+                                            border: 'none',
+                                            background: '#3b82f6',
+                                            color: 'white',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                    >
+                                        🔍 검색
+                                    </button>
+                                </div>
                             </div>
                             <div style={inputGroupStyle}>
                                 <label style={inputLabelStyle}>연락처</label>

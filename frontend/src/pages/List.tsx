@@ -14,6 +14,7 @@ function List() {
     const order = searchParams.get('order') || 'ASC';
     const statusParams = searchParams.get('status') || '전체';
     const regionParams = searchParams.get('region') || '전체';
+    const myAgencyOnly = searchParams.get('myAgencyOnly') === 'true';
 
     const [complaints, setComplaints] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -25,7 +26,7 @@ function List() {
 
     useEffect(() => {
         fetchComplaints();
-    }, [page, search, category, statusParams, regionParams, sort, order]);
+    }, [page, search, category, statusParams, regionParams, sort, order, myAgencyOnly]);
 
     const fetchComplaints = async () => {
         setLoading(true);
@@ -41,11 +42,15 @@ function List() {
                 search,
                 category,
                 status: statusParams,
-                region: regionParams,
                 sort,
                 order,
-                adminMode: isAdminPath // Send adminMode flag to backend
+                adminMode: isAdminPath, // Send adminMode flag to backend
+                myAgencyOnly // Add implicit check
             };
+
+            if (regionParams && regionParams !== '전체') {
+                params.region = regionParams;
+            }
 
             // If we are in admin view and user is AGENCY, provide agencyNo for security validation (though backend will enforce)
             if (isAdminPath && role === 'AGENCY' && agencyNo) {
@@ -64,19 +69,19 @@ function List() {
 
     // Fix handleSearch
     const handleSearch = () => {
-        setSearchParams({ page: '1', search: searchInput, category, status: statusParams, region: regionParams, sort, order });
+        setSearchParams({ page: '1', search: searchInput, category, status: statusParams, region: regionParams, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
     const handleCategoryChange = (e: any) => {
-        setSearchParams({ page: '1', search, category: e.target.value, status: statusParams, region: regionParams, sort, order });
+        setSearchParams({ page: '1', search, category: e.target.value, status: statusParams, region: regionParams, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
     const handleStatusChange = (e: any) => {
-        setSearchParams({ page: '1', search, category, status: e.target.value, region: regionParams, sort, order });
+        setSearchParams({ page: '1', search, category, status: e.target.value, region: regionParams, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
     const handleRegionChange = (e: any) => {
-        setSearchParams({ page: '1', search, category, status: statusParams, region: e.target.value, sort, order });
+        setSearchParams({ page: '1', search, category, status: statusParams, region: e.target.value, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
     const handleSortChange = (e: any) => {
@@ -87,21 +92,21 @@ function List() {
         if (val === 'old') {
             newOrder = 'ASC';
         } else if (val === 'likes') {
-            newSort = 'like_count';
+            newSort = 'likeCount';
         }
 
-        setSearchParams({ page: '1', search, category, status: statusParams, region: regionParams, sort: newSort, order: newOrder });
+        setSearchParams({ page: '1', search, category, status: statusParams, region: regionParams, sort: newSort, order: newOrder, myAgencyOnly: String(myAgencyOnly) });
     };
 
     const setPage = (newPage: number) => {
-        setSearchParams({ page: String(newPage), search, category, status: statusParams, region: regionParams, sort, order });
+        setSearchParams({ page: String(newPage), search, category, status: statusParams, region: regionParams, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
-    const getStatusBadge = (status) => {
-        const statusMap = {
+    const getStatusBadge = (status: any) => {
+        const statusMap: any = {
             'UNPROCESSED': { text: '미처리', bg: '#fee2e2', color: '#dc2626' }, // 빨간색
             'IN_PROGRESS': { text: '처리중', bg: '#fef3c7', color: '#d97706' }, // 노란색
-            'COMPLETED': { text: '완료', bg: '#dcfce7', color: '#16a34a' },
+            'COMPLETED': { text: '처리완료', bg: '#dcfce7', color: '#16a34a' },
             'REJECTED': { text: '반려', bg: '#f1f5f9', color: '#64748b' },
             'CANCELLED': { text: '취소', bg: '#f1f5f9', color: '#64748b' }
         };
@@ -174,6 +179,43 @@ function List() {
                         alignItems: 'center'
                     }}>
                         <select
+                            value={regionParams}
+                            onChange={handleRegionChange}
+                            style={{
+                                padding: '12px 16px',
+                                border: '2px solid #e2e8f0',
+                                borderRadius: '10px',
+                                fontSize: '0.95rem',
+                                backgroundColor: 'white',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            {[
+                                { label: '지역', value: '전체' },
+                                { label: '서울', value: '11' },
+                                { label: '부산', value: '26' },
+                                { label: '대구', value: '27' },
+                                { label: '인천', value: '28' },
+                                { label: '광주', value: '29' },
+                                { label: '대전', value: '30' },
+                                { label: '울산', value: '31' },
+                                { label: '세종', value: '50' },
+                                { label: '경기', value: '41' },
+                                { label: '강원', value: '42' },
+                                { label: '충북', value: '43' },
+                                { label: '충남', value: '44' },
+                                { label: '전북', value: '45' },
+                                { label: '전남', value: '46' },
+                                { label: '경북', value: '47' },
+                                { label: '경남', value: '48' },
+                                { label: '제주', value: '49' }
+                            ].map(r => (
+                                <option key={r.value} value={r.value}>
+                                    {r.label}
+                                </option>
+                            ))}
+                        </select>
+                        <select
                             value={category}
                             onChange={handleCategoryChange}
                             style={{
@@ -191,22 +233,6 @@ function List() {
                             ))}
                         </select>
                         <select
-                            value={regionParams}
-                            onChange={handleRegionChange}
-                            style={{
-                                padding: '12px 16px',
-                                border: '2px solid #e2e8f0',
-                                borderRadius: '10px',
-                                fontSize: '0.95rem',
-                                backgroundColor: 'white',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            {['전체', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'].map(r => (
-                                <option key={r} value={r}>{r === '전체' ? '지역' : r}</option>
-                            ))}
-                        </select>
-                        <select
                             value={statusParams}
                             onChange={handleStatusChange}
                             style={{
@@ -218,12 +244,36 @@ function List() {
                                 cursor: 'pointer'
                             }}
                         >
-                            {['전체', '미처리', '처리중', '완료'].map(s => (
+                            {['전체', '미처리', '처리중', '처리완료'].map(s => (
                                 <option key={s} value={s === '전체' ? '전체' : (s === '미처리' ? 'UNPROCESSED' : (s === '처리중' ? 'IN_PROGRESS' : 'COMPLETED'))}>
                                     {s === '전체' ? '접수상태' : s}
                                 </option>
                             ))}
                         </select>
+
+                        {localStorage.getItem('role') === 'AGENCY' && (
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', fontWeight: '600', color: '#475569', cursor: 'pointer', padding: '0 8px' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={searchParams.get('myAgencyOnly') === 'true'}
+                                    onChange={(e) => {
+                                        const isChecked = e.target.checked;
+                                        setSearchParams({
+                                            page: '1',
+                                            search,
+                                            category,
+                                            status: statusParams,
+                                            region: regionParams,
+                                            sort,
+                                            order,
+                                            myAgencyOnly: isChecked ? 'true' : 'false'
+                                        });
+                                    }}
+                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                />
+                                내 담당민원
+                            </label>
+                        )}
                         <input
                             type="text"
                             value={searchInput}
@@ -323,7 +373,7 @@ function List() {
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr style={{ backgroundColor: '#f8fafc' }}>
-                                        {['번호', '분류', '제목', '발송기관', '상태', '등록일', '좋아요'].map(h => (
+                                        {['번호', '분류', '제목', '지역', '상태', '등록일', '좋아요'].map(h => (
                                             <th key={h} style={{
                                                 padding: '16px 20px',
                                                 textAlign: 'left',
@@ -364,11 +414,11 @@ function List() {
                                             <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>
                                                 <span style={{
                                                     padding: '4px 10px',
-                                                    backgroundColor: c.agencyName && c.agencyName !== '미지정' ? '#e0f2fe' : '#f1f5f9',
+                                                    backgroundColor: c.regionName ? '#e0f2fe' : 'transparent',
                                                     borderRadius: '6px',
                                                     fontSize: '0.8rem',
-                                                    color: c.agencyName && c.agencyName !== '미지정' ? '#0369a1' : '#94a3b8'
-                                                }}>{c.agencyName}</span>
+                                                    color: c.regionName ? '#0369a1' : '#94a3b8'
+                                                }}>{c.regionName || ''}</span>
                                             </td>
                                             <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>{getStatusBadge(c.status)}</td>
                                             <td style={{ padding: '18px 20px', color: '#94a3b8', fontSize: '0.9rem', borderBottom: '1px solid #f1f5f9' }}>{formatDate(c.createdDate)}</td>

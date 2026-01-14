@@ -173,6 +173,11 @@ export const complaintsAPI = {
         return apiRequest(`/gis/complaints${query ? `?${query}` : ''}`);
     },
 
+    getHotspots: (params: any) => {
+        const query = new URLSearchParams(params).toString();
+        return apiRequest(`/gis/hotspots${query ? `?${query}` : ''}`);
+    },
+
     // 관리자: 민원 처리 상태 변경
     updateStatus: (id: string | number, status: string) => apiRequest(`/complaints/${id}/status`, {
         method: 'PATCH',

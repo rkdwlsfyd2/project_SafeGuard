@@ -4,11 +4,12 @@ import { getToken } from '../utils/api';
 
 function Home() {
     const navigate = useNavigate();
-    const [statsData, setStatsData] = React.useState({ total: 0, processing: 0, completed: 0 });
+    const [statsData, setStatsData] = React.useState({ total: 0, today: 0, processing: 0, completed: 0 });
     const [topLiked, setTopLiked] = React.useState([]);
+    const [latestComplaints, setLatestComplaints] = React.useState([]);
 
     React.useEffect(() => {
-        // Fetch Stats
+        // 1. Fetch Stats
         fetch('/api/complaints/stats')
             .then(res => {
                 if (!res.ok) throw new Error('Network response was not ok');
@@ -17,26 +18,34 @@ function Home() {
             .then(data => setStatsData(data))
             .catch(err => {
                 console.error('Failed to fetch stats:', err);
-                setStatsData({ total: 0, processing: 0, completed: 0 }); // Fallback
+                setStatsData({ total: 0, today: 0, processing: 0, completed: 0 });
             });
 
-        // Fetch Top Liked
+        // 2. Fetch Top Liked
         fetch('/api/complaints/top-liked')
-            .then(res => {
-                if (!res.ok) throw new Error('Network response was not ok');
-                return res.json();
-            })
+            .then(res => res.json())
             .then(data => {
-                if (Array.isArray(data)) {
-                    setTopLiked(data);
-                } else {
-                    console.error('Expected array for top-liked but got:', data);
-                    setTopLiked([]);
-                }
+                if (Array.isArray(data)) setTopLiked(data);
+                else setTopLiked([]);
             })
             .catch(err => {
                 console.error('Failed to fetch top liked:', err);
-                setTopLiked([]); // Fallback
+                setTopLiked([]);
+            });
+
+        // 3. Fetch Latest Complaints
+        fetch('/api/complaints?limit=5')
+            .then(res => res.json())
+            .then(data => {
+                if (data.complaints && Array.isArray(data.complaints)) {
+                    setLatestComplaints(data.complaints);
+                } else {
+                    setLatestComplaints([]);
+                }
+            })
+            .catch(err => {
+                console.error('Failed to fetch latest complaints:', err);
+                setLatestComplaints([]);
             });
     }, []);
 
@@ -65,9 +74,22 @@ function Home() {
     ];
 
     const stats = [
-        { label: '전체 민원', value: statsData.total.toLocaleString(), color: '#7c3aed', icon: '📊' },
-        { label: '처리 중', value: statsData.processing.toLocaleString(), color: '#f59e0b', icon: '⏳', percent: statsData.total > 0 ? (statsData.processing / statsData.total * 100) : 0 },
-        { label: '답변 완료', value: statsData.completed.toLocaleString(), color: '#10b981', icon: '✅', percent: statsData.total > 0 ? (statsData.completed / statsData.total * 100) : 0 }
+        {
+            id: 'TODAY',
+            label: '오늘 들어온 민원',
+            value: statsData.today?.toLocaleString() || '0',
+            color: '#d97706', // 텍스트 가독성을 위해 조금 더 진한 색상
+            bg: 'linear-gradient(145deg, #fffbeb 0%, #fff7ed 100%)', // 따뜻한 연한 오렌지/앰버 배경
+            borderColor: '#feTg8a'
+        },
+        {
+            id: 'ALL',
+            label: '전체 민원',
+            value: statsData.total.toLocaleString(),
+            color: '#7c3aed',
+            bg: 'linear-gradient(145deg, #f5f3ff 0%, #ede9fe 100%)', // 연한 바이올렛 배경
+            borderColor: '#ddd6fe'
+        }
     ];
 
     return (
@@ -196,16 +218,26 @@ function Home() {
                 zIndex: 20
             }}>
                 <div style={{
-                    backgroundColor: 'white',
-                    borderRadius: '24px',
-                    padding: '40px',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: '40px'
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: '24px' // 간격 조정
                 }}>
                     {stats.map((stat, idx) => (
-                        <div key={idx} style={{ textAlign: 'center' }}>
+                        <div
+                            key={idx}
+                            style={{
+                                background: stat.bg,
+                                borderRadius: '24px',
+                                padding: '40px',
+                                boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
+                                border: `1px solid ${stat.borderColor}`,
+                                textAlign: 'center',
+                                transition: 'transform 0.2s',
+                                cursor: 'default'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
                             <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -213,39 +245,27 @@ function Home() {
                                 gap: '8px',
                                 marginBottom: '12px'
                             }}>
-                                <span style={{ fontSize: '1.5rem' }}>{stat.icon}</span>
                                 <span style={{
                                     color: stat.color,
                                     fontWeight: '600',
-                                    fontSize: '1rem'
+                                    fontSize: '1.2rem' // 폰트 사이즈 약간 키움
                                 }}>{stat.label}</span>
                             </div>
                             <div style={{
-                                fontSize: '2.5rem',
+                                fontSize: '3.5rem',
                                 fontWeight: '800',
                                 color: '#1e293b',
-                                marginBottom: '12px'
+                                lineHeight: '1.2'
                             }}>
-                                {stat.value}<span style={{ fontSize: '1rem', fontWeight: '500', marginLeft: '4px' }}>건</span>
+                                {stat.value}
+                                <span style={{
+                                    fontSize: '1.5rem',
+                                    fontWeight: '600',
+                                    color: '#94a3b8',
+                                    marginLeft: '8px',
+                                    verticalAlign: 'middle'
+                                }}>건</span>
                             </div>
-                            {stat.percent && (
-                                <div style={{
-                                    height: '8px',
-                                    backgroundColor: '#f1f5f9',
-                                    borderRadius: '4px',
-                                    overflow: 'hidden',
-                                    maxWidth: '200px',
-                                    margin: '0 auto'
-                                }}>
-                                    <div style={{
-                                        height: '100%',
-                                        width: `${stat.percent}%`,
-                                        backgroundColor: stat.color,
-                                        borderRadius: '4px',
-                                        transition: 'width 1s ease'
-                                    }}></div>
-                                </div>
-                            )}
                         </div>
                     ))}
                 </div>
@@ -260,41 +280,96 @@ function Home() {
                 gridTemplateColumns: 'repeat(2, 1fr)',
                 gap: '24px'
             }}>
-                {/* 최신 민원 박스 (기존 유지) */}
+                {/* 최신 민원 박스 (필터링 적용) */}
                 <div
-                    onClick={() => navigate('/list')}
                     style={{
                         backgroundColor: 'white',
                         borderRadius: '20px',
                         overflow: 'hidden',
                         boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                        cursor: 'pointer',
-                        transition: 'box-shadow 0.3s',
                         display: 'flex',
                         flexDirection: 'column'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 10px 40px rgba(0,0,0,0.15)'}
-                    onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)'}
                 >
                     <div style={{
                         background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
                         padding: '20px 24px',
-                        color: 'white'
-                    }}>
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0 }}>📋 최신 민원</h3>
-                        <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '4px' }}>목록으로 이동</p>
-                    </div>
-                    <div style={{
-                        flex: 1,
+                        color: 'white',
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#94a3b8',
-                        padding: '40px'
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
                     }}>
-                        <div style={{ textAlign: 'center' }}>
-                            <p style={{ fontSize: '1rem', color: '#64748b' }}>전체 목록 보러가기</p>
+                        <div>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0 }}>
+                                📋 최신 민원
+                            </h3>
+                            <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '4px' }}>최근에 올라온 민원</p>
                         </div>
+                        <button
+                            onClick={() => navigate('/list')}
+                            style={{
+                                background: 'rgba(255,255,255,0.2)',
+                                border: 'none',
+                                color: 'white',
+                                padding: '6px 12px',
+                                borderRadius: '20px',
+                                cursor: 'pointer',
+                                fontSize: '0.85rem'
+                            }}
+                        >
+                            더보기 &rarr;
+                        </button>
+                    </div>
+                    <div style={{ padding: '0', flex: 1 }}>
+                        {latestComplaints.length === 0 ? (
+                            <div style={{
+                                height: '200px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#94a3b8'
+                            }}>
+                                <p>등록된 최신 민원이 없습니다</p>
+                            </div>
+                        ) : (
+                            <div>
+                                {latestComplaints.map((c, idx) => (
+                                    <div
+                                        key={c.complaintNo}
+                                        onClick={() => navigate(`/reports/${c.complaintNo}`)}
+                                        style={{
+                                            padding: '16px 24px',
+                                            borderBottom: idx < latestComplaints.length - 1 ? '1px solid #f1f5f9' : 'none',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                                    >
+                                        <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', marginRight: '10px' }}>
+                                            <span style={{
+                                                marginRight: '8px',
+                                                fontWeight: '600',
+                                                fontSize: '0.8rem',
+                                                padding: '2px 6px',
+                                                borderRadius: '4px',
+                                                backgroundColor: c.status === 'COMPLETED' ? '#dcfce7' : (c.status === 'IN_PROGRESS' ? '#fef3c7' : '#fee2e2'),
+                                                color: c.status === 'COMPLETED' ? '#166534' : (c.status === 'IN_PROGRESS' ? '#92400e' : '#dc2626')
+                                            }}>
+                                                {c.status === 'COMPLETED' ? '처리완료' : (c.status === 'IN_PROGRESS' ? '처리중' : '미처리')}
+                                            </span>
+                                            <span style={{ fontWeight: '600', color: '#334155' }}>{c.title}</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                                            {new Date(c.createdDate).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -312,7 +387,9 @@ function Home() {
                         padding: '20px 24px',
                         color: 'white'
                     }}>
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0 }}>🔥 주요 민원 (화제의 민원)</h3>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0 }}>
+                            🔥 주요 민원
+                        </h3>
                         <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '4px' }}>가장 많은 관심(좋아요)을 받은 민원</p>
                     </div>
                     <div style={{ padding: '0' }}>
@@ -324,7 +401,7 @@ function Home() {
                                 justifyContent: 'center',
                                 color: '#94a3b8'
                             }}>
-                                <p>아직 주요 민원이 없습니다</p>
+                                <p>해당하는 주요 민원이 없습니다</p>
                             </div>
                         ) : (
                             <div>

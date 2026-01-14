@@ -1,6 +1,7 @@
 package com.safeguard.controller;
 
 import com.safeguard.dto.ComplaintDTO;
+import com.safeguard.dto.ComplaintStatsDTO;
 import com.safeguard.dto.UserDTO;
 import com.safeguard.enums.ComplaintStatus;
 import com.safeguard.enums.UserRole;
@@ -47,7 +48,11 @@ public class ComplaintController {
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "false") boolean myAgencyOnly,
+            @RequestParam(defaultValue = "complaint_no") String sort,
+            @RequestParam(defaultValue = "DESC") String order,
+            @RequestParam(required = false) String region) {
 
         // 로그인한 기관 사용자인 경우 해당 기관의 민원만 필터링하도록 agencyNo 확보
         Long agencyNo = null;
@@ -58,7 +63,16 @@ public class ComplaintController {
                 && !"anonymousUser".equals(auth.getPrincipal())) {
             UserDTO user = userMapper.findByUserId(auth.getName()).orElse(null);
             if (user != null && user.getRole() == UserRole.AGENCY) {
-                agencyNo = user.getAgencyNo();
+                if (myAgencyOnly) {
+                    agencyNo = user.getAgencyNo();
+                } else {
+                    // agencyNo not enforced for general filtering unless explicitly requested,
+                    // but we might want to keep the option to filter by agencyNo if passed by
+                    // param?
+                    // The requirement says:
+                    // Checkbox ON -> myAgencyOnly=true -> filter by my agency
+                    // Checkbox OFF -> myAgencyOnly=false -> show all (or filtered by region)
+                }
             }
         }
 
@@ -68,7 +82,10 @@ public class ComplaintController {
         params.put("search", search);
         params.put("category", category);
         params.put("status", status);
-        params.put("agencyNo", agencyNo);
+        params.put("region", region);
+        params.put("sort", sort);
+        params.put("order", order);
+        params.put("agencyNo", agencyNo); // Will be null if myAgencyOnly is false
         params.put("limit", limit);
         params.put("offset", offset);
 
@@ -113,6 +130,7 @@ public class ComplaintController {
         result.put("authorName", "익명사용자");
         result.put("likeCount", c.getLikeCount() != null ? c.getLikeCount() : 0);
         result.put("answer", c.getAnswer());
+        result.put("assignedAgencyText", c.getAssignedAgencyText());
 
         // 현재 로그인한 사용자의 좋아요 상태 확인 (임시로 testuser 사용 가능)
         Long userNo = userMapper.findByUserId("testuser").map(UserDTO::getUserNo).orElse(1L);
@@ -243,5 +261,60 @@ public class ComplaintController {
             return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
         }
+    }
+
+    /*
+     * ===============================
+     * 통계 (대시보드)
+     * ===============================
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<ComplaintStatsDTO> getStats() {
+        Long agencyNo = null;
+        var auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+
+        if (auth != null && auth.isAuthenticated()
+                && !"anonymousUser".equals(auth.getPrincipal())) {
+            UserDTO user = userMapper.findByUserId(auth.getName()).orElse(null);
+            if (user != null && user.getRole() == UserRole.AGENCY) {
+                agencyNo = user.getAgencyNo();
+            }
+        }
+
+        ComplaintStatsDTO stats = complaintMapper.selectComplaintStats(agencyNo);
+        if (stats == null) {
+            stats = new ComplaintStatsDTO();
+        }
+        return ResponseEntity.ok(stats);
+    }
+
+    /*
+     * ===============================
+     * 좋아요 상위 5개 (필터 지원)
+     * ===============================
+     */
+    @GetMapping("/top-liked")
+    public ResponseEntity<List<ComplaintDTO>> getTopLikedComplaints(
+            @RequestParam(required = false) String status) {
+
+        /*
+         * 1. 로그인 사용자 기준 agencyNo
+         */
+        Long agencyNo = null;
+        var auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+
+        if (auth != null && auth.isAuthenticated()
+                && !"anonymousUser".equals(auth.getPrincipal())) {
+
+            UserDTO user = userMapper.findByUserId(auth.getName()).orElse(null);
+            if (user != null && user.getRole() == UserRole.AGENCY) {
+                agencyNo = user.getAgencyNo();
+            }
+        }
+
+        List<ComplaintDTO> result = complaintMapper.selectTopLikedComplaints(status, agencyNo);
+        return ResponseEntity.ok(result);
     }
 }

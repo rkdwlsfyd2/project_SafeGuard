@@ -31,4 +31,7 @@ public class ComplaintDTO {
     private Long userNo;
     private Long agencyNo;
     private String agencyName;
+    private String assignedAgencyText;
+    private String regionName;
+    private String regionCode;
 }

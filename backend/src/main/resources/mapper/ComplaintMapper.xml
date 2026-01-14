@@ -22,7 +22,12 @@
             c.is_public AS isPublic,
             c.like_count AS likeCount,
             ca.agency_no AS agencyNo,
-            a.agency_name AS agencyName
+            a.agency_name AS agencyName,
+            a.region_code AS regionCode,
+            CASE 
+                WHEN a.agency_type = 'LOCAL' THEN a.agency_name
+                ELSE NULL
+            END AS regionName
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
@@ -37,6 +42,10 @@
             </if>
             <if test="agencyNo != null">
                 AND ca.agency_no = #{agencyNo}
+            </if>
+            <!-- [수정] 지역 필터: region_code 사용 -->
+            <if test="region != null and region != '전체'">
+                AND a.region_code = #{region}
             </if>
             <if test="search != null and search != ''">
                 AND (c.title ILIKE CONCAT('%', #{search}, '%')
@@ -62,14 +71,31 @@
             c.answer,
             c.is_public AS isPublic,
             c.like_count AS likeCount,
-            ca.agency_no AS agencyNo,
-            a.agency_name AS agencyName
+            MAX(ca.agency_no) AS agencyNo,
+            MAX(a.agency_name) AS agencyName,
+            MAX(a.region_code) AS regionCode,
+            MAX(CASE 
+                WHEN a.agency_type = 'LOCAL' THEN a.agency_name
+                ELSE NULL
+            END) AS regionName,
+            (
+                SELECT
+                    CASE
+                        WHEN COUNT(*) > 1 THEN CONCAT(MIN(a2.agency_name), ' 외 ', COUNT(*) - 1, '곳')
+                        WHEN COUNT(*) = 1 THEN MIN(a2.agency_name)
+                        ELSE NULL
+                    END
+                FROM agency a2
+                JOIN complaint_agency ca2 ON ca2.agency_no = a2.agency_no
+                WHERE ca2.complaint_no = c.complaint_no
+            ) AS assignedAgencyText
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
         LEFT JOIN agency a
             ON ca.agency_no = a.agency_no
         WHERE c.complaint_no = #{complaintNo}
+        GROUP BY c.complaint_no
     </select>
 
     <!-- 민원 등록 (Entity) : 서비스(createComplaint)에서 호출 -->
@@ -133,9 +159,15 @@
             <if test="agencyNo != null">
                 AND ca.agency_no = #{agencyNo}
             </if>
+            <!-- [수정] 지역 필터: region_code 사용 -->
+            <if test="region != null and region != '전체'">
+                AND a.agency_type = 'LOCAL'
+                AND a.region_code = #{region}
+            </if>
         </where>
     </sql>
 
+    <!-- 대시보드/목록 페이징 조회 -->
     <!-- 대시보드/목록 페이징 조회 -->
     <select id="findAll" resultType="com.safeguard.dto.ComplaintDTO">
         SELECT
@@ -147,19 +179,25 @@
             c.address,
             c.is_public AS isPublic,
             c.like_count AS likeCount,
-            ca.agency_no AS agencyNo,
-            a.agency_name AS agencyName
+            MAX(ca.agency_no) AS agencyNo,
+            MAX(a.agency_name) AS agencyName,
+            MAX(a.region_code) AS regionCode,
+            MAX(CASE 
+                WHEN a.agency_type = 'LOCAL' THEN a.agency_name
+                ELSE NULL
+            END) AS regionName
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
         LEFT JOIN agency a
             ON ca.agency_no = a.agency_no
         <include refid="SharedWhere"/>
+        GROUP BY c.complaint_no
         ORDER BY
         <choose>
-            <when test="sort == 'like_count'">c.like_count</when>
-            <when test="sort == 'complaint_no'">c.complaint_no</when>
-            <otherwise>c.created_date</otherwise>
+            <when test="sort == 'created_date'">c.created_date</when>
+            <when test="sort == 'likeCount'">c.like_count</when>
+            <otherwise>c.complaint_no</otherwise>
         </choose>
         <choose>
             <when test="order == 'ASC'">ASC</when>
@@ -170,12 +208,15 @@
 
     <!-- 페이징 total count -->
     <select id="countAll" resultType="long">
-        SELECT COUNT(*)
+        SELECT COUNT(DISTINCT c.complaint_no)
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
+        LEFT JOIN agency a
+            ON ca.agency_no = a.agency_no
         <include refid="SharedWhere"/>
     </select>
+
 
     <!-- 좋아요 여부 -->
     <select id="isLikedByUser" resultType="boolean">
@@ -228,22 +269,41 @@
     </update>
 
     <select id="selectTopLikedComplaints" resultType="com.safeguard.dto.ComplaintDTO">
-        SELECT *
-        FROM complaint
-        ORDER BY like_count DESC
+        SELECT DISTINCT c.*
+        FROM complaint c
+        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
+        <where>
+            <if test="status != null and status != 'ALL'">
+                AND c.status = #{status}
+            </if>
+            <if test="agencyNo != null">
+                AND ca.agency_no = #{agencyNo}
+            </if>
+        </where>
+        ORDER BY c.like_count DESC
         LIMIT 5
     </select>
 
-    <!-- 통계(요약): 전체 건수, 접수됨, 처리중, 완료됨 및 SLA 준수율(3일 이내 완료) 조회 -->
-    <select id="selectComplaintStats" resultType="java.util.Map">
+    <resultMap id="StatsResultMap" type="com.safeguard.dto.ComplaintStatsDTO">
+        <result property="total" column="total"/>
+        <result property="today" column="today"/>
+        <result property="received" column="received"/>
+        <result property="processing" column="processing"/>
+        <result property="completed" column="completed"/>
+        <result property="slaCompliance" column="sla_compliance"/>
+    </resultMap>
+
+    <!-- 통계(요약): 전체 건수, 상태별(UNPROCESSED, IN_PROGRESS 등) 카운트 및 SLA 준수율 조회 -->
+    <select id="selectComplaintStats" resultMap="StatsResultMap">
         SELECT
-            COUNT(*) AS total,
-            COUNT(CASE WHEN c.status = 'RECEIVED' THEN 1 END) AS received,
-            COUNT(CASE WHEN c.status = 'IN_PROGRESS' THEN 1 END) AS processing,
-            COUNT(CASE WHEN c.status = 'COMPLETED' THEN 1 END) AS completed,
+            COUNT(DISTINCT c.complaint_no) AS total,
+            COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CAST(NOW() AS DATE) THEN c.complaint_no END) AS today,
+            COUNT(DISTINCT CASE WHEN c.status = 'UNPROCESSED' THEN c.complaint_no END) AS received,
+            COUNT(DISTINCT CASE WHEN c.status = 'IN_PROGRESS' THEN c.complaint_no END) AS processing,
+            COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' THEN c.complaint_no END) AS completed,
             COALESCE(ROUND(
-                (COUNT(CASE WHEN c.status = 'COMPLETED' AND c.completed_date &lt;= c.created_date + INTERVAL '3 days' THEN 1 END)::numeric /
-                NULLIF(COUNT(CASE WHEN c.status = 'COMPLETED' THEN 1 END), 0)) * 100, 1
+                (COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' AND c.updated_date &lt;= c.created_date + INTERVAL '3 days' THEN c.complaint_no END)::numeric /
+                NULLIF(COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' THEN c.complaint_no END), 0)) * 100, 1
             ), 0) AS sla_compliance
         FROM complaint c
         LEFT JOIN complaint_agency ca
@@ -325,7 +385,7 @@
     <select id="selectAgencyBottleneck" resultType="map">
         SELECT
             SPLIT_PART(address, ' ', 2) AS name,
-            COUNT(CASE WHEN status IN ('RECEIVED', 'IN_PROGRESS') THEN 1 END)::int AS count
+            COUNT(CASE WHEN status IN ('UNPROCESSED', 'IN_PROGRESS') THEN 1 END)::int AS count
         FROM complaint
         WHERE address LIKE '서울특별시 %'
         GROUP BY SPLIT_PART(address, ' ', 2)
@@ -339,7 +399,7 @@
             SPLIT_PART(address, ' ', 2) AS name,
             COUNT(*)::int AS count
         FROM complaint
-        WHERE status IN ('RECEIVED', 'IN_PROGRESS')
+        WHERE status IN ('UNPROCESSED', 'IN_PROGRESS')
           AND created_date &lt; (CURRENT_TIMESTAMP - INTERVAL '3 days')
           AND address LIKE '서울특별시 %'
         GROUP BY SPLIT_PART(address, ' ', 2)
@@ -379,7 +439,7 @@
                 EXTRACT(HOUR FROM (CURRENT_TIMESTAMP - created_date)), '시간 지연'
             ) AS overdueTime
         FROM complaint
-        WHERE status IN ('RECEIVED', 'IN_PROGRESS')
+        WHERE status IN ('UNPROCESSED', 'IN_PROGRESS')
           AND created_date &lt; (CURRENT_TIMESTAMP - INTERVAL '3 days')
           AND address LIKE '서울특별시 %'
         ORDER BY created_date ASC

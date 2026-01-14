@@ -62,8 +62,8 @@
             "environment": [],
             "mountPoints": [],
             "volumesFrom": [],
-            "memory": 2048,
-            "memoryReservation": 1024,
+            "memory": 1280,
+            "memoryReservation": 512,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -91,8 +91,8 @@
             "environment": [],
             "mountPoints": [],
             "volumesFrom": [],
-            "memory": 2048,
-            "memoryReservation": 1024,
+            "memory": 1280,
+            "memoryReservation": 512,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -132,13 +132,13 @@
                 },
                 {
                     "name": "JAVA_TOOL_OPTIONS",
-                    "value": "-Xms256m -Xmx1024m"
+                    "value": "-Xms512m -Xmx1024m"
                 }
             ],
             "mountPoints": [],
             "volumesFrom": [],
-            "memory": 2048,
-            "memoryReservation": 1024,
+            "memory": 1536,
+            "memoryReservation": 512,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -173,8 +173,8 @@
                     "value": "19530"
                 }
             ],
-            "memory": 2048,
-            "memoryReservation": 1024,
+            "memory": 1536,
+            "memoryReservation": 512,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -190,10 +190,10 @@
     "requiresCompatibilities": [
         "FARGATE"
     ],
-    "cpu": "4096",
-    "memory": "9216",
+    "cpu": "2048",
+    "memory": "6144",
     "ephemeralStorage": {
-        "sizeInGiB": 100
+        "sizeInGiB": 21
     },
     "runtimePlatform": {
         "cpuArchitecture": "X86_64",
