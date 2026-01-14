@@ -1,3 +1,6 @@
+/**
+ * 분류별 민원 통계 및 순위를 보여주는 도넛 차트 및 리스트 컴포넌트입니다.
+ */
 import React, { useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
@@ -13,6 +16,16 @@ const MOCK_TYPE_DATA = [
     { name: '교육', value: 381, change: 2.7, rank: 8 },
     { name: '관광', value: 290, change: 14.6, rank: 9 },
     { name: '보건', value: 286, change: -32.4, rank: 10 },
+    { name: '정보통신', value: 265, change: 4.2, rank: 11 },
+    { name: '산림·농업', value: 240, change: -1.5, rank: 12 },
+    { name: '상하수도', value: 215, change: 0.8, rank: 13 },
+    { name: '재난·안전', value: 198, change: -2.4, rank: 14 },
+    { name: '공원·녹지', value: 175, change: 5.5, rank: 15 },
+    { name: '도시계획', value: 152, change: -0.9, rank: 16 },
+    { name: '수산·해양', value: 135, change: 1.2, rank: 17 },
+    { name: '과학기술', value: 118, change: -3.1, rank: 18 },
+    { name: '외교·안보', value: 102, change: 0.4, rank: 19 },
+    { name: '기획·예산', value: 85, change: -1.8, rank: 20 },
 ];
 
 interface ChartTwoProps {
@@ -89,9 +102,30 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                 <h5 style={{ fontSize: '20px', fontWeight: '950', color: '#1e293b' }}>분류별 민원 통계</h5>
             </div>
 
-            <div className="mb-6 flex justify-center">
-                <div id="typeChart" className="cursor-pointer hover:scale-[1.02] transition-transform">
-                    <ReactApexChart options={state.options} series={state.series} type="donut" width={340} />
+            <div
+                className="mb-6 w-full"
+                style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                }}
+            >
+                <div
+                    id="typeChart"
+                    className="cursor-pointer hover:scale-[1.02] transition-transform"
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                    }}
+                >
+                    <ReactApexChart
+                        options={state.options}
+                        series={state.series}
+                        type="donut"
+                        width={440}
+                        height={440}
+                    />
                 </div>
             </div>
 
@@ -100,7 +134,7 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                     <h6 style={{ fontSize: '13px', fontWeight: '800', color: '#64748B', letterSpacing: '-0.02em' }}> ▼ 분류별 민원신청 건수 및 전일대비 증감률(%)</h6>
                 </div>
 
-                <div className="max-h-[520px] overflow-auto pr-3 custom-scrollbar">
+                <div className="custom-scrollbar" style={{ height: '520px', overflowY: 'auto', paddingRight: '12px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {MOCK_TYPE_DATA.map((item, i) => (
                             <div
@@ -131,9 +165,9 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                                     fontSize: '16px',
                                     fontWeight: '950',
                                     marginRight: '20px',
-                                    backgroundColor: item.rank <= 7 ? '#A0C4FF' : '#E2E8F0',
+                                    backgroundColor: item.rank <= 5 ? '#A0C4FF' : '#E2E8F0',
                                     color: 'white',
-                                    boxShadow: item.rank <= 7 ? '0 4px 6px rgba(160, 196, 255, 0.4)' : 'none',
+                                    boxShadow: item.rank <= 5 ? '0 4px 6px rgba(160, 196, 255, 0.4)' : 'none',
                                     flexShrink: 0
                                 }}>
                                     {item.rank}

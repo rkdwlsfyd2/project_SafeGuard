@@ -1,3 +1,6 @@
+/**
+ * 연령별 민원접수 현황을 보여주는 바 차트 컴포넌트입니다.
+ */
 import React from 'react';
 import ReactApexChart from 'react-apexcharts';
 
