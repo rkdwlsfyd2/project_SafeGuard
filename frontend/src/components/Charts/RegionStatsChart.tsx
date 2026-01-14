@@ -1,3 +1,6 @@
+/**
+ * 지역별 또는 기관별 민원 현황 및 비중을 보여주는 도넛 차트 및 요약 테이블 컴포넌트입니다.
+ */
 import React, { useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
 

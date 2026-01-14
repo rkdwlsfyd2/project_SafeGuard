@@ -1,3 +1,6 @@
+/**
+ * 선택된 카테고리의 민원 접수, 완료 건수 및 증감률, 백로그 트렌드를 보여주는 복합 차트 컴포넌트입니다.
+ */
 import React, { useState, useMemo } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
