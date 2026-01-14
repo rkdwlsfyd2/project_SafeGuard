@@ -208,11 +208,11 @@ function MyPage() {
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
                                         <tr style={{ backgroundColor: 'var(--primary-color)', color: 'white' }}>
-                                            <th style={{ padding: '15px' }}>접수번호</th>
-                                            <th style={{ padding: '15px' }}>제목</th>
-                                            <th style={{ padding: '15px' }}>지역</th>
-                                            <th style={{ padding: '15px' }}>신고일</th>
-                                            <th style={{ padding: '15px' }}>상태</th>
+                                            <th style={{ padding: '15px', whiteSpace: 'nowrap' }}>접수번호</th>
+                                            <th style={{ padding: '15px', whiteSpace: 'nowrap' }}>제목</th>
+                                            <th style={{ padding: '15px', whiteSpace: 'nowrap' }}>지역</th>
+                                            <th style={{ padding: '15px', whiteSpace: 'nowrap' }}>신고일</th>
+                                            <th style={{ padding: '15px', whiteSpace: 'nowrap' }}>상태</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -229,11 +229,34 @@ function MyPage() {
                                                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
                                                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                                             >
-                                                <td style={{ padding: '15px' }}>{report.complaintNo}</td>
-                                                <td style={{ padding: '15px', textAlign: 'left', fontWeight: '600' }}>{report.title}</td>
-                                                <td style={{ padding: '15px' }}>{report.address}</td>
-                                                <td style={{ padding: '15px' }}>{new Date(report.createdDate).toLocaleDateString()}</td>
-                                                <td style={{ padding: '15px', color: report.status === 'IN_PROGRESS' ? '#EF4444' : (report.status === 'COMPLETED' ? '#16A34A' : '#2563EB'), fontWeight: 'bold' }}>
+                                                <td style={{ padding: '15px', whiteSpace: 'nowrap' }}>{report.complaintNo}</td>
+                                                <td style={{
+                                                    padding: '15px',
+                                                    textAlign: 'left',
+                                                    fontWeight: '600',
+                                                    maxWidth: '250px',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis'
+                                                }} title={report.title}>
+                                                    {report.title}
+                                                </td>
+                                                <td style={{
+                                                    padding: '15px',
+                                                    maxWidth: '200px',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis'
+                                                }} title={report.address}>
+                                                    {report.address}
+                                                </td>
+                                                <td style={{ padding: '15px', whiteSpace: 'nowrap' }}>{new Date(report.createdDate).toLocaleDateString()}</td>
+                                                <td style={{
+                                                    padding: '15px',
+                                                    color: report.status === 'IN_PROGRESS' ? '#EF4444' : (report.status === 'COMPLETED' ? '#16A34A' : '#2563EB'),
+                                                    fontWeight: 'bold',
+                                                    whiteSpace: 'nowrap'
+                                                }}>
                                                     {getStatusText(report.status)}
                                                 </td>
                                             </tr>

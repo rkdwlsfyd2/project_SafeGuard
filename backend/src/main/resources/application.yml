@@ -31,6 +31,8 @@ ai:
     url: ${AI_RAG_URL:http://127.0.0.1:8001}
   stt:
     url: ${AI_STT_URL:http://127.0.0.1:8000}
+  yolo:
+    url: ${AI_YOLO_URL:http://127.0.0.1:5001}
 
 # JWT Configuration
 jwt:

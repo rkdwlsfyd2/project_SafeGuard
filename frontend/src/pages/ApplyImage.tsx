@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { complaintsAPI, getToken, agenciesAPI } from '../utils/api';
+import { complaintsAPI, getToken, agenciesAPI, analyzeImage } from '../utils/api';
 
 function ApplyImage() {
     const navigate = useNavigate();
@@ -169,15 +169,10 @@ function ApplyImage() {
         uploadData.append('image', file);
 
         try {
-            console.log('[프론트엔드 로그] AI 분석 요청 시작...');
-            const response = await fetch('http://localhost:5001/api/analyze-image', {
-                method: 'POST',
-                body: uploadData,
-            });
+            console.log('[프론트엔드 로그] AI 분석 요청 시작 (백엔드 프록시 이용)...');
+            const data = await analyzeImage(file);
 
-            if (!response.ok) throw new Error('분석 실패');
-
-            const data = await response.json();
+            console.log('[프론트엔드 로그] AI 분석 결과 수신:', data);
             setAiResult({ type: data.type, agency: data.agency });
 
             // 분석 결과를 내용에 자동 채움
@@ -212,13 +207,9 @@ function ApplyImage() {
         setLoading(true);
         setError('');
         try {
+            // 업로드 로직 통합: 별도의 uploadImage 호출 없이
+            // FormData에 'file' 파라미터로 직접 첨부하여 보냅니다.
 
-            // 1. 이미지를 백엔드 영구 저장소에 업로드
-            console.log('[프론트엔드 로그] 서버에 이미지 업로드 시작...');
-            const uploadResult = await complaintsAPI.uploadImage(selectedImage);
-            const imagePath = uploadResult.imagePath; // 서버에서 반환한 경로
-
-            // 2. 업로드된 경로를 포함하여 민원 생성 전송 (FormData로 변환)
             let agencyCode = null;
             if (aiResult?.agency && agencies.length > 0) {
                 const found = agencies.find((a: any) => a.agencyName === aiResult.agency);
@@ -233,14 +224,17 @@ function ApplyImage() {
                 content: formData.content,
                 isPublic: formData.isPublic,
                 location: formData.location,
-                imagePath: imagePath, // 저장된 경로 전달
                 agencyCode: agencyCode,
                 agencyName: aiResult?.agency || null
             };
 
             const submitData = new FormData();
             submitData.append('complaint', JSON.stringify(complaintData));
-            // 이미지는 이미 업로드되었으므로 file 파트는 보내지 않음 (null 처리 or 생략)
+
+            // 이미지 파일을 'file'이라는 이름으로 추가 (백엔드 RequestPart와 일치)
+            if (selectedImage) {
+                submitData.append('file', selectedImage);
+            }
 
             const result = await complaintsAPI.create(submitData);
             alert(`이미지 민원이 접수되었습니다. (접수번호: ${result.complaintNo})`);
