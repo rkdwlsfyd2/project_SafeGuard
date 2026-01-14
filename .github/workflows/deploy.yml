@@ -107,7 +107,7 @@ jobs:
           tmp=$(mktemp)
           jq --arg access_key "${{ secrets.AWS_ACCESS_KEY_ID }}" \
              --arg secret_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-             --arg bucket "safeguard-uploads" \
+             --arg bucket "safeguard-bukket" \
              --arg region "${{ env.AWS_REGION }}" \
              '(.containerDefinitions[] | select(.name == "safeguard-backend").environment) += [
                {"name": "AWS_ACCESS_KEY_ID", "value": $access_key},
