@@ -38,7 +38,7 @@ function App() {
     const storedAgencyName = localStorage.getItem('agencyName');
 
     if (role === 'AGENCY' && storedAgencyName) {
-      setTitle(`${storedAgencyName} 관리자 모드`);
+      setTitle(`(${storedAgencyName}) 관리자 모드`);
     } else if (role === 'AGENCY') {
       setTitle('관리자 모드');
     } else {
