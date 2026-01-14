@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { complaintsAPI, getToken, analyzeText } from '../utils/api';
 
+const MAX_CONTENT_LENGTH = 1000;
+
 function ApplyText() {
     const navigate = useNavigate();
     const mapRef = useRef<HTMLDivElement>(null);
@@ -213,11 +215,6 @@ function ApplyText() {
     };
 
     const handleAnalyze = async () => {
-
-        const result = await analyzeText(formData.content);
-        console.log('AI RESULT RAW:', result);
-        setAiResult(result);
-
         if (!formData.content || formData.content.length < 8) {
             alert('민원 내용을 8자 이상 입력해주세요.');
             return;
@@ -434,7 +431,17 @@ function ApplyText() {
                                     }}
                                     onFocus={(e) => e.target.style.borderColor = '#7c3aed'}
                                     onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                                    maxLength={MAX_CONTENT_LENGTH}
                                 />
+                                <div style={{
+                                    textAlign: 'right',
+                                    marginTop: '6px',
+                                    fontSize: '0.85rem',
+                                    color: formData.content.length > MAX_CONTENT_LENGTH * 0.9 ? '#ef4444' : '#94a3b8',
+                                    fontWeight: '500'
+                                }}>
+                                    {formData.content.length.toLocaleString()} / {MAX_CONTENT_LENGTH.toLocaleString()}자
+                                </div>
                             </div>
 
                             {/* 파일 첨부 */}
@@ -705,17 +712,17 @@ function ApplyText() {
                             {/* 민원 접수하기 버튼 (여기로 이동됨) */}
                             <button
                                 onClick={handleAnalyze}
-                                disabled={analyzing || !formData.content}
+                                disabled={analyzing || !formData.content || formData.content.length < 8}
                                 style={{
                                     width: '100%',
                                     padding: '16px',
-                                    background: (analyzing || !formData.content) ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                                    background: (analyzing || !formData.content || formData.content.length < 8) ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '12px',
                                     fontSize: '1rem',
                                     fontWeight: '700',
-                                    cursor: (analyzing || !formData.content) ? 'not-allowed' : 'pointer',
+                                    cursor: (analyzing || !formData.content || formData.content.length < 8) ? 'not-allowed' : 'pointer',
                                     boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
                                     transition: 'all 0.3s'
                                 }}
