@@ -53,7 +53,7 @@ public class ComplaintServiceImpl implements ComplaintService {
         if (file != null && !file.isEmpty()) {
             try {
                 String fileName = fileService.storeFile(file);
-                imagePath = "/uploads/" + fileName;
+                imagePath = fileName; // S3 Migration: storeFile returns full URL
             } catch (Exception e) {
                 log.error("파일 업로드 실패", e);
             }

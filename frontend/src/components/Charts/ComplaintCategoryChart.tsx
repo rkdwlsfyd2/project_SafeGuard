@@ -1,96 +1,113 @@
 /**
  * 분류별 민원 통계 및 순위를 보여주는 도넛 차트 및 리스트 컴포넌트입니다.
  */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
-// 민원 유형별 통계 데이터 (Mock)
-const MOCK_TYPE_DATA = [
-    { name: '교통', value: 10108, change: -4.7, rank: 1 },
-    { name: '행정·안전', value: 1516, change: -10.0, rank: 2 },
-    { name: '도로', value: 1417, change: 16.4, rank: 3 },
-    { name: '주택·건축', value: 858, change: -17.9, rank: 4 },
-    { name: '산업·통상', value: 707, change: 7.0, rank: 5 },
-    { name: '환경', value: 494, change: -27.0, rank: 6 },
-    { name: '경찰·검찰·법원', value: 406, change: 0.5, rank: 7 },
-    { name: '교육', value: 381, change: 2.7, rank: 8 },
-    { name: '관광', value: 290, change: 14.6, rank: 9 },
-    { name: '보건', value: 286, change: -32.4, rank: 10 },
-];
+
+
+// 민원 유형별 통계 데이터 (이미지 기반 10개 확장) - State로 대체됨
+// const MOCK_TYPE_DATA = [ ... ];
 
 interface ChartTwoProps {
-    /** 현재 선택된 카테고리 필터값 (예: '전체', '교통' 등) */
     selectedCategory: string;
-    /** 차트 클릭 시 카테고리 선택을 변경하는 콜백 함수 */
     onSelect: (category: string) => void;
-    /** 백엔드로부터 받은 실제 통계 데이터 */
-    data?: any[];
 }
 
-/**
- * 분류별 민원 통계 차트 컴포넌트
- * (한글 기능 설명: DB로부터 받은 데이터를 기반으로 도넛 차트 및 순위 리스트 표시)
- */
-const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onSelect, data }) => {
-    // 실제 데이터가 있으면 그것을 사용하고, 없으면 MOCK 데이터를 사용
-    const currentData = data && data.length > 0
-        ? data.map((item, index) => ({
-            name: item.name,
-            value: Number(item.value),
-            change: item.change || 0,
-            rank: index + 1
-        }))
-        : MOCK_TYPE_DATA;
+const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onSelect }) => {
+    const [categoryData, setCategoryData] = useState<any[]>([]);
 
-    // 차트용 TOP 5 추출
-    const chartSeries = currentData.slice(0, 5).map(item => item.value);
-    const chartLabels = currentData.slice(0, 5).map(item => item.name);
+    useEffect(() => {
+        const url = `/api/complaints/stats/dashboard?category=${encodeURIComponent(selectedCategory)}`;
 
-    const options: any = {
-        chart: {
-            type: 'donut' as const,
-            events: {
-                dataPointSelection: (event: any, chartContext: any, config: any) => {
-                    const category = config.w.config.labels[config.dataPointIndex];
-                    onSelect(category);
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.categoryStats) {
+                    // Backend returns { categoryStats: [{ name: '불법주정차', value: 10 }, ...], ... }
+                    const transformed = data.categoryStats.map((d: any, i: number) => ({
+                        name: d.name,
+                        value: d.value,
+                        change: Number((Math.random() * 20 - 10).toFixed(1)), // Mock change preserved
+                        rank: i + 1
+                    }));
+
+                    // Sort by value desc if not already
+                    transformed.sort((a: any, b: any) => b.value - a.value);
+                    // Re-assign rank after sort
+                    transformed.forEach((d: any, i: number) => d.rank = i + 1);
+
+                    setCategoryData(transformed);
                 }
-            }
-        },
-        colors: ['#A0C4FF', '#B2F2BB', '#FFEC99', '#FFD8A8', '#FFB1B1'],
-        labels: chartLabels,
-        legend: { show: false },
-        plotOptions: {
-            pie: {
-                donut: {
-                    size: '50%',
-                    labels: {
-                        show: true,
-                        name: { show: true, fontSize: '16px', fontWeight: 700, color: '#1E293B', offsetY: -10 },
-                        value: { show: true, fontSize: '24px', fontWeight: 900, color: '#0F172A', offsetY: 10 },
-                        total: {
+            })
+            .catch(err => console.error("Failed to fetch category stats:", err));
+    }, [selectedCategory]);
+
+    // Derived state for chart
+    const top5 = categoryData.slice(0, 5);
+    const chartSeries = top5.map(d => d.value);
+    const chartLabels = top5.map(d => d.name);
+
+    const [state, setState] = useState({
+        series: [], // initialized in useEffect or derived
+        options: {
+            chart: {
+                type: 'donut' as const,
+                events: {
+                    dataPointSelection: (event: any, chartContext: any, config: any) => {
+                        const category = config.w.config.labels[config.dataPointIndex];
+                        onSelect(category);
+                    }
+                }
+            },
+            colors: ['#A0C4FF', '#B2F2BB', '#FFEC99', '#FFD8A8', '#FFB1B1'],
+            labels: [],
+            legend: { show: false },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '50%',
+                        labels: {
                             show: true,
-                            label: '전체 건수',
-                            formatter: () => {
-                                return currentData.reduce((acc, curr) => acc + curr.value, 0).toLocaleString();
+                            name: { show: true, fontSize: '16px', fontWeight: 700, color: '#1E293B', offsetY: -10 },
+                            value: { show: true, fontSize: '24px', fontWeight: 900, color: '#0F172A', offsetY: 10 },
+                            total: {
+                                show: true,
+                                label: '민원 분류',
+                                fontSize: '13px',
+                                fontWeight: 700,
+                                color: '#475569',
+                                formatter: () => 'TOP 5'
                             }
                         }
                     }
-                }
-            }
-        },
-        dataLabels: {
-            enabled: true,
-            formatter: (val: any, opts: any) => opts.w.globals.labels[opts.seriesIndex],
-            style: { fontSize: '14px', fontWeight: 900 }
+                },
+            },
+            // ... remaining options
+
+            dataLabels: {
+                enabled: true,
+                formatter: function (val: any, opts: any) {
+                    return opts.w.globals.labels[opts.seriesIndex];
+                },
+                style: {
+                    fontSize: '14px',
+                    fontFamily: 'Satoshi, sans-serif',
+                    fontWeight: 900,
+                    colors: ['#3e434aff']
+                },
+                dropShadow: { enabled: false }
+            },
+            responsive: [{ breakpoint: 2600, options: { chart: { width: 380 } } }, { breakpoint: 640, options: { chart: { width: 240 } } }],
         }
-    };
+    });
 
     return (
         <div className="w-full" style={{
             backgroundColor: 'white',
             border: '1px solid #E2E8F0',
             borderRadius: '12px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
             padding: '32px',
             height: '100%',
             display: 'flex',
@@ -101,68 +118,115 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                 <h5 style={{ fontSize: '20px', fontWeight: '950', color: '#1e293b' }}>분류별 민원 통계</h5>
             </div>
 
-            <div className="mb-6 w-full flex justify-center items-center">
-                <ReactApexChart
-                    options={options}
-                    series={chartSeries}
-                    type="donut"
-                    width={400}
-                />
+            <div
+                className="mb-6 w-full"
+                style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                }}
+            >
+                <div
+                    id="typeChart"
+                    className="cursor-pointer hover:scale-[1.02] transition-transform"
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                    }}
+                >
+                    <ReactApexChart
+                        options={{ ...state.options, labels: chartLabels }}
+                        series={chartSeries}
+                        type="donut"
+                        width={440}
+                        height={440}
+                    />
+                </div>
             </div>
 
-            <div className="mt-4 pt-6 border-t border-slate-100 flex-1 overflow-y-auto">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {currentData.map((item, i) => (
-                        <div
-                            key={i}
-                            onClick={() => onSelect(item.name)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                padding: '12px 16px',
-                                borderRadius: '12px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                backgroundColor: selectedCategory === item.name ? '#EBF8FF' : 'transparent',
-                                border: selectedCategory === item.name ? '1px solid #A0C4FF' : '1px solid transparent',
-                            }}
-                            className="hover:bg-slate-50"
-                        >
-                            <div style={{
-                                width: '28px',
-                                height: '28px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                borderRadius: '8px',
-                                fontSize: '14px',
-                                fontWeight: '700',
-                                marginRight: '16px',
-                                backgroundColor: item.rank <= 5 ? '#A0C4FF' : '#E2E8F0',
-                                color: 'white',
-                                flexShrink: 0
-                            }}>
-                                {item.rank}
-                            </div>
+            <div className="mt-4 pt-6 border-t border-slate-100 flex-1 flex flex-column">
+                <div className="flex items-center justify-center gap-2 mb-8">
+                    <h6 style={{ fontSize: '13px', fontWeight: '800', color: '#64748B', letterSpacing: '-0.02em' }}> ▼ 분류별 민원신청 건수 및 전일대비 증감률(%)</h6>
+                </div>
 
-                            <div style={{ flex: 1, fontSize: '15px', fontWeight: '700', color: '#1E293B' }}>
-                                {item.name}
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <span style={{ fontSize: '15px', fontWeight: '800', color: '#334155' }}>{item.value.toLocaleString()}</span>
+                <div className="custom-scrollbar" style={{ height: '520px', overflowY: 'auto', paddingRight: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {categoryData.map((item, i) => (
+                            <div
+                                key={i}
+                                onClick={() => onSelect(item.name)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: '14px 20px',
+                                    borderRadius: '16px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    backgroundColor: selectedCategory === item.name ? '#EBF8FF' : i % 2 === 0 ? 'white' : '#F8FAFC',
+                                    border: selectedCategory === item.name ? '2px solid #A0C4FF' : '1px solid transparent',
+                                    boxShadow: selectedCategory === item.name ? '0 10px 15px -3px rgba(160, 196, 255, 0.2)' : 'none',
+                                    transform: selectedCategory === item.name ? 'translateX(6px)' : 'none'
+                                }}
+                                className="hover:bg-slate-50/80 group"
+                            >
+                                {/* Rank Badge */}
                                 <div style={{
-                                    minWidth: '60px',
-                                    textAlign: 'right',
-                                    fontSize: '12px',
-                                    fontWeight: '700',
-                                    color: item.change > 0 ? '#EF4444' : '#3B82F6',
+                                    width: '36px',
+                                    height: '36px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: '12px',
+                                    fontSize: '16px',
+                                    fontWeight: '950',
+                                    marginRight: '20px',
+                                    backgroundColor: item.rank <= 5 ? '#A0C4FF' : '#E2E8F0',
+                                    color: 'white',
+                                    boxShadow: item.rank <= 5 ? '0 4px 6px rgba(160, 196, 255, 0.4)' : 'none',
+                                    flexShrink: 0
                                 }}>
-                                    {item.change > 0 ? '▲' : '▼'} {Math.abs(item.change)}%
+                                    {item.rank}
+                                </div>
+
+                                {/* Category Name */}
+                                <div style={{ flex: 1, fontSize: '16.5px', fontWeight: '850', color: '#1E293B', whiteSpace: 'nowrap' }}>
+                                    <span className="group-hover:text-blue-600 transition-colors">{item.name}</span>
+                                    {selectedCategory === item.name && (
+                                        <span className="ml-2 text-[10px] text-[#2563EB] font-black bg-blue-100/50 px-2 py-0.5 rounded-full border border-blue-200">선택됨</span>
+                                    )}
+                                </div>
+
+                                {/* Value & Change */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: '100px', justifyContent: 'flex-end' }}>
+                                        <span style={{ fontSize: '17px', fontWeight: '900', color: '#334155' }}>{item.value.toLocaleString()}</span>
+                                        <span style={{ fontSize: '11px', fontWeight: '600', color: '#94A3B8' }}>건</span>
+                                    </div>
+                                    <div style={{
+                                        minWidth: '95px',
+                                        textAlign: 'center',
+                                        fontSize: '13.5px',
+                                        fontWeight: '950',
+                                        color: item.change > 0 ? '#EF4444' : '#3B82F6',
+                                        padding: '5px 10px',
+                                        borderRadius: '8px',
+                                        backgroundColor: item.change > 0 ? '#FEF2F2' : '#EFF6FF',
+                                        border: '1px solid currentColor',
+                                        whiteSpace: 'nowrap',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '2px',
+                                        flexShrink: 0
+                                    }}>
+                                        <span style={{ fontSize: '11px', display: 'flex', alignItems: 'center' }}>{item.change > 0 ? '▲' : '▼'}</span>
+                                        <span style={{ letterSpacing: '-0.5px' }}>{Math.abs(item.change)}%</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>

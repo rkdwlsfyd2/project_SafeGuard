@@ -1,32 +1,26 @@
 package com.safeguard.service.impl;
 
 import com.safeguard.service.FileService;
+import io.awspring.cloud.s3.S3Template;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FileServiceImpl implements FileService {
 
-    private final Path fileStorageLocation;
+    private final S3Template s3Template;
 
-    public FileServiceImpl() {
-        this.fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
-        try {
-            Files.createDirectories(this.fileStorageLocation);
-        } catch (Exception ex) {
-            throw new RuntimeException("Could not create the directory where the uploaded files will be stored.", ex);
-        }
-    }
+    @Value("${spring.cloud.aws.s3.bucket}")
+    private String bucketName;
 
     @Override
     public String storeFile(MultipartFile file) {
@@ -44,10 +38,13 @@ public class FileServiceImpl implements FileService {
             }
 
             String fileName = UUID.randomUUID().toString() + extension;
-            Path targetLocation = this.fileStorageLocation.resolve(fileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-            return fileName;
+            // Upload to S3
+            s3Template.upload(bucketName, fileName, file.getInputStream());
+
+            // Return the S3 URL (Public)
+            return s3Template.download(bucketName, fileName).getURL().toString();
+
         } catch (IOException ex) {
             throw new RuntimeException("Could not store file " + originalFileName + ". Please try again!", ex);
         }

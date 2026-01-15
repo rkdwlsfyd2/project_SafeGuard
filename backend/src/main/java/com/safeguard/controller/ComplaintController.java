@@ -290,8 +290,9 @@ public class ComplaintController {
     public ResponseEntity<Map<String, String>> uploadImage(
             @RequestParam("image") MultipartFile file) {
         try {
-            String fileName = fileService.storeFile(file);
-            String imagePath = "/uploads/" + fileName;
+            String imagePath = fileService.storeFile(file);
+            // String imagePath = "/uploads/" + fileName; // S3 Migration: storeFile returns
+            // full URL
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(Map.of("imagePath", imagePath));
         } catch (Exception e) {

@@ -1,6 +1,7 @@
 spring:
   application:
     name: backend
+
   datasource:
     url: jdbc:postgresql://localhost:5433/safeguard
     username: user
@@ -15,6 +16,14 @@ spring:
       hibernate:
         format_sql: true
 
+  cloud:
+    aws:
+      s3:
+        bucket: ${AWS_S3_BUCKET:safeguard-bukket}
+        region: ${AWS_REGION:ap-northeast-2}
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
 
 # MyBatis Configuration
 mybatis:
@@ -59,5 +68,3 @@ management:
   metrics:
     tags:
       application: backend-spring
-
-

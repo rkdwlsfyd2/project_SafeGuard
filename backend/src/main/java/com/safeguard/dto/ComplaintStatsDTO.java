@@ -12,4 +12,5 @@ public class ComplaintStatsDTO {
     private long completed;
     @JsonProperty("sla_compliance")
     private double slaCompliance;
+    private long overdue;
 }

@@ -11,6 +11,11 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api\/stt/, ''),
             },
+            '/api/rag/title': {
+                target: 'http://127.0.0.1:8001',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api\/rag\/title/, '/generate-title'),
+            },
             '/api': {
                 target: 'http://localhost:8080',
                 changeOrigin: true,

@@ -137,11 +137,9 @@ function ApplyVoice() {
                 setError('');
 
                 try {
-                    // [Fix] Web Speech API(브라우저 내장)의 환각(예: noise -> strange text)이 
-                    // 백엔드 필터링을 우회하는 문제를 해결하기 위해,
-                    // 최종 변환 시에는 브라우저 인식 텍스트(previewText)를 서버로 보내지 않고
-                    // 무조건 서버의 Whisper(강화된 설정 적용됨)를 사용하도록 변경.
-                    const result = await sttAPI.transcribe(audioBlob, null); // text인자를 null로 전달
+                    // [Fix] PR #52: 브라우저 인식 텍스트(previewText)를 서버로 전달하여
+                    // 백엔드의 Priority Check(Whisper 스킵)가 동작하도록 변경.
+                    const result = await sttAPI.transcribe(audioBlob, previewTextRef.current);
 
                     let finalContent = '';
 

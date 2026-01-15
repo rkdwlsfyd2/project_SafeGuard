@@ -47,7 +47,7 @@ CREATE TABLE complaint (
     longitude DOUBLE PRECISION,
     image_path VARCHAR(500),
     analysis_result JSONB,
-    status VARCHAR(20) NOT NULL DEFAULT 'RECEIVED',
+    status VARCHAR(20) NOT NULL DEFAULT 'UNPROCESSED',
     is_public BOOLEAN NOT NULL DEFAULT TRUE,
     created_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMPTZ,
@@ -143,9 +143,5 @@ INSERT INTO agency (agency_type, agency_name, region_code) VALUES
   ('CENTRAL', '소방청', NULL),
   ('CENTRAL', '인사혁신처', NULL),
   ('CENTRAL', '기타', NULL);
-
--- 4. 기초 데이터 삽입 (Default User)
-INSERT INTO app_user (user_id, pw, name, role) VALUES
-('testuser', 'password', '테스트유저', 'USER');
 
 SELECT 'Reset Complete' as status;

@@ -89,6 +89,8 @@ services:
       spring.jpa.hibernate.ddl-auto: update
       AI_RAG_URL: http://ai-rag:8001
       AI_STT_URL: http://ai-stt:8000
+    volumes:
+      - ./uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -139,6 +141,8 @@ services:
     depends_on:
       - backend
       - ai-yolo
+    volumes:
+      - ./uploads:/usr/share/nginx/html/uploads
     networks:
       - safeguard-network
 

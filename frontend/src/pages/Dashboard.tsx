@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Download
 } from 'lucide-react';
@@ -12,63 +13,66 @@ import DistrictBottleneckChart from '../components/Charts/DistrictBottleneckChar
 
 
 // --- 임시 데이터 (Mock) ---
+// MOCK_OVERDUE_DATA removed
 
 
 
-/**
- * 메인 관리자 대시보드 컴포넌트
- * (한글 기능 설명: 각종 민원 통계 요약, 월별 트렌드, 자치구별 지연 현황 등 시각화)
- */
-const Dashboard: React.FC = () => {
-    // 통계 데이터 관리 상태
-    const [stats, setStats] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-
-    // 필터링 상태 (카테고리)
-    const [selectedCategory, setSelectedCategory] = useState<string>('전체');
-
-    // 지연 민원 리스트 페이지네이션 상태
-    const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 5;
-
-    const paginatedOverdueList = stats?.overdueList
-        ? stats.overdueList.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-        : [];
-
-    // 통계 조회 및 수동 새로고침 처리
-    const fetchStats = async () => {
-        try {
-            setLoading(true);
-            const data = await complaintsAPI.getStats(selectedCategory === '전체' ? undefined : selectedCategory);
-            setStats(data);
-        } catch (error) {
-            console.error('통계 조회 오류:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+const Dashboard = () => {
+    const [stats, setStats] = useState({
+        total: 0,
+        received: 0,
+        processing: 0,
+        completed: 0,
+        sla_compliance: 0,
+        overdue: 0
+    });
+    const navigate = useNavigate();
+    const [overdueList, setOverdueList] = useState<any[]>([]);
 
     useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const res = await fetch('/api/complaints/stats/dashboard');
+                const data = await res.json();
 
-        fetchStats();
+                if (data) {
+                    if (data.summary) {
+                        setStats(data.summary);
+                    }
+                    if (data.overdueList) {
+                        setOverdueList(data.overdueList);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch dashboard stats:', error);
+            }
+        };
+        fetchDashboardData();
+    }, []);
 
-        // 30초마다 데이터 자동 갱신 (Real-time update)
-        const intervalId = setInterval(fetchStats, 30000);
-
-        return () => clearInterval(intervalId);
-    }, [selectedCategory]);
+    const [selectedCategory, setSelectedCategory] = useState('도로');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 5;
     const overdueListRef = useRef<HTMLDivElement>(null);
+
+    const totalPages = Math.ceil(overdueList.length / ITEMS_PER_PAGE);
+    const currentOverdueList = overdueList.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
 
     const handleOverdueClick = () => {
         overdueListRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    // 통계 요약 데이터 추출
-    const summary = stats?.summary || { total: 0, received: 0, processing: 0, completed: 0 };
-    const received = summary.received;
-    const processing = summary.processing;
-    const completed = summary.completed;
-    const total = summary.total;
+    // const received = stats.total - (stats.processing + stats.completed);
+
 
     return (
         <div className="dash-page">
@@ -142,12 +146,12 @@ const Dashboard: React.FC = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '16px' }}>
                         {[
-                            { label: '전 체', count: total, color: '#F1F5F9', textColor: '#334155' },
-                            { label: '접 수', count: received, color: '#EFF6FF', textColor: '#2563EB' },
-                            { label: '처리중', count: processing, color: '#FEF2F2', textColor: '#EF4444' },
-                            { label: '처리완료', count: completed, color: '#F0FDF4', textColor: '#16A34A' },
-                            { label: 'SLA 준수율', count: `${summary.sla_compliance || 0}%`, color: '#EEF2FF', textColor: '#4F46E5' },
-                            { label: '지연 민원', count: 12, color: '#FFF1F2', textColor: '#E11D48', isUrgent: true }
+                            { label: '전 체', count: stats.total, color: '#F1F5F9', textColor: '#334155' },
+                            { label: '접 수', count: stats.received, color: '#EFF6FF', textColor: '#2563EB' },
+                            { label: '처리중', count: stats.processing, color: '#FEF2F2', textColor: '#EF4444' },
+                            { label: '처리완료', count: stats.completed, color: '#F0FDF4', textColor: '#16A34A' },
+                            { label: 'SLA 준수율', count: `${stats.sla_compliance}%`, color: '#EEF2FF', textColor: '#4F46E5' },
+                            { label: '지연 민원', count: overdueList.length, color: '#FFF1F2', textColor: '#E11D48', isUrgent: true }
                         ].map((stat, idx) => (
                             <div
                                 key={idx}
@@ -180,21 +184,14 @@ const Dashboard: React.FC = () => {
                     <div className="dash-main !mb-0">
                         {/* Left: Donut Chart -> Replaced with ChartTwo */}
                         <div className="dash-left">
-                            <ComplaintCategoryChart
-                                selectedCategory={selectedCategory}
-                                onSelect={setSelectedCategory}
-                                data={stats?.categoryStats || []}
-                            />
+                            <ComplaintCategoryChart selectedCategory={selectedCategory} onSelect={setSelectedCategory} />
                         </div>
 
                         {/* Right: Trend Chart + Age Group Chart */}
                         <div className="dash-right">
-                            <ComplaintTrendChart
-                                selectedCategory={selectedCategory}
-                                data={stats?.monthlyTrend || []}
-                            />
+                            <ComplaintTrendChart selectedCategory={selectedCategory} />
                             <div style={{ flex: 1 }}>
-                                <AgeGroupChart data={stats?.ageGroupStats || []} />
+                                <AgeGroupChart />
                             </div>
                         </div>
                     </div>
@@ -202,8 +199,8 @@ const Dashboard: React.FC = () => {
 
                 {/* 3. Bottom Grid: District Bottleneck Ranking (Bottleneck Analysis) */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '40px' }}>
-                    <DistrictBottleneckChart type="unprocessed" data={stats?.bottleneck || []} />
-                    <DistrictBottleneckChart type="overdue" data={stats?.bottleneckOverdue || []} />
+                    <DistrictBottleneckChart type="unprocessed" />
+                    <DistrictBottleneckChart type="overdue" />
                 </div>
                 {/* 4. Delayed Complaint List Section (Drill-down) */}
                 <section ref={overdueListRef} style={{ marginBottom: '60px' }}>
@@ -211,9 +208,7 @@ const Dashboard: React.FC = () => {
                         <div style={{ backgroundColor: '#FFF1F2', padding: '24px 32px', borderBottom: '1px solid #FECDD3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3 className="font-bold flex items-center gap-3">
                                 <span style={{ fontSize: '22px', fontWeight: '950', color: '#9F1239' }}>지연 민원 상세 관리 (SLA Overdue)</span>
-                                <span style={{ backgroundColor: '#E11D48', color: 'white', padding: '2px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '900' }}>
-                                    {stats?.overdueList?.length || 0} Active
-                                </span>
+                                <span style={{ backgroundColor: '#E11D48', color: 'white', padding: '2px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '900' }}>{stats.overdue} 개 민원</span>
                             </h3>
 
                         </div>
@@ -230,7 +225,7 @@ const Dashboard: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {paginatedOverdueList.map((item: any) => (
+                                    {currentOverdueList.map((item) => (
                                         <tr key={item.id} style={{ backgroundColor: '#fff5f5', borderRadius: '12px', transition: 'transform 0.2s' }}>
                                             <td style={{ padding: '20px 16px', borderTopLeftRadius: '12px', borderBottomLeftRadius: '12px', fontWeight: '900', color: '#BE123C' }}>{item.category}</td>
                                             <td style={{ padding: '20px 16px', fontWeight: '700', color: '#1E293B' }}>{item.title}</td>
@@ -240,52 +235,50 @@ const Dashboard: React.FC = () => {
                                                 <span style={{ color: '#E11D48', fontWeight: '950', backgroundColor: '#FFE4E6', padding: '4px 10px', borderRadius: '6px' }}>{item.overduetime}</span>
                                             </td>
                                             <td style={{ padding: '20px 16px', borderTopRightRadius: '12px', borderBottomRightRadius: '12px', textAlign: 'center' }}>
-                                                <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '900', cursor: 'pointer' }}>즉시 점검</button>
+                                                <button
+                                                    onClick={() => navigate('/reports/' + item.id)}
+                                                    style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '900', cursor: 'pointer' }}
+                                                >
+                                                    즉시 점검
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
-                                    {(!stats?.overdueList || stats.overdueList.length === 0) && (
-                                        <tr>
-                                            <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
-                                                현재 지연된 민원이 없습니다.
-                                            </td>
-                                        </tr>
-                                    )}
                                 </tbody>
                             </table>
 
                             {/* Pagination Controls */}
-                            {stats?.overdueList && stats.overdueList.length > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '20px' }}>
+                            {totalPages > 1 && (
+                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '20px' }}>
                                     <button
-                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        onClick={() => handlePageChange(currentPage - 1)}
                                         disabled={currentPage === 1}
                                         style={{
                                             padding: '8px 16px',
                                             borderRadius: '8px',
                                             border: '1px solid #FECDD3',
-                                            backgroundColor: currentPage === 1 ? '#F3F4F6' : 'white',
-                                            color: currentPage === 1 ? '#9CA3AF' : '#E11D48',
+                                            backgroundColor: currentPage === 1 ? '#FFF5F5' : 'white',
+                                            color: currentPage === 1 ? '#FDA4AF' : '#E11D48',
                                             cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                                            fontWeight: '800'
+                                            fontWeight: '700'
                                         }}
                                     >
                                         이전
                                     </button>
-                                    <span style={{ fontWeight: '900', color: '#881337' }}>
-                                        {currentPage} / {Math.ceil(stats.overdueList.length / ITEMS_PER_PAGE)}
+                                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#9F1239' }}>
+                                        {currentPage} / {totalPages}
                                     </span>
                                     <button
-                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(stats.overdueList.length / ITEMS_PER_PAGE)))}
-                                        disabled={currentPage >= Math.ceil(stats.overdueList.length / ITEMS_PER_PAGE)}
+                                        onClick={() => handlePageChange(currentPage + 1)}
+                                        disabled={currentPage === totalPages}
                                         style={{
                                             padding: '8px 16px',
                                             borderRadius: '8px',
                                             border: '1px solid #FECDD3',
-                                            backgroundColor: currentPage >= Math.ceil(stats.overdueList.length / ITEMS_PER_PAGE) ? '#F3F4F6' : 'white',
-                                            color: currentPage >= Math.ceil(stats.overdueList.length / ITEMS_PER_PAGE) ? '#9CA3AF' : '#E11D48',
-                                            cursor: currentPage >= Math.ceil(stats.overdueList.length / ITEMS_PER_PAGE) ? 'not-allowed' : 'pointer',
-                                            fontWeight: '800'
+                                            backgroundColor: currentPage === totalPages ? '#FFF5F5' : 'white',
+                                            color: currentPage === totalPages ? '#FDA4AF' : '#E11D48',
+                                            cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                            fontWeight: '700'
                                         }}
                                     >
                                         다음
@@ -295,7 +288,7 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
                 </section>
-            </div>
+            </div >
         </div >
     );
 };

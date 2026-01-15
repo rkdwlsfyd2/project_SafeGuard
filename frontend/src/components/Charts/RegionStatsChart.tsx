@@ -1,23 +1,40 @@
 /**
  * 지역별 또는 기관별 민원 현황 및 비중을 보여주는 도넛 차트 및 요약 테이블 컴포넌트입니다.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
 const RegionStatsChart: React.FC = () => {
     const [viewType, setViewType] = useState<'institution' | 'region'>('region');
 
     // Mock Data for Regions
-    const regionSeries = [7417, 4087, 1648, 1500, 1316];
-    const regionLabels = ['경기', '서울', '인천', '부산', '경남'];
-    // Red, Orange, Teal, Blue, Grey
+    const [regionData, setRegionData] = useState<{ name: string, count: number }[]>([]);
+    const [institutionData, setInstitutionData] = useState<{ name: string, count: number }[]>([]);
+
+    useEffect(() => {
+        // Fetch Region Data
+        fetch('http://localhost:5000/api/dashboard/region-stats?type=region')
+            .then(res => res.json())
+            .then(data => setRegionData(data));
+
+        // Fetch Institution Data
+        fetch('http://localhost:5000/api/dashboard/region-stats?type=institution')
+            .then(res => res.json())
+            .then(data => setInstitutionData(data));
+    }, []);
+
+    const regionSeries = regionData.map(d => parseInt(d.count.toString()));
+    const regionLabels = regionData.map(d => d.name);
+    // Dynamic colors generation or reuse existing if fixed number
     const regionColors = ['#FF6B6B', '#FFB84C', '#20B2AA', '#5C7CFA', '#CED4DA'];
 
-    // Mock Data for Institutions (Just to have something when toggled)
-    const instSeries = [5000, 3000, 2000, 1000, 500];
-    const instLabels = ['경찰청', '국토부', '행안부', '환경부', '교육부'];
-    // Blue shades
+    const instSeries = institutionData.map(d => parseInt(d.count.toString()));
+    const instLabels = institutionData.map(d => d.name);
     const instColors = ['#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE'];
+
+
+    // Mock Data for Institutions (Just to have something when toggled)
+
 
     const currentSeries = viewType === 'region' ? regionSeries : instSeries;
     const currentLabels = viewType === 'region' ? regionLabels : instLabels;
@@ -74,19 +91,20 @@ const RegionStatsChart: React.FC = () => {
     };
 
     // Table Data (Mock)
-    const tableData = viewType === 'region' ? [
-        { name: '경기', count: 7417, change: 1.7, isUp: true },
-        { name: '서울', count: 4087, change: -2.2, isUp: false },
-        { name: '인천', count: 1648, change: -11.3, isUp: false },
-        { name: '부산', count: 1500, change: 6.8, isUp: true },
-        { name: '경남', count: 1316, change: 4.9, isUp: true },
-    ] : [
-        { name: '경찰청', count: 5000, change: 5.2, isUp: true },
-        { name: '국토부', count: 3000, change: 1.1, isUp: true },
-        { name: '행안부', count: 2000, change: -0.5, isUp: false },
-        { name: '환경부', count: 1000, change: 0.0, isUp: true },
-        { name: '교육부', count: 500, change: -1.2, isUp: false },
-    ];
+    // Table Data (Mapped from fetched data)
+    // Note: 'Change' is mocked for now as we don't have historical data snapshot in this simple implementation
+    const tableData = viewType === 'region' ? regionData.map((d, i) => ({
+        name: d.name,
+        count: parseInt(d.count.toString()),
+        change: Number((Math.random() * 10 - 5).toFixed(1)), // Mock change
+        isUp: Math.random() > 0.5
+    })) : institutionData.map((d, i) => ({
+        name: d.name,
+        count: parseInt(d.count.toString()),
+        change: Number((Math.random() * 10 - 5).toFixed(1)), // Mock change
+        isUp: Math.random() > 0.5
+    }));
+
 
     return (
         <div className="w-full" style={{

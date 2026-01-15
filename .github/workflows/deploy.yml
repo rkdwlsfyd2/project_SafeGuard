@@ -103,6 +103,19 @@ jobs:
       - name: Register Task Definition
         id: register-task
         run: |
+          # Inject secrets into Task Definition
+          tmp=$(mktemp)
+          jq --arg access_key "${{ secrets.AWS_ACCESS_KEY_ID }}" \
+             --arg secret_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+             --arg bucket "safeguard-bukket" \
+             --arg region "${{ env.AWS_REGION }}" \
+             '(.containerDefinitions[] | select(.name == "safeguard-backend").environment) += [
+               {"name": "AWS_ACCESS_KEY_ID", "value": $access_key},
+               {"name": "AWS_SECRET_ACCESS_KEY", "value": $secret_key},
+               {"name": "AWS_S3_BUCKET", "value": $bucket},
+               {"name": "AWS_REGION", "value": $region}
+             ]' task_definition_update_v3.json > "$tmp" && mv "$tmp" task_definition_update_v3.json
+          
           aws ecs register-task-definition --cli-input-json file://task_definition_update_v3.json
 
       - name: Force ECS Deployment

@@ -10,6 +10,8 @@ import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import complaintsRoutes from './routes/complaints.js';
 import agenciesRoutes from './routes/agencies.js';
+import dashboardRoutes from './routes/dashboard.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,6 +53,8 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintsRoutes);
 app.use('/api/agencies', agenciesRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+
 
 // 이미지 분석 API (기존 유지)
 app.post('/api/analyze-image', upload.single('image'), async (req, res) => {

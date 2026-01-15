@@ -155,10 +155,10 @@
     <insert id="insertComplaintDto" useGeneratedKeys="true" keyProperty="complaintNo"
             parameterType="com.safeguard.dto.ComplaintDTO">
         INSERT INTO complaint (
-            title, content, category, status, is_public, user_no, created_date,
+            title, content, category, status, is_public, user_no, created_date, updated_date, completed_date,
             address, latitude, longitude, image_path, like_count
         ) VALUES (
-            #{title}, #{content}, #{category}, #{status}, #{isPublic}, #{userNo}, #{createdDate},
+            #{title}, #{content}, #{category}, #{status}, #{isPublic}, #{userNo}, #{createdDate}, #{updatedDate}, #{completedDate},
             #{address}, #{latitude}, #{longitude}, #{imagePath}, #{likeCount}
         )
     </insert>
@@ -344,6 +344,7 @@
         <result property="processing" column="processing"/>
         <result property="completed" column="completed"/>
         <result property="slaCompliance" column="sla_compliance"/>
+        <result property="overdue" column="overdue"/>
     </resultMap>
 
     <!-- 통계(요약): 전체 건수, 상태별(UNPROCESSED, IN_PROGRESS 등) 카운트 및 SLA 준수율 조회 -->
@@ -357,7 +358,8 @@
             COALESCE(ROUND(
                 (COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' AND c.updated_date &lt;= c.created_date + INTERVAL '3 days' THEN c.complaint_no END)::numeric /
                 NULLIF(COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' THEN c.complaint_no END), 0)) * 100, 1
-            ), 0) AS sla_compliance
+            ), 0) AS sla_compliance,
+            COUNT(DISTINCT CASE WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') AND c.created_date &lt; (CURRENT_TIMESTAMP - INTERVAL '3 days') THEN c.complaint_no END) AS overdue
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
@@ -417,8 +419,22 @@
     <select id="selectMonthlyTrend" resultType="map">
         SELECT 
             TO_CHAR(d, 'YYYY-MM') AS month,
-            COUNT(CASE WHEN TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM') THEN 1 END)::int AS received,
-            COUNT(CASE WHEN TO_CHAR(c.completed_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM') THEN 1 END)::int AS completed
+            (
+                SELECT COUNT(*)::int 
+                FROM complaint c 
+                WHERE TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
+                <if test="category != null and category != '전체' and category != ''">
+                    AND c.category = #{category}
+                </if>
+            ) AS received,
+            (
+                SELECT COUNT(*)::int 
+                FROM complaint c 
+                WHERE TO_CHAR(c.completed_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
+                <if test="category != null and category != '전체' and category != ''">
+                    AND c.category = #{category}
+                </if>
+            ) AS completed
         FROM (
             SELECT generate_series(
                 CURRENT_DATE - INTERVAL '5 months', 
@@ -426,11 +442,6 @@
                 '1 month'
             )::date AS d
         ) d
-        LEFT JOIN complaint c ON TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
-        <if test="category != null and category != '전체' and category != ''">
-            AND c.category = #{category}
-        </if>
-        GROUP BY month
         ORDER BY month ASC
     </select>
 
@@ -488,8 +499,7 @@
             SPLIT_PART(address, ' ', 2) AS district,
             '안전총괄실' AS agency,
             CONCAT(
-                EXTRACT(DAY FROM (CURRENT_TIMESTAMP - created_date)), '일 ',
-                EXTRACT(HOUR FROM (CURRENT_TIMESTAMP - created_date)), '시간 지연'
+                EXTRACT(DAY FROM (CURRENT_TIMESTAMP - created_date)), '일 지연'
             ) AS overdueTime
         FROM complaint
         WHERE status IN ('UNPROCESSED', 'IN_PROGRESS')

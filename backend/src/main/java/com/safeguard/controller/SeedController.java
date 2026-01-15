@@ -14,7 +14,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.ArrayList;
+import java.time.format.DateTimeFormatter;
 
 @Slf4j
 @RestController
@@ -398,6 +402,110 @@ public class SeedController {
 
         } catch (Exception e) {
             log.error("[Seed] Failed to fix agency mappings", e);
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/bulk-seed")
+    public ResponseEntity<Map<String, Object>> generateBulkData() {
+        try {
+            log.info("[Seed] Starting bulk seed...");
+            Random random = new Random();
+            int complaintCount = 0;
+            int userCount = 0;
+
+            // 1. Create Users with different ages (10s to 60s)
+            List<UserDTO> users = new ArrayList<>();
+            int[] birthYears = { 2010, 2000, 1990, 1980, 1970, 1960 }; // 10s, 20s, 30s, 40s, 50s, 60s
+            String[] ageLabels = { "teen", "twenty", "thirty", "forty", "fifty", "sixty" };
+
+            for (int i = 0; i < birthYears.length; i++) {
+                String userId = "user_" + ageLabels[i];
+                if (!userMapper.existsByUserId(userId)) {
+                    UserDTO user = UserDTO.builder()
+                            .userId(userId)
+                            .pw(passwordEncoder.encode("password"))
+                            .name("User " + ageLabels[i])
+                            .birthDate(java.time.LocalDate.of(birthYears[i], 1, 1))
+                            .addr("Seoul")
+                            .phone("010-0000-" + (1000 + i))
+                            .role(com.safeguard.enums.UserRole.USER)
+                            .build();
+                    userMapper.insertUser(user);
+                    // Fetch back to get userNo
+                    users.add(userMapper.findByUserId(userId).get());
+                    userCount++;
+                } else {
+                    users.add(userMapper.findByUserId(userId).get());
+                }
+            }
+
+            // 2. Create Complaints
+            String[] categories = { "도로", "불법주차", "청소", "시설", "안전", "교통", "건축" };
+            String[] districts = { "강남구", "서초구", "송파구", "마포구", "종로구", "동작구", "영등포구" };
+
+            // Get Agencies for mapping
+            List<Agency> agencies = agencyMapper.selectAgencyList();
+            if (agencies.isEmpty()) {
+                seedAgencies(); // Ensure agencies exist
+                agencies = agencyMapper.selectAgencyList();
+            }
+
+            for (int i = 0; i < 500; i++) {
+                UserDTO randomUser = users.get(random.nextInt(users.size()));
+                String category = categories[random.nextInt(categories.length)];
+                String district = districts[random.nextInt(districts.length)];
+
+                // Random Status
+                com.safeguard.enums.ComplaintStatus status;
+                int statusRoll = random.nextInt(10); // 0-9
+                if (statusRoll < 2)
+                    status = com.safeguard.enums.ComplaintStatus.UNPROCESSED; // 20%
+                else if (statusRoll < 5)
+                    status = com.safeguard.enums.ComplaintStatus.IN_PROGRESS; // 30%
+                else
+                    status = com.safeguard.enums.ComplaintStatus.COMPLETED; // 50%
+
+                // Random Date (Last 6 months)
+                java.time.OffsetDateTime createdDate = java.time.OffsetDateTime.now()
+                        .minusDays(random.nextInt(180));
+
+                java.time.OffsetDateTime completedDate = null;
+                if (status == com.safeguard.enums.ComplaintStatus.COMPLETED) {
+                    completedDate = createdDate.plusDays(random.nextInt(10) + 1);
+                }
+
+                // Random Agency
+                Agency agency = agencies.get(random.nextInt(agencies.size()));
+
+                ComplaintDTO complaint = ComplaintDTO.builder()
+                        .title(category + " 민원 요청 " + i)
+                        .content("민원 내용입니다. " + district + " 지역.")
+                        .category(category)
+                        .address("서울특별시 " + district)
+                        .latitude(37.5 + (random.nextDouble() * 0.1))
+                        .longitude(127.0 + (random.nextDouble() * 0.1))
+                        .status(status)
+                        .createdDate(createdDate)
+                        .completedDate(completedDate)
+                        .updatedDate(completedDate != null ? completedDate : createdDate)
+                        .userNo(randomUser.getUserNo())
+                        .agencyNo(agency.getAgencyNo())
+                        .isPublic(true)
+                        .likeCount(random.nextInt(10))
+                        .analysisResult("{\"keywords\": [\"" + category + "\", \"민원\"]}")
+                        .build();
+
+                complaintMapper.insertComplaintDto(complaint);
+                complaintCount++;
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Bulk seed completed",
+                    "usersCreated", userCount,
+                    "complaintsCreated", complaintCount));
+        } catch (Exception e) {
+            log.error("Bulk seed failed", e);
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }

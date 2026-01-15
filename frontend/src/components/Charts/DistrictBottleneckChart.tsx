@@ -1,19 +1,41 @@
 /**
  * 자치구별 미처리 또는 지연된 민원 건수 TOP 10을 보여주는 병목 분석 차트 컴포넌트입니다.
  */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
 interface DistrictBottleneckChartProps {
     type: 'unprocessed' | 'overdue';
-    data: { name: string; count: number }[];
 }
 
-const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type, data }) => {
-    // 실제 데이터 매핑
-    const currentData = data.map(item => ({ x: item.name, y: item.count }));
+const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type }) => {
+    const [data, setData] = useState<{ x: string, y: number }[]>([]);
+
+    useEffect(() => {
+        // Fetch Dashboard Stats including bottleneck data
+        fetch(`/api/complaints/stats/dashboard`)
+            .then(res => res.json())
+            .then(data => {
+                let sourceData = [];
+                if (type === 'unprocessed') {
+                    sourceData = data.bottleneck || [];
+                } else {
+                    sourceData = data.bottleneckOverdue || [];
+                }
+
+                // Formatting to match chart data structure {x, y}
+                const formatted = sourceData.map((d: any) => ({
+                    x: d.name,
+                    y: parseInt(d.count)
+                }));
+                setData(formatted);
+            })
+            .catch(err => console.error("Failed to fetch bottleneck stats:", err));
+    }, [type]);
 
 
+
+    const currentData = data;
     const mainColor = type === 'unprocessed' ? '#3B82F6' : '#EF4444';
     const bgColor = type === 'unprocessed' ? '#EFF6FF' : '#FEF2F2';
     const title = type === 'unprocessed' ? '구별 미처리 TOP 10' : '구별 지연(Overdue) TOP 10';

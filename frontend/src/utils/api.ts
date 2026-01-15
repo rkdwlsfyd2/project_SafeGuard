@@ -295,7 +295,7 @@ export const analyzeText = async (text: string) => {
  * AI 기반 제목 자동 생성 API
  */
 export const generateTitle = async (text: string, address: string, type: string) => {
-    const response = await fetch('http://localhost:8001/generate-title', {
+    const response = await fetch(`${API_BASE}/rag/title`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, address, type }),
