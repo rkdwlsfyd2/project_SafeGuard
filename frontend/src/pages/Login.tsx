@@ -17,6 +17,10 @@ function Login() {
         try {
             const result = await authAPI.login({ userId, password });
             if (result.user.role === 'AGENCY') {
+                // Ensure agencyName is stored (redundant check)
+                if (result.user.agencyName) {
+                    localStorage.setItem('agencyName', result.user.agencyName);
+                }
                 window.location.href = '/admin/dashboard';
             } else {
                 window.location.href = '/';

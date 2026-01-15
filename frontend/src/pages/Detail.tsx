@@ -10,13 +10,20 @@ function Detail() {
     const [isEditing, setIsEditing] = useState(false);
     const navigate = useNavigate();
 
+    const [loading, setLoading] = useState(true);
+    const [accessDenied, setAccessDenied] = useState(false); // New state for explicit private handling if needed
+
     const fetchDetail = async () => {
         try {
+            setLoading(true);
             const data = await complaintsAPI.getDetail(id);
             setReport(data);
             if (data.answer) setAnswerText(data.answer);
         } catch (err) {
             console.error('Failed to fetch report detail:', err);
+            // Optionally handle error state
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -90,7 +97,40 @@ function Detail() {
         }
     };
 
-    if (!report) return <div className="container" style={{ padding: '100px', textAlign: 'center' }}>로딩중...</div>;
+    if (loading) {
+        return <div className="container" style={{ padding: '100px', textAlign: 'center' }}>로딩중...</div>;
+    }
+
+    if (!report) {
+        return <div className="container" style={{ padding: '100px', textAlign: 'center' }}>게시물을 찾을 수 없습니다.</div>;
+    }
+
+    // [Strict Access Control] 비공개 게시물 처리
+    if (report.message === "비공개된 게시물입니다") {
+        return (
+            <div className="container" style={{ padding: '100px', textAlign: 'center' }}>
+                <div style={{ fontSize: '64px', marginBottom: '20px' }}>🔒</div>
+                <h2>비공개된 게시물입니다</h2>
+                <p style={{ color: '#666', marginTop: '10px' }}>
+                    작성자와 담당 기관 관계자만 열람할 수 있습니다.
+                </p>
+                <button
+                    onClick={() => navigate('/list')}
+                    style={{
+                        marginTop: '30px',
+                        padding: '10px 20px',
+                        backgroundColor: '#2563eb',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    목록으로 돌아가기
+                </button>
+            </div>
+        );
+    }
 
     const statusMap = {
         'UNPROCESSED': '미처리',

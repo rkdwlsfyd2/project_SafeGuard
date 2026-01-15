@@ -14,11 +14,14 @@ import MyPage from './pages/MyPage';
 import FindAccount from './pages/FindAccount';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import { agenciesAPI } from './utils/api';
 import './index.css';
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [role, setRole] = useState(localStorage.getItem('role') || 'USER');
+  const [agencyName, setAgencyName] = useState('');
+  const [title, setTitle] = useState('모두의 민원');
 
   // localStorage 변경을 다른 탭/창에서도 반영 (선택사항이지만 유용)
   useEffect(() => {
@@ -29,6 +32,19 @@ function App() {
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
+
+  // Fetch agency name if user is AGENCY
+  useEffect(() => {
+    const storedAgencyName = localStorage.getItem('agencyName');
+
+    if (role === 'AGENCY' && storedAgencyName) {
+      setTitle(`(${storedAgencyName}) 관리자 모드`);
+    } else if (role === 'AGENCY') {
+      setTitle('관리자 모드');
+    } else {
+      setTitle('모두의 민원');
+    }
+  }, [role, token]);
 
   if (import.meta.env.DEV) {
     console.log('ENV TEST:', import.meta.env.VITE_KAKAO_MAP_KEY);
@@ -42,6 +58,8 @@ function App() {
 
     setToken(null);
     setRole('USER');
+    setAgencyName('');
+    setTitle('모두의 민원');
 
     window.location.href = '/login';
   };
@@ -83,7 +101,9 @@ function App() {
           <div className="container header__inner">
             <div className="logo">
               <Link to={isAdminUser ? "/admin/dashboard" : "/"}>
-                <h1 style={{ color: 'var(--primary-color)', fontSize: '1.8rem', fontWeight: '800' }}>모두의 민원</h1>
+                <h1 style={{ color: 'var(--primary-color)', fontSize: '1.8rem', fontWeight: '800' }}>
+                  {title}
+                </h1>
               </Link>
             </div>
             <nav className="nav">

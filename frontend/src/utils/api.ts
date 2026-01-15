@@ -84,6 +84,11 @@ export const authAPI = {
                 } else {
                     localStorage.removeItem('agencyNo');
                 }
+                if (data.user.agencyName) {
+                    localStorage.setItem('agencyName', data.user.agencyName);
+                } else {
+                    localStorage.removeItem('agencyName');
+                }
             }
         }
 

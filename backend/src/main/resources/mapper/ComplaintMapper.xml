@@ -83,6 +83,14 @@
                 WHERE cl.complaint_no = c.complaint_no AND cl.user_no = #{userNo}
             ) AS myReaction,
             CASE WHEN c.user_no = #{userNo} THEN TRUE ELSE FALSE END AS isMyPost,
+            CASE 
+                WHEN EXISTS (
+                    SELECT 1 FROM complaint_agency ca_check 
+                    WHERE ca_check.complaint_no = c.complaint_no 
+                    AND ca_check.agency_no = #{viewerAgencyNo}
+                ) THEN TRUE 
+                ELSE FALSE 
+            END AS isAssignedToMe,
             MAX(ca.agency_no) AS agencyNo,
             MAX(a.agency_name) AS agencyName,
             MAX(a.region_code) AS regionCode,

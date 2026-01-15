@@ -95,6 +95,9 @@ public class AuthServiceImpl implements AuthService {
         if (user.getAgencyNo() != null) {
             userInfo.put("agencyNo", user.getAgencyNo());
         }
+        if (user.getAgencyName() != null) {
+            userInfo.put("agencyName", user.getAgencyName());
+        }
 
         return Map.of(
                 "token", token,
