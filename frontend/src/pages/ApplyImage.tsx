@@ -425,8 +425,11 @@ function ApplyImage() {
 
                             {/* 이미지 업로드 섹션 */}
                             <div ref={imageRef} style={{ marginBottom: '30px', textAlign: 'center' }}>
-                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '16px', textAlign: 'left' }}>
-                                    현장 사진 첨부 <span style={{ color: '#ef4444' }}>*</span>
+                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '16px', textAlign: 'left' }}>
+                                    <span>현장 사진 첨부 <span style={{ color: '#ef4444' }}>*</span></span>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: '400', color: '#94a3b8', marginLeft: '12px' }}>
+                                        (5MB 이하의 이미지 파일만 업로드 가능합니다)
+                                    </span>
                                 </label>
 
                                 <input

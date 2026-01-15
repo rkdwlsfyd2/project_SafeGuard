@@ -678,8 +678,11 @@ function ApplyVoice() {
 
                             {/* 파일 첨부 */}
                             <div style={{ marginBottom: '24px' }}>
-                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
-                                    파일 첨부
+                                <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                                    <span>파일 첨부</span>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: '400', color: '#94a3b8', marginLeft: '12px' }}>
+                                        (5MB 이하의 이미지 파일만 업로드 가능합니다)
+                                    </span>
                                 </label>
                                 <div style={{
                                     padding: '10px 14px',

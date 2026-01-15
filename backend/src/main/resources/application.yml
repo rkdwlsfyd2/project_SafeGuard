@@ -20,10 +20,16 @@ spring:
     aws:
       s3:
         bucket: ${AWS_S3_BUCKET:safeguard-bukket}
-        region: ${AWS_REGION:ap-northeast-2}
+      region:
+        static: ${AWS_REGION:ap-northeast-2}
       credentials:
-        access-key: ${AWS_ACCESS_KEY_ID}
-        secret-key: ${AWS_SECRET_ACCESS_KEY}
+        access-key: ${AWS_ACCESS_KEY_ID:none}
+        secret-key: ${AWS_SECRET_ACCESS_KEY:none}
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 # MyBatis Configuration
 mybatis:
