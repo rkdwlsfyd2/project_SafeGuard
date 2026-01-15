@@ -88,6 +88,14 @@ KEYWORD_TO_AGENCY = {
     "임금": "고용노동부",
     "체불": "고용노동부",
     "해고": "고용노동부",
+    "월급": "고용노동부",
+    "급여": "고용노동부",
+    "돈을 안줘": "고용노동부",
+    "돈을 안 줘": "고용노동부",
+    "돈을 못받": "고용노동부",
+    "급여가 밀": "고용노동부",
+    "월급이 밀": "고용노동부",  
+
 
     # 행정
     "민원": "국민권익위원회",
@@ -241,7 +249,7 @@ def classify_complaint(user_query: str) -> dict:
             weight += score_value 
             score_label = "COSINE"
         else:
-            score_value = r.get("bm25_score", 0.0)
+            score_value = r.get("score", 0.0)
             weight += min(1.0, score_value / 10.0)
             score_label = "BM25"
 
