@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
-    Download
+    Download,
+    HelpCircle
 } from 'lucide-react';
 import { complaintsAPI } from '../utils/api';
 import ComplaintTrendChart from '../components/Charts/ComplaintTrendChart';
@@ -28,31 +30,38 @@ const Dashboard = () => {
     });
     const navigate = useNavigate();
     const [overdueList, setOverdueList] = useState<any[]>([]);
+    const [showSlaTooltip, setShowSlaTooltip] = useState(false);
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const res = await fetch('/api/complaints/stats/dashboard');
-                const data = await res.json();
-
-                if (data) {
-                    if (data.summary) {
-                        setStats(data.summary);
-                    }
-                    if (data.overdueList) {
-                        setOverdueList(data.overdueList);
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to fetch dashboard stats:', error);
-            }
-        };
-        fetchDashboardData();
-    }, []);
-
-    const [selectedCategory, setSelectedCategory] = useState('도로');
+    const [selectedCategory, setSelectedCategory] = useState('전체');
+    const [timeBasis, setTimeBasis] = useState<'DAY' | 'MONTH' | 'YEAR'>('MONTH');
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 5;
+
+    const fetchDashboardData = useCallback(async () => {
+        try {
+            const params = new URLSearchParams();
+            if (selectedCategory !== '전체') params.append('category', selectedCategory);
+            params.append('timeBasis', timeBasis);
+
+            const response = await fetch(`/api/complaints/stats/dashboard?${params.toString()}`);
+            const data = await response.json();
+
+            if (data) {
+                if (data.summary) {
+                    setStats(data.summary);
+                }
+                if (data.overdueList) {
+                    setOverdueList(data.overdueList);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch dashboard stats:', error);
+        }
+    }, [selectedCategory, timeBasis]);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [fetchDashboardData]);
     const overdueListRef = useRef<HTMLDivElement>(null);
 
     const totalPages = Math.ceil(overdueList.length / ITEMS_PER_PAGE);
@@ -121,6 +130,32 @@ const Dashboard = () => {
                 {/* 상단 타이틀 및 필터 */}
                 <div className="dash-header">
                     <h1 className="dash-title">관리자 대시보드</h1>
+                    <div style={{ display: 'flex', gap: '8px', backgroundColor: '#E2E8F0', padding: '4px', borderRadius: '12px' }}>
+                        {[
+                            { label: '일별', value: 'DAY' },
+                            { label: '월별', value: 'MONTH' },
+                            { label: '연별', value: 'YEAR' }
+                        ].map((item) => (
+                            <button
+                                key={item.value}
+                                onClick={() => setTimeBasis(item.value as any)}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '10px',
+                                    fontSize: '13px',
+                                    fontWeight: 800,
+                                    backgroundColor: timeBasis === item.value ? 'white' : 'transparent',
+                                    color: timeBasis === item.value ? '#334155' : '#64748B',
+                                    boxShadow: timeBasis === item.value ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* 나의 민원 현황 (KPI Cards) */}
@@ -131,8 +166,7 @@ const Dashboard = () => {
                     padding: '32px',
                     marginBottom: '40px',
                     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                    position: 'relative',
-                    overflow: 'hidden'
+                    position: 'relative'
                 }}>
                     <div style={{
                         position: 'absolute', top: 0, left: 0, right: 0, height: '6px',
@@ -142,6 +176,58 @@ const Dashboard = () => {
                     <h3 style={{ marginBottom: '28px', color: '#1e293b', fontWeight: '900', fontSize: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ width: '4px', height: '20px', backgroundColor: '#3B82F6', borderRadius: '2px' }}></span>
                         민원 처리 현황
+                        <div
+                            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: '4px', cursor: 'help' }}
+                            onMouseEnter={() => setShowSlaTooltip(true)}
+                            onMouseLeave={() => setShowSlaTooltip(false)}
+                        >
+                            <HelpCircle size={16} color="#94A3B8" />
+                            {showSlaTooltip && createPortal(
+                                <div style={{
+                                    position: 'fixed',
+                                    top: '190px',
+                                    left: '420px',
+                                    width: '320px',
+                                    padding: '24px',
+                                    backgroundColor: '#0f172a',
+                                    color: 'white',
+                                    borderRadius: '16px',
+                                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                                    zIndex: 10000,
+                                    textAlign: 'left',
+                                    lineHeight: '1.6',
+                                    border: '1px solid #334155',
+                                    pointerEvents: 'none'
+                                }}>
+                                    <div style={{ fontWeight: '900', fontSize: '14px', marginBottom: '10px', color: '#60A5FA', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>SLA (Service Level Agreement)</div>
+                                    <div style={{ marginBottom: '12px', color: '#E2E8F0', fontSize: '12.5px' }}>행정 서비스 수준 협약으로, 민원 접수 후 해결까지의 목표 처리 시간을 의미합니다.</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                                        {[
+                                            '계산 기준: 주말 및 공휴일을 제외한 영업일 기준 3일 이내 처리',
+                                            '공식: (3영업일 내 완료 건수 / 전체 완료 건수) × 100',
+                                            '주말(토, 일)은 처리 기간 산정 시 자동으로 제외됩니다.'
+                                        ].map((detail, i) => (
+                                            <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                                                <span style={{ color: '#60A5FA', marginTop: '2px' }}>•</span>
+                                                <span style={{ color: '#94A3B8', fontSize: '12px' }}>{detail}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div style={{
+                                        marginTop: '12px',
+                                        paddingTop: '12px',
+                                        borderTop: '1px solid #334155',
+                                        fontSize: '11px',
+                                        color: '#64748B',
+                                        textAlign: 'center',
+                                        fontWeight: '600'
+                                    }}>
+                                        ※ 본 지표는 선택된 민원 유형 기준으로 산정됩니다.
+                                    </div>
+                                </div>,
+                                document.body
+                            )}
+                        </div>
                     </h3>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '16px' }}>
@@ -151,8 +237,8 @@ const Dashboard = () => {
                             { label: '처리중', count: stats.processing, color: '#FEF2F2', textColor: '#EF4444' },
                             { label: '처리완료', count: stats.completed, color: '#F0FDF4', textColor: '#16A34A' },
                             { label: 'SLA 준수율', count: `${stats.sla_compliance}%`, color: '#EEF2FF', textColor: '#4F46E5' },
-                            { label: '지연 민원', count: overdueList.length, color: '#FFF1F2', textColor: '#E11D48', isUrgent: true }
-                        ].map((stat, idx) => (
+                            { label: '지연 민원', count: stats.overdue, color: '#FFF1F2', textColor: '#E11D48', isUrgent: true }
+                        ].map((stat: any, idx) => (
                             <div
                                 key={idx}
                                 onClick={stat.isUrgent ? handleOverdueClick : undefined}
@@ -189,7 +275,7 @@ const Dashboard = () => {
 
                         {/* Right: Trend Chart + Age Group Chart */}
                         <div className="dash-right">
-                            <ComplaintTrendChart selectedCategory={selectedCategory} />
+                            <ComplaintTrendChart selectedCategory={selectedCategory} timeBasis={timeBasis} />
                             <div style={{ flex: 1 }}>
                                 <AgeGroupChart />
                             </div>

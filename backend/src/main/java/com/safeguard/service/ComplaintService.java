@@ -23,7 +23,7 @@ public interface ComplaintService {
      * @param category 카테고리 필터링 시 사용 (null 가능)
      * @return 통계 데이터 맵
      */
-    java.util.Map<String, Object> getDashboardStats(Long agencyNo, String category);
+    java.util.Map<String, Object> getDashboardStats(Long agencyNo, String category, String timeBasis);
 
     /**
      * 민원 상세 조회 (접근 권한 엄격 제어)
