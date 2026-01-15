@@ -103,8 +103,10 @@
                 FROM agency a2
                 JOIN complaint_agency ca2 ON ca2.agency_no = a2.agency_no
                 WHERE ca2.complaint_no = c.complaint_no
-            ) AS assignedAgencyText
+            ) AS assignedAgencyText,
+            MAX(u.name) AS authorName
         FROM complaint c
+        LEFT JOIN app_user u ON c.user_no = u.user_no
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
         LEFT JOIN agency a

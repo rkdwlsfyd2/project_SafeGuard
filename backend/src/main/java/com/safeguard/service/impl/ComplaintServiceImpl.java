@@ -275,7 +275,7 @@ public class ComplaintServiceImpl implements ComplaintService {
         result.put("isPublic", c.getIsPublic());
         result.put("regionName", c.getRegionName());
         result.put("agencyName", c.getAgencyName());
-        result.put("authorName", "익명");
+        result.put("authorName", c.getAuthorName() != null ? c.getAuthorName() : "익명");
         result.put("answer", c.getAnswer());
         result.put("assignedAgencyText", c.getAssignedAgencyText());
         result.put("myReaction", c.getMyReaction());

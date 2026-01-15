@@ -175,6 +175,15 @@ function Detail() {
         };
     };
 
+    const maskName = (name: string) => {
+        if (!name) return '';
+        if (name.length <= 1) return name;
+        if (name.length === 2) {
+            return name[0] + '*';
+        }
+        return name[0] + '*' + name[name.length - 1];
+    };
+
     return (
         <div className="detail-page" style={{ padding: '40px 0', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
             <div className="container" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 20px' }}>
@@ -215,7 +224,7 @@ function Detail() {
 
                             <div style={{ display: 'flex', gap: '12px', color: '#64748b', fontSize: '0.9rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                    <span>👤</span> {report.authorName}
+                                    <span>👤</span> {report.isMyPost ? maskName(report.authorName) : '익명'}
                                 </div>
                                 <div style={{ width: '1px', height: '12px', backgroundColor: '#e2e8f0' }}></div>
                                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>

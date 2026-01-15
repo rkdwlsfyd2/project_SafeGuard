@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 public class ComplaintDTO {
     private Long complaintNo;
+    private String authorName;
     private Long seqNo;
     private String title;
     private String content;
