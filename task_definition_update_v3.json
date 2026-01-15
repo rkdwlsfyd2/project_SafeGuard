@@ -1,6 +1,6 @@
 {
     "family": "safeguard-task",
-    "C": "arn:aws:iam::274799453401:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::274799453401:role/ecsTaskExecutionRole",
     "networkMode": "awsvpc",
     "containerDefinitions": [
         {
