@@ -169,24 +169,6 @@ public class ComplaintServiceImpl implements ComplaintService {
             return null;
         switch (category) {
             case "도로":
-<<<<<<< HEAD
-            case "보행방해물":
-                return "국토교통부";
-            case "행정안전":
-            case "주택건축":
-            case "현수막":
-            case "공사현장":
-            case "행정·안전":
-            case "주택·건축":
-                return "행정안전부";
-            case "교통":
-            case "불법주정차":
-                return "경찰청";
-            case "환경":
-            case "쓰레기":
-                return "기후에너지환경부";
-            default: return null;
-=======
                 return "국토교통부";
             case "행정·안전":
                 return "행정안전부";
@@ -198,7 +180,6 @@ public class ComplaintServiceImpl implements ComplaintService {
                 return "기후에너지환경부";
             default:
                 return null;
->>>>>>> main
         }
     }
 
