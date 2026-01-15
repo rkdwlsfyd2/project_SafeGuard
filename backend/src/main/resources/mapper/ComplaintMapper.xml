@@ -383,7 +383,8 @@
                 ) > 3 THEN c.complaint_no 
             END) AS overdue,
             
-            -- 기간별 접수 건수 (Summary Bar용)
+            <!-- Summary Bar용 기간별 집계: 오늘/어제/이번달/지난달/올해/작년 데이터를 한 번에 조회 -->
+            <!-- CASE WHEN 구문을 활용하여 조건부 카운팅 수행 (DB 접근 최소화) -->
             COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CAST(NOW() AS DATE) THEN c.complaint_no END) AS todayCount,
             COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CAST(NOW() - INTERVAL '1 day' AS DATE) THEN c.complaint_no END) AS yesterdayCount,
             COUNT(DISTINCT CASE WHEN TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(NOW(), 'YYYY-MM') THEN c.complaint_no END) AS monthCount,

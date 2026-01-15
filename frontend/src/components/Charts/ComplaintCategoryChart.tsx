@@ -1,5 +1,11 @@
 /**
- * 분류별 민원 통계 및 순위를 보여주는 도넛 차트 및 리스트 컴포넌트입니다.
+ * 분류별 민원 통계 및 순위 차트 (Donut Chart + List)
+ * 
+ * 주요 기능:
+ * 1. Chart: 상위 5개 민원 유형의 비중을 도넛 차트로 시각화
+ * 2. List: 전체 민원 유형의 접수 건수 및 전일 대비 증감율을 리스트로 표시
+ * 3. Interaction: 차트/리스트 클릭 시 해당 카테고리로 대시보드 필터링 적용
+ * 4. UI: '전체 보기' 버튼 제공 및 리스트 스크롤 처리로 편의성 강화
  */
 import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
@@ -42,6 +48,7 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                     setCategoryData(transformed);
                 }
             })
+            // 데이터 로드 실패 시 에러 로깅
             .catch(err => console.error("Failed to fetch category stats:", err));
     }, [selectedCategory, refreshKey]);
 
@@ -118,6 +125,7 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
                 <div style={{ width: '4px', height: '20px', backgroundColor: '#FF8787', borderRadius: '2px', flexShrink: 0 }}></div>
                 <h5 style={{ fontSize: '20px', fontWeight: '950', color: '#1e293b' }}>분류별 민원 통계</h5>
+                {/* 전체 보기 버튼: 카테고리가 선택된 상태에서만 노출되어 초기화를 지원 */}
                 {selectedCategory !== '전체' && (
                     <button
                         onClick={(e) => {
@@ -178,6 +186,7 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                     <h6 style={{ fontSize: '13px', fontWeight: '800', color: '#64748B', letterSpacing: '-0.02em' }}> ▼ 분류별 민원신청 건수 및 전일대비 증감률(%)</h6>
                 </div>
 
+                {/* 리스트 영역: 고정 높이(680px) 및 스크롤 적용으로 레이아웃 안정성 확보 */}
                 <div className="custom-scrollbar" style={{ height: '680px', overflowY: 'auto', paddingRight: '12px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {categoryData.map((item, i) => (

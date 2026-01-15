@@ -1,4 +1,11 @@
 
+/**
+ * 민원 접수 및 증감 추이 복합 차트 (Mixed Chart)
+ * 
+ * 주요 기능:
+ * 1. 상단 Summary Bar: 오늘/이번달/올해 접수 건수 및 전일/전월/전년 대비 증감율 표시
+ * 2. 하단 Chart: 월별 접수 건수(Bar)와 전월 대비 증감율(Line)을 시각화
+ */
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
@@ -47,6 +54,7 @@ const ComplaintGrowthTrendChart: React.FC<ChartProps> = ({ selectedCategory, tim
                     const current = trends[i];
                     const prev = i > 0 ? trends[i - 1] : null;
 
+                    // 전월 대비 증감율 계산 (전월 데이터 0일 경우 예외 처리)
                     let growthRate = 0;
                     if (prev && prev.received > 0) {
                         const diff = current.received - prev.received;
@@ -75,6 +83,7 @@ const ComplaintGrowthTrendChart: React.FC<ChartProps> = ({ selectedCategory, tim
                     });
                 }
             })
+            // Fetch 실패 시 에러 로깅
             .catch((err) => console.error('Failed to fetch dashboard trends:', err));
     }, [selectedCategory, timeBasis, refreshKey]);
 
@@ -165,7 +174,7 @@ const ComplaintGrowthTrendChart: React.FC<ChartProps> = ({ selectedCategory, tim
                 접수 및 증감율 추이
             </div>
 
-            {/* Summary Bar */}
+            {/* Summary Bar: 주요 기간별 통계 및 증감율 요약 */}
             {summary && (
                 <div style={{
                     display: 'flex',

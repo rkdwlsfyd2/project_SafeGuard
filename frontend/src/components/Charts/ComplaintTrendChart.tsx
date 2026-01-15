@@ -1,9 +1,10 @@
 /**
- * [환경] 상세 분석 및 트렌드 (개선版)
- * - 상단 KPI 카드 3개: 이번 달 접수/완료/현재 Backlog(+전월 대비)
- * - 차트 2개 분리:
- *   A) 접수/완료 추이 (라인 2개)
- *   B) Backlog(잔량) 추이 (라인 1개)
+ * 민원 처리율 및 SLA 준수율 트렌드 차트 (Stacked Bar Components Integration)
+ * 
+ * 주요 기능:
+ * 1. KPI Cards: 접수/처리/완료/미처리 건수 상태 표시 및 전일/전월/전년 대비 증감율 비교
+ * 2. Trend Chart: 월별 SLA 준수율(파란선) 및 처리율(초록선) 추이 시각화
+ * 3. Backlog(미처리) 통계: 현재 잔량 역산 및 증감 상태(증가/감소)에 따른 색상/아이콘 동적 처리
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -28,6 +29,7 @@ type BacklogStats = {
     longTermRate: number;   // 장기 미처리 비율
 };
 
+// KPI 카드 컴포넌트: 지표 타이틀, 값, 비교 텍스트, 상태 컬러 등을 표현
 const KpiCard: React.FC<{
     title: string;
     value: React.ReactNode;
@@ -143,7 +145,7 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBa
                 const processed: TrendRow[] = [];
                 let tempBacklog = anchorPending;
 
-                // 뒤에서 앞으로 역산
+                // 최신 데이터부터 과거로 역산하여 월별 잔량(Backlog) 추정
                 for (let i = trends.length - 1; i >= 0; i--) {
                     const item = trends[i];
                     const cRate = item.received > 0 ? Math.min(100, Math.round((item.completed / item.received) * 1000) / 10) : 0;
@@ -163,7 +165,9 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBa
 
                 setTrendData(processed);
 
-                // Backlog 전월 대비
+                setTrendData(processed);
+
+                // 최근 2개월 데이터를 비교하여 Backlog 증감율 및 상태 도출
                 let bStats = {
                     current: anchorPending,
                     diff: 0,
@@ -190,6 +194,7 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBa
                 }
                 setBacklogStats(bStats);
             })
+            // 데이터 로드 실패 시 에러 처리
             .catch((err) => console.error('Failed to fetch dashboard trends:', err));
     }, [selectedCategory, timeBasis, refreshKey]);
 

@@ -1,5 +1,10 @@
 /**
- * 자치구별 미처리 또는 지연된 민원 건수 TOP 10을 보여주는 병목 분석 차트 컴포넌트입니다.
+ * 자치구별 병목 현황 분석 차트 (Horizontal Bar Chart)
+ * 
+ * 주요 기능:
+ * 1. '미처리(unprocessed)' 또는 '지연(overdue)' 민원 상위 10개 자치구 랭킹 표시
+ * 2. 타입(type) prop에 따라 서로 다른 색상 테마(Blue/Red) 적용
+ * 3. refreshKey 연동을 통한 실시간 순위 변동 반영
  */
 import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';

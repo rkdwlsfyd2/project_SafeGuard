@@ -20,6 +20,14 @@ import ComplaintGrowthTrendChart from '../components/Charts/ComplaintGrowthTrend
 
 
 
+/**
+ * 관리자 대시보드 메인 페이지
+ * 
+ * 주요 기능:
+ * 1. 30초 주기 자동 데이터 갱신 (카운트다운 타이머 포함)
+ * 2. 민원 현황 KPI 및 다양한 통계 차트(추이, 분류, 연령별, 병목 등) 렌더링
+ * 3. 자식 컴포넌트(차트)에 refreshKey를 전파하여 일괄 업데이트 유도
+ */
 const Dashboard = () => {
     const [stats, setStats] = useState({
         total: 0,
@@ -40,15 +48,17 @@ const Dashboard = () => {
     const ITEMS_PER_PAGE = 5;
 
     // Auto-refresh Timer
+    // 30초 자동 갱신을 위한 타이머 및 키 상태 관리
     const [refreshKey, setRefreshKey] = useState(0);
     const [timeLeft, setTimeLeft] = useState(30);
 
     useEffect(() => {
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
+                // 1초 이하일 때 키 업데이트(갱신 트리거) 및 타이머 초기화
                 if (prev <= 1) {
                     setRefreshKey((k) => k + 1);
-                    return 30; // Reset to 30s
+                    return 30;
                 }
                 return prev - 1;
             });
@@ -307,6 +317,7 @@ const Dashboard = () => {
                     <div className="dash-main !mb-0">
                         {/* Left: Donut Chart -> Replaced with ChartTwo */}
                         <div className="dash-left">
+                            {/* 분류별 통계: refreshKey 전달하여 동기화 */}
                             <ComplaintCategoryChart selectedCategory={selectedCategory} onSelect={setSelectedCategory} refreshKey={refreshKey} />
                         </div>
 
