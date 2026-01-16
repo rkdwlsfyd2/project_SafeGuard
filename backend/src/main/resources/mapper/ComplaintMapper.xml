@@ -475,9 +475,19 @@
         WHERE user_no = #{userNo}
     </delete>
 
-    <!-- 통계(카테고리별): 민원 카테고리별 건수 분포 조회 -->
+    <!-- 통계(카테고리별): 민원 카테고리별 건수 분포 및 전일 대비 증감률 조회 -->
     <select id="selectCategoryStats" resultType="map">
-        SELECT category AS name, COUNT(*)::int AS value
+        SELECT 
+            category AS name, 
+            COUNT(*)::int AS value,
+            COALESCE(ROUND(
+                (
+                    (SUM(CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE THEN 1 ELSE 0 END) - 
+                     SUM(CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE - INTERVAL '1 day' THEN 1 ELSE 0 END))::numeric
+                    / 
+                    NULLIF(SUM(CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE - INTERVAL '1 day' THEN 1 ELSE 0 END), 0)
+                ) * 100, 1
+            ), 0) AS change
         FROM complaint c
         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
         <where>
