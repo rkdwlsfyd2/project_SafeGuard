@@ -32,7 +32,7 @@ public interface ComplaintMapper {
     // =========================
     // 상세/통계/Top
     // =========================
-    ComplaintStatsDTO selectComplaintStats(@Param("agencyNo") Long agencyNo);
+    ComplaintStatsDTO selectComplaintStats(@Param("agencyNo") Long agencyNo, @Param("category") String category);
 
     List<ComplaintDTO> selectTopLikedComplaints(@Param("status") String status,
             @Param("agencyNo") Long agencyNo);
@@ -149,7 +149,7 @@ public interface ComplaintMapper {
      * @param category 카테고리 필터 (null 가능)
      * @return 월별 접수/완료 건수 리스트
      */
-    List<Map<String, Object>> selectMonthlyTrend(@Param("category") String category);
+    List<Map<String, Object>> selectMonthlyTrend(@Param("category") String category, @Param("timeBasis") String timeBasis);
 
     /**
      * 기관별(자치구별) 미처리 민원 병목 현황 조회
