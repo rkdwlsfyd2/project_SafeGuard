@@ -111,9 +111,9 @@ function App() {
               <ul className="nav__list">
                 {isAdminUser ? (
                   <>
+                    <li className="nav__item"><Link to="/admin/dashboard">대시보드(관리자)</Link></li>
                     <li className="nav__item"><Link to="/admin/list">민원 목록(관리자)</Link></li>
                     <li className="nav__item"><Link to="/admin/map">신고현황 지도(관리자)</Link></li>
-                    <li className="nav__item"><Link to="/admin/dashboard">대시보드(관리자)</Link></li>
                   </>
                 ) : (
                   <>
