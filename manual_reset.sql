@@ -52,7 +52,7 @@ CREATE TABLE complaint (
     created_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMPTZ,
     completed_date TIMESTAMPTZ,
-    user_no BIGINT NOT NULL REFERENCES app_user(user_no),
+    user_no BIGINT NOT NULL REFERENCES app_user(user_no) ON DELETE CASCADE,
     like_count INTEGER DEFAULT 0,
     answer TEXT
 );
@@ -69,8 +69,8 @@ CREATE TABLE complaint_like (
 
 -- Complaint Agency (민원-기관 연결)
 CREATE TABLE complaint_agency (
-    complaint_no BIGINT NOT NULL,
-    agency_no BIGINT NOT NULL,
+    complaint_no BIGINT NOT NULL REFERENCES complaint(complaint_no) ON DELETE CASCADE,
+    agency_no BIGINT NOT NULL REFERENCES agency(agency_no) ON DELETE CASCADE,
     PRIMARY KEY (complaint_no, agency_no)
 );
 

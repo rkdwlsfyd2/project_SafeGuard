@@ -470,6 +470,11 @@
         DELETE FROM complaint
     </delete>
 
+    <delete id="deleteByUserNo">
+        DELETE FROM complaint
+        WHERE user_no = #{userNo}
+    </delete>
+
     <!-- 통계(카테고리별): 민원 카테고리별 건수 분포 조회 -->
     <select id="selectCategoryStats" resultType="map">
         SELECT category AS name, COUNT(*)::int AS value

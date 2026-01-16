@@ -1,6 +1,7 @@
 package com.safeguard.service.impl;
 
 import com.safeguard.dto.UserDTO;
+import com.safeguard.mapper.ComplaintMapper;
 import com.safeguard.mapper.UserMapper;
 import com.safeguard.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
+    private final ComplaintMapper complaintMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -62,6 +64,10 @@ public class UserServiceImpl implements UserService {
         if (!userMapper.selectUserByUserNo(userNo).isPresent()) {
             throw new RuntimeException("사용자를 찾을 수 없습니다.");
         }
+        
+        // 유저가 작성한 민원 및 관련 데이터 삭제 (연쇄 삭제 지원용)
+        complaintMapper.deleteByUserNo(userNo);
+        
         userMapper.deleteUserByUserNo(userNo);
     }
 
