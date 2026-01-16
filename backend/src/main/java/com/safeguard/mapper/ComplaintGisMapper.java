@@ -30,6 +30,9 @@ public interface ComplaintGisMapper {
             @Param("req") MapSearchRequest req,
             @Param("gridDeg") double gridDeg);
 
+    // 시군구 통계
+    List<com.safeguard.dto.MapDistrictDto> selectDistrictCounts(@Param("req") MapSearchRequest req);
+
     // 목록
     List<ComplaintListItemDto> selectComplaintMapList(
             @Param("req") MapSearchRequest req,

@@ -5,61 +5,56 @@
 
 <mapper namespace="com.safeguard.mapper.ComplaintGisMapper">
 
-    <!-- 공통 WHERE: req(MapSearchRequest) 기준으로만 참조 -->
-    <sql id="CommonWhere">
-        <where>
-            <!-- bounds: Kakao 기준 sw/ne -->
-            <if test="req.swLng != null and req.swLat != null and req.neLng != null and req.neLat != null">
-                AND ST_Intersects(
-                sf.geom,
-                ST_MakeEnvelope(#{req.swLng}, #{req.swLat}, #{req.neLng}, #{req.neLat}, 4326)
-                )
-            </if>
+    <!-- 공통 조건 SQL (WHERE 태그 없이 조건만 포함) -->
+    <sql id="CommonConditions">
+        <!-- bounds: Kakao 기준 sw/ne -->
+        <if test="req.swLng != null and req.swLat != null and req.neLng != null and req.neLat != null">
+            AND ST_Intersects(
+            sf.geom,
+            ST_MakeEnvelope(#{req.swLng}, #{req.swLat}, #{req.neLng}, #{req.neLat}, 4326)
+            )
+        </if>
 
-            <!-- category -->
-            <if test="req.category != null and req.category != ''">
-                AND c.category = #{req.category}
-            </if>
+        <!-- category -->
+        <if test="req.category != null and req.category != ''">
+            AND c.category = #{req.category}
+        </if>
 
-            <!-- status -->
-            <if test="req.status != null and req.status != ''">
-                AND c.status = #{req.status}
-            </if>
+        <!-- status -->
+        <if test="req.status != null and req.status != ''">
+            AND c.status = #{req.status}
+        </if>
 
-            <!-- adminCode (민원 테이블에 컬럼이 없으므로 주석 처리)
-            <if test="req.adminCode != null and req.adminCode != ''">
-                AND c.admin_code = #{req.adminCode}
-            </if>
-            -->
-
-            <!-- date range: OffsetDateTime from/to -->
-            <if test="req.from != null">
-                AND c.created_date <![CDATA[ >= ]]> #{req.from}
-            </if>
-            <if test="req.to != null">
-                AND c.created_date <![CDATA[ <= ]]> #{req.to}
-            </if>
-            <if test="req.agencyNo != null">
-                AND c.agency_no = #{req.agencyNo}
-            </if>
-        </where>
+        <!-- date range: OffsetDateTime from/to -->
+        <if test="req.from != null">
+            AND c.created_date <![CDATA[ >= ]]> #{req.from}
+        </if>
+        <if test="req.to != null">
+            AND c.created_date <![CDATA[ <= ]]> #{req.to}
+        </if>
+        <if test="req.agencyNo != null">
+            AND ca.agency_no = #{req.agencyNo}
+        </if>
     </sql>
 
     <!-- markers -->
     <select id="selectMapMarkers" resultType="com.safeguard.dto.MapItemDto">
-        SELECT
-        'MARKER'      AS type,
-        ST_Y(sf.geom) AS lat,
-        ST_X(sf.geom) AS lng,
-        c.complaint_no AS complaintNo,
-        c.title        AS title,
-        c.category     AS category,
-        c.status       AS status,
-        sf.addr_text   AS address
+        SELECT DISTINCT
+            'MARKER'      AS type,
+            ST_Y(sf.geom) AS lat,
+            ST_X(sf.geom) AS lng,
+            c.complaint_no AS complaintNo,
+            c.title        AS title,
+            c.category     AS category,
+            c.status       AS status,
+            sf.addr_text   AS address
         FROM complaint c
         JOIN spatial_feature sf ON sf.complaint_no = c.complaint_no
-        <include refid="CommonWhere"/>
-        ORDER BY c.created_date DESC
+        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
+        <where>
+            <include refid="CommonConditions"/>
+        </where>
+        ORDER BY complaintNo DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
@@ -67,10 +62,13 @@
     <!-- clusters -->
     <select id="selectMapClusters" resultType="com.safeguard.dto.MapClusterDto">
         WITH filtered AS (
-        SELECT sf.geom
-        FROM complaint c
-        JOIN spatial_feature sf ON sf.complaint_no = c.complaint_no
-        <include refid="CommonWhere"/>
+            SELECT DISTINCT sf.geom, c.complaint_no
+            FROM complaint c
+            JOIN spatial_feature sf ON sf.complaint_no = c.complaint_no
+            LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
+            <where>
+                <include refid="CommonConditions"/>
+            </where>
         )
         SELECT
         COUNT(*) AS count,
@@ -87,17 +85,19 @@
 
     <!-- list -->
     <select id="selectComplaintMapList" resultType="com.safeguard.dto.ComplaintListItemDto">
-        SELECT
-        c.complaint_no AS complaintNo,
-        c.title        AS title,
-        c.category     AS category,
-        c.status       AS status,
-        c.created_date AS createdDate,
-        sf.addr_text   AS addrText
+        SELECT DISTINCT
+            c.complaint_no AS complaintNo,
+            c.title        AS title,
+            c.category     AS category,
+            c.status       AS status,
+            c.created_date AS createdDate,
+            sf.addr_text   AS addrText
         FROM complaint c
         JOIN spatial_feature sf ON sf.complaint_no = c.complaint_no
-        <include refid="CommonWhere"/>
-        ORDER BY c.created_date DESC
+        <where>
+            <include refid="CommonConditions"/>
+        </where>
+        ORDER BY createdDate DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
@@ -113,34 +113,26 @@
 
     <select id="selectHotspots" resultMap="HotspotResultMap">
         WITH grid AS (
-            SELECT ST_SquareGrid(#{gridDeg}, ST_SetSRID(ST_MakeEnvelope(
+            SELECT ST_HexagonGrid(#{gridDeg}, ST_SetSRID(ST_MakeEnvelope(
                 #{req.swLng}, #{req.swLat}, #{req.neLng}, #{req.neLat}
             ), 4326)) AS cell
         ),
-        squares AS (
+        hexagons AS (
             SELECT (grid.cell).geom AS geom, (grid.cell).i, (grid.cell).j
             FROM grid
         ),
         counts AS (
-            SELECT s.geom, s.i, s.j, COUNT(c.complaint_no) AS cnt
-            FROM squares s
-            JOIN spatial_feature sf ON ST_Intersects(s.geom, sf.geom)
+            SELECT h.geom, h.i, h.j, COUNT(DISTINCT c.complaint_no) AS cnt
+            FROM hexagons h
+            JOIN spatial_feature sf ON ST_Intersects(h.geom, sf.geom)
             JOIN complaint c ON c.complaint_no = sf.complaint_no
+            LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
             <where>
-                <if test="req.category != null and req.category != ''">
-                    AND c.category = #{req.category}
-                </if>
-                <if test="req.status != null and req.status != ''">
-                    AND c.status = #{req.status}
-                </if>
-                <if test="req.agencyNo != null">
-                    AND c.agency_no = #{req.agencyNo}
-                </if>
-                <!-- 처리 완료 제외 -->
+                <include refid="CommonConditions"/>
                 AND c.status != 'COMPLETED'
             </where>
-            GROUP BY s.geom, s.i, s.j
-            HAVING COUNT(c.complaint_no) > 0
+            GROUP BY h.geom, h.i, h.j
+            HAVING COUNT(DISTINCT c.complaint_no) > 0
         ),
         points AS (
             SELECT cnt, i, j, (ST_DumpPoints(geom)).geom AS pt
@@ -155,12 +147,30 @@
         ORDER BY cell_id
     </select>
 
-    <!-- count -->
-    <select id="countComplaintMapList" resultType="long">
-        SELECT COUNT(*)
+    <!-- District Counts (Sigungu Aggregation) -->
+    <select id="selectDistrictCounts" resultType="com.safeguard.dto.MapDistrictDto">
+        SELECT
+            DISTINCT SPLIT_PART(sf.addr_text, ' ', 2) AS name,
+            COUNT(DISTINCT c.complaint_no) AS count
         FROM complaint c
         JOIN spatial_feature sf ON sf.complaint_no = c.complaint_no
-        <include refid="CommonWhere"/>
+        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
+        <where>
+            <include refid="CommonConditions"/>
+        </where>
+        GROUP BY name
+        HAVING COUNT(DISTINCT c.complaint_no) > 0
+        ORDER BY count DESC
+    </select>
+
+    <!-- count -->
+    <select id="countComplaintMapList" resultType="long">
+        SELECT COUNT(DISTINCT c.complaint_no)
+        FROM complaint c
+        JOIN spatial_feature sf ON sf.complaint_no = c.complaint_no
+        <where>
+            <include refid="CommonConditions"/>
+        </where>
     </select>
 
 </mapper>

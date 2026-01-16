@@ -9,5 +9,7 @@ public interface ComplaintGisService {
 
     List<MapHotspotDto> getHotspots(MapSearchRequest req);
 
+    List<MapDistrictDto> getDistrictCounts(MapSearchRequest req);
+
     PageResponse<ComplaintListItemDto> listComplaints(MapSearchRequest req, int page, int size);
 }

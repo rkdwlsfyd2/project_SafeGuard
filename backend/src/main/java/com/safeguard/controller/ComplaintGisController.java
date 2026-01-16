@@ -21,8 +21,15 @@ public class ComplaintGisController {
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
             String userId = auth.getName();
             com.safeguard.dto.UserDTO currentUser = userMapper.findByUserId(userId).orElse(null);
-            if (currentUser != null && currentUser.getRole() == com.safeguard.enums.UserRole.AGENCY) {
-                req.setAgencyNo(currentUser.getAgencyNo());
+            if (currentUser != null) {
+                // AGENCY 역할인 경우, 프론트엔드에서 agencyNo를 보냈을 때(내 담당민원 토글 On)만 본인 기관으로 필터링.
+                // 보내지 않았다면(null 상태) 모든 민원 노출을 허용함.
+                if (currentUser.getRole() == com.safeguard.enums.UserRole.AGENCY) {
+                    if (req.getAgencyNo() != null) {
+                        req.setAgencyNo(currentUser.getAgencyNo());
+                    }
+                }
+                // ADMIN은 프론트엔드에서 보낸 값을 존중함 (기본 null이면 전체 노출)
             }
         }
     }
@@ -46,6 +53,15 @@ public class ComplaintGisController {
     public List<MapHotspotDto> hotspots(@ModelAttribute MapSearchRequest req) {
         enforceAgency(req);
         return complaintGisService.getHotspots(req);
+    }
+
+    /**
+     * 시군구별 민원 건수 (Choropleth용)
+     */
+    @GetMapping("/districts")
+    public List<MapDistrictDto> districtCounts(@ModelAttribute MapSearchRequest req) {
+        enforceAgency(req);
+        return complaintGisService.getDistrictCounts(req);
     }
 
     /**

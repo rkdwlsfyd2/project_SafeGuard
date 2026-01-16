@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { complaintsAPI, usersAPI } from '../utils/api';
+import Modal from '../components/common/Modal';
 
 function MyPage() {
     const navigate = useNavigate();
@@ -11,6 +12,7 @@ function MyPage() {
     const [isChangingPw, setIsChangingPw] = useState(false);
     const [pwData, setPwData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [filterStatus, setFilterStatus] = useState('ALL');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const getStatusText = (status: string) => {
         switch (status) {
@@ -102,16 +104,20 @@ function MyPage() {
         }
     };
 
-    const handleDeleteAccount = async () => {
-        if (window.confirm('정말로 탈퇴하시겠습니까? 작성하신 모든 데이터가 삭제될 수 있습니다.')) {
-            try {
-                await usersAPI.deleteAccount();
-                alert('탈퇴 처리가 완료되었습니다.');
-                localStorage.clear();
-                window.location.href = '/';
-            } catch (err: any) {
-                alert(err.message);
-            }
+    const handleDeleteAccount = () => {
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDeleteAccount = async () => {
+        try {
+            await usersAPI.deleteAccount();
+            alert('탈퇴 처리가 완료되었습니다.');
+            localStorage.clear();
+            window.location.href = '/';
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setIsDeleteModalOpen(false);
         }
     };
 
@@ -355,6 +361,24 @@ function MyPage() {
                     </div>
                 </div>
             )}
+
+            <Modal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDeleteAccount}
+                title="회원 탈퇴 확인"
+                confirmText="탈퇴하기"
+            >
+                <div style={{ textAlign: 'center' }}>
+                    <p style={{ color: '#EF4444', fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '10px' }}>
+                        정말로 탈퇴하시겠습니까?
+                    </p>
+                    <p style={{ color: '#64748B' }}>
+                        작성하신 모든 데이터가 삭제되며, <br />
+                        삭제된 데이터는 복구할 수 없습니다.
+                    </p>
+                </div>
+            </Modal>
         </div>
     );
 }

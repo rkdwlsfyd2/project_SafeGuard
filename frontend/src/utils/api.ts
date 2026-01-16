@@ -204,18 +204,47 @@ export const complaintsAPI = {
      * GIS 지도 관련 데이터 (마커 및 핫스팟 등)
      */
     getMapItems: (params: any) => {
-        const query = new URLSearchParams(params).toString();
+        const filtered: Record<string, any> = {};
+        Object.keys(params).forEach(key => {
+            if (params[key] !== null && params[key] !== undefined) {
+                filtered[key] = params[key];
+            }
+        });
+        const query = new URLSearchParams(filtered).toString();
         return apiRequest(`/gis/map-items${query ? `?${query}` : ''}`);
     },
 
     getComplaints: (params: any) => {
-        const query = new URLSearchParams(params).toString();
+        const filtered: Record<string, any> = {};
+        Object.keys(params).forEach(key => {
+            if (params[key] !== null && params[key] !== undefined) {
+                filtered[key] = params[key];
+            }
+        });
+        const query = new URLSearchParams(filtered).toString();
         return apiRequest(`/gis/complaints${query ? `?${query}` : ''}`);
     },
 
     getHotspots: (params: any) => {
-        const query = new URLSearchParams(params).toString();
+        const filtered: Record<string, any> = {};
+        Object.keys(params).forEach(key => {
+            if (params[key] !== null && params[key] !== undefined) {
+                filtered[key] = params[key];
+            }
+        });
+        const query = new URLSearchParams(filtered).toString();
         return apiRequest(`/gis/hotspots${query ? `?${query}` : ''}`);
+    },
+
+    getDistrictCounts: (params: any) => {
+        const filtered: Record<string, any> = {};
+        Object.keys(params).forEach(key => {
+            if (params[key] !== null && params[key] !== undefined) {
+                filtered[key] = params[key];
+            }
+        });
+        const query = new URLSearchParams(filtered).toString();
+        return apiRequest(`/gis/districts${query ? `?${query}` : ''}`);
     },
 
     // 관리자: 민원 처리 상태 변경

@@ -1,106 +1,54 @@
 package com.safeguard.service.impl;
 
-import com.safeguard.dto.ComplaintListItemDto;
-import com.safeguard.dto.MapHotspotDto;
-import com.safeguard.dto.MapItemDto;
-import com.safeguard.dto.MapSearchRequest;
-import com.safeguard.dto.PageResponse;
+import com.safeguard.dto.*;
 import com.safeguard.mapper.ComplaintGisMapper;
 import com.safeguard.service.ComplaintGisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ComplaintGisServiceImpl implements ComplaintGisService {
 
-    private final ComplaintGisMapper mapper;
+    private final ComplaintGisMapper gisMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public List<MapItemDto> getMapItems(MapSearchRequest req) {
-        validateBounds(req);
-
-        int limit = normalizeLimit(req.getLimit(), 2000);
-
-        if (useCluster(req)) {
-            double gridDeg = zoomToGridDeg(req.getZoom());
-            // 클러스터 사용 시 반환 로직 (현재 비활성)
-            // return mapper.selectMapClusters(req, gridDeg, limit);
-        }
-
-        // 지도는 보통 offset 0 (필요 시 page 개념을 req로 확장)
-        return mapper.selectMapMarkers(req, limit, 0);
+        // limit logic if needed
+        return gisMapper.selectMapMarkers(req, 1000, 0);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<MapHotspotDto> getHotspots(MapSearchRequest req) {
-        validateBounds(req);
-        double gridDeg = zoomToGridDegForHotspot(req.getZoom());
-        return mapper.selectHotspots(req, gridDeg);
+        // zoom level에 따라 gridDeg 조정 가능
+        double gridDeg = 0.005; // default ~500m
+        if (req.getZoom() != null) {
+            if (req.getZoom() < 10) gridDeg = 0.02;
+            if (req.getZoom() < 8) gridDeg = 0.05;
+        }
+        return gisMapper.selectHotspots(req, gridDeg);
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<MapDistrictDto> getDistrictCounts(MapSearchRequest req) {
+        // 지도 범위와 상관없이 전체 통계를 원할 수도 있지만, 일단 req 필터를 따름
+        // 전국 단위 시각화이므로 bounds가 전체를 포함하면 전체가 나옴
+        return gisMapper.selectDistrictCounts(req);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PageResponse<ComplaintListItemDto> listComplaints(MapSearchRequest req, int page, int size) {
-        validateBounds(req);
-
-        int safeSize = Math.max(1, Math.min(size, 100));
-        int safePage = Math.max(0, page);
-        int offset = safePage * safeSize;
-
-        long total = mapper.countComplaintMapList(req);
-        List<ComplaintListItemDto> items = mapper.selectComplaintMapList(req, safeSize, offset);
-
-        return new PageResponse<>(items, safePage, safeSize, total);
-    }
-
-    // ===== 내부 유틸 =====
-
-    private void validateBounds(MapSearchRequest req) {
-        // TODO: 기존 validateBounds 로직 유지
-        // 예: minLat/maxLat/minLng/maxLng null 체크, 범위 체크 등
-        if (req == null) {
-            throw new IllegalArgumentException("Request is null");
-        }
-    }
-
-    private boolean useCluster(MapSearchRequest req) {
-        // TODO: 기존 로직 유지
-        // 예: 줌이 특정 값 이하이면 클러스터 사용
-        Integer zoom = req.getZoom();
-        return zoom != null && zoom <= 7;
-    }
-
-    private double zoomToGridDeg(Integer zoom) {
-        // TODO: 기존 grid 계산 방식 유지
-        if (zoom == null) {
-            return 0.02;
-        }
-        // 단순 예시 (실제는 기존 로직에 맞게 조정)
-        return Math.max(0.0005, 0.08 / Math.pow(2, Math.max(0, zoom - 3)));
-    }
-
-    private double zoomToGridDegForHotspot(Integer zoom) {
-        if (zoom == null) return 0.005;
-        // 훨씬 촘촘한 격자를 위해 도 단위를 작게 조정 (참고 이미지 수준의 미려함 목표)
-        if (zoom <= 2) return 0.0001; // 매우 상세
-        if (zoom <= 3) return 0.0002;
-        if (zoom <= 4) return 0.0005;
-        if (zoom <= 5) return 0.001;
-        if (zoom <= 6) return 0.002;
-        if (zoom <= 7) return 0.005;
-        if (zoom <= 8) return 0.01;
-        if (zoom <= 9) return 0.02;
-        return 0.04;
-    }
-
-    private int normalizeLimit(Integer reqLimit, int max) {
-        if (reqLimit == null) {
-            return Math.min(500, max);
-        }
-        return Math.max(1, Math.min(reqLimit, max));
+        int offset = (page - 1) * size;
+        List<ComplaintListItemDto> content = gisMapper.selectComplaintMapList(req, size, offset);
+        long total = gisMapper.countComplaintMapList(req);
+        return new PageResponse<>(content, page, size, total);
     }
 }
