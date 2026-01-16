@@ -343,6 +343,18 @@
         <result property="completed" column="completed"/>
         <result property="slaCompliance" column="sla_compliance"/>
         <result property="overdue" column="overdue"/>
+        <result property="avgProcessingDays" column="avg_processing_days"/>
+        <result property="completionRate" column="completion_rate"/>
+        <result property="safetyRiskRate" column="safety_risk_rate"/>
+        <result property="longTermUnprocessedRate" column="long_term_unprocessed_rate"/>
+        
+        <!-- Summary Bar용 신규 매핑 -->
+        <result property="todayCount" column="todayCount"/>
+        <result property="yesterdayCount" column="yesterdayCount"/>
+        <result property="monthCount" column="monthCount"/>
+        <result property="lastMonthCount" column="lastMonthCount"/>
+        <result property="yearCount" column="yearCount"/>
+        <result property="lastYearCount" column="lastYearCount"/>
     </resultMap>
 
     <!-- 통계(요약): 전체 건수, 상태별(UNPROCESSED, IN_PROGRESS 등) 카운트 및 SLA 준수율 조회 -->
@@ -354,10 +366,43 @@
             COUNT(DISTINCT CASE WHEN c.status = 'IN_PROGRESS' THEN c.complaint_no END) AS processing,
             COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' THEN c.complaint_no END) AS completed,
             COALESCE(ROUND(
-                (COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' AND c.updated_date &lt;= c.created_date + INTERVAL '3 days' THEN c.complaint_no END)::numeric /
+                (COUNT(DISTINCT CASE 
+                    WHEN c.status = 'COMPLETED' AND (
+                        SELECT count(*) 
+                        FROM generate_series(c.created_date::date + 1, c.updated_date::date, '1 day') AS d 
+                        WHERE extract(dow from d) NOT IN (0, 6)
+                    ) &lt;= 3 THEN c.complaint_no 
+                END)::numeric /
                 NULLIF(COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' THEN c.complaint_no END), 0)) * 100, 1
             ), 0) AS sla_compliance,
-            COUNT(DISTINCT CASE WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') AND c.created_date &lt; (CURRENT_TIMESTAMP - INTERVAL '3 days') THEN c.complaint_no END) AS overdue
+            COUNT(DISTINCT CASE 
+                WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') AND (
+                    SELECT count(*) 
+                    FROM generate_series(c.created_date::date + 1, now()::date, '1 day') AS d 
+                    WHERE extract(dow from d) NOT IN (0, 6)
+                ) > 3 THEN c.complaint_no 
+            END) AS overdue,
+            
+            <!-- Summary Bar용 기간별 집계: 오늘/어제/이번달/지난달/올해/작년 데이터를 한 번에 조회 -->
+            <!-- CASE WHEN 구문을 활용하여 조건부 카운팅 수행 (DB 접근 최소화) -->
+            COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CAST(NOW() AS DATE) THEN c.complaint_no END) AS todayCount,
+            COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CAST(NOW() - INTERVAL '1 day' AS DATE) THEN c.complaint_no END) AS yesterdayCount,
+            COUNT(DISTINCT CASE WHEN TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(NOW(), 'YYYY-MM') THEN c.complaint_no END) AS monthCount,
+            COUNT(DISTINCT CASE WHEN TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(NOW() - INTERVAL '1 month', 'YYYY-MM') THEN c.complaint_no END) AS lastMonthCount,
+            COUNT(DISTINCT CASE WHEN TO_CHAR(c.created_date, 'YYYY') = TO_CHAR(NOW(), 'YYYY') THEN c.complaint_no END) AS yearCount,
+            COUNT(DISTINCT CASE WHEN TO_CHAR(c.created_date, 'YYYY') = TO_CHAR(NOW() - INTERVAL '1 year', 'YYYY') THEN c.complaint_no END) AS lastYearCount,
+
+            COALESCE(ROUND(
+                AVG(EXTRACT(EPOCH FROM (c.completed_date - c.created_date)) / 86400.0) FILTER (WHERE c.status = 'COMPLETED'), 1
+            ), 0) AS avg_processing_days,
+            COALESCE(ROUND(
+                (COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' AND TO_CHAR(c.completed_date, 'YYYY-MM') = TO_CHAR(NOW(), 'YYYY-MM') THEN c.complaint_no END)::numeric /
+                NULLIF(COUNT(DISTINCT CASE WHEN TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(NOW(), 'YYYY-MM') THEN c.complaint_no END), 0)) * 100, 1
+            ), 0) AS completion_rate,
+            COALESCE(ROUND(
+                (COUNT(DISTINCT CASE WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') AND (CURRENT_DATE - c.created_date::date) > 14 THEN c.complaint_no END)::numeric /
+                NULLIF(COUNT(DISTINCT CASE WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') THEN c.complaint_no END), 0)) * 100, 1
+            ), 0) AS long_term_unprocessed_rate
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
@@ -365,6 +410,10 @@
             <if test="agencyNo != null">
                 AND ca.agency_no = #{agencyNo}
             </if>
+            <if test="category != null and category != '전체'">
+                AND c.category = #{category}
+            </if>
+            AND c.status != 'DELETED'
         </where>
     </select>
 
@@ -413,34 +462,140 @@
         ORDER BY value DESC
     </select>
 
-    <!-- 통계(월별 트렌드): 최근 6개월간 월별 접수 및 완료 건수 추이 조회 -->
+    <!-- 통계(트렌드): 기간 단위(연/월/일)별 접수, 완료 건수 및 SLA 준수율 추이 조회 -->
     <select id="selectMonthlyTrend" resultType="map">
-        SELECT 
-            TO_CHAR(d, 'YYYY-MM') AS month,
-            (
-                SELECT COUNT(*)::int 
-                FROM complaint c 
-                WHERE TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
-                <if test="category != null and category != '전체' and category != ''">
-                    AND c.category = #{category}
-                </if>
-            ) AS received,
-            (
-                SELECT COUNT(*)::int 
-                FROM complaint c 
-                WHERE TO_CHAR(c.completed_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
-                <if test="category != null and category != '전체' and category != ''">
-                    AND c.category = #{category}
-                </if>
-            ) AS completed
-        FROM (
-            SELECT generate_series(
-                CURRENT_DATE - INTERVAL '5 months', 
-                CURRENT_DATE, 
-                '1 month'
-            )::date AS d
-        ) d
-        ORDER BY month ASC
+        <choose>
+            <when test="timeBasis == 'YEAR'">
+                SELECT 
+                    TO_CHAR(d, 'YYYY') AS month,
+                    (
+                        SELECT COUNT(*)::int 
+                        FROM complaint c 
+                        WHERE TO_CHAR(c.created_date, 'YYYY') = TO_CHAR(d, 'YYYY')
+                        <if test="category != null and category != '전체' and category != ''">
+                            AND c.category = #{category}
+                        </if>
+                    ) AS received,
+                    (
+                        SELECT COUNT(*)::int 
+                        FROM complaint c 
+                        WHERE TO_CHAR(c.completed_date, 'YYYY') = TO_CHAR(d, 'YYYY')
+                        <if test="category != null and category != '전체' and category != ''">
+                            AND c.category = #{category}
+                        </if>
+                    ) AS completed,
+                    COALESCE((
+                        SELECT ROUND(
+                            AVG(CASE WHEN (
+                                SELECT count(*) 
+                                FROM generate_series(c.created_date::date + 1, c.updated_date::date, '1 day') AS gs 
+                                WHERE extract(dow from gs) NOT IN (0, 6)
+                            ) &lt;= 3 THEN 100.0 ELSE 0.0 END), 1
+                        )
+                        FROM complaint c 
+                        WHERE c.status = 'COMPLETED' 
+                        AND TO_CHAR(c.completed_date, 'YYYY') = TO_CHAR(d, 'YYYY')
+                        <if test="category != null and category != '전체' and category != ''">
+                            AND c.category = #{category}
+                        </if>
+                    ), 0) AS sla_rate
+                FROM (
+                    SELECT generate_series(
+                        CURRENT_DATE - INTERVAL '4 years', 
+                        CURRENT_DATE, 
+                        '1 year'
+                    )::date AS d
+                ) d
+                ORDER BY d ASC
+            </when>
+            <when test="timeBasis == 'DAY'">
+                SELECT 
+                    TO_CHAR(d, 'MM-DD') AS month,
+                    (
+                        SELECT COUNT(*)::int 
+                        FROM complaint c 
+                        WHERE TO_CHAR(c.created_date, 'MM-DD') = TO_CHAR(d, 'MM-DD')
+                        <if test="category != null and category != '전체' and category != ''">
+                            AND c.category = #{category}
+                        </if>
+                    ) AS received,
+                    (
+                        SELECT COUNT(*)::int 
+                        FROM complaint c 
+                        WHERE TO_CHAR(c.completed_date, 'MM-DD') = TO_CHAR(d, 'MM-DD')
+                        <if test="category != null and category != '전체' and category != ''">
+                            AND c.category = #{category}
+                        </if>
+                    ) AS completed,
+                    COALESCE((
+                        SELECT ROUND(
+                            AVG(CASE WHEN (
+                                SELECT count(*) 
+                                FROM generate_series(c.created_date::date + 1, c.updated_date::date, '1 day') AS gs 
+                                WHERE extract(dow from gs) NOT IN (0, 6)
+                            ) &lt;= 3 THEN 100.0 ELSE 0.0 END), 1
+                        )
+                        FROM complaint c 
+                        WHERE c.status = 'COMPLETED' 
+                        AND TO_CHAR(c.completed_date, 'MM-DD') = TO_CHAR(d, 'MM-DD')
+                        <if test="category != null and category != '전체' and category != ''">
+                            AND c.category = #{category}
+                        </if>
+                    ), 0) AS sla_rate
+                FROM (
+                    SELECT generate_series(
+                        CURRENT_DATE - INTERVAL '13 days', 
+                        CURRENT_DATE, 
+                        '1 day'
+                    )::date AS d
+                ) d
+                ORDER BY d ASC
+            </when>
+            <otherwise>
+                <!-- Default: MONTH -->
+                SELECT 
+                    TO_CHAR(d, 'YYYY-MM') AS month,
+                    (
+                        SELECT COUNT(*)::int 
+                        FROM complaint c 
+                        WHERE TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
+                        <if test="category != null and category != '전체' and category != ''">
+                            AND c.category = #{category}
+                        </if>
+                    ) AS received,
+                    (
+                        SELECT COUNT(*)::int 
+                        FROM complaint c 
+                        WHERE TO_CHAR(c.completed_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
+                        <if test="category != null and category != '전체' and category != ''">
+                            AND c.category = #{category}
+                        </if>
+                    ) AS completed,
+                    COALESCE((
+                        SELECT ROUND(
+                            AVG(CASE WHEN (
+                                SELECT count(*) 
+                                FROM generate_series(c.created_date::date + 1, c.updated_date::date, '1 day') AS gs 
+                                WHERE extract(dow from gs) NOT IN (0, 6)
+                            ) &lt;= 3 THEN 100.0 ELSE 0.0 END), 1
+                        )
+                        FROM complaint c 
+                        WHERE c.status = 'COMPLETED' 
+                        AND TO_CHAR(c.completed_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
+                        <if test="category != null and category != '전체' and category != ''">
+                            AND c.category = #{category}
+                        </if>
+                    ), 0) AS sla_rate
+                FROM (
+                    SELECT generate_series(
+                        CURRENT_DATE - INTERVAL '5 months', 
+                        CURRENT_DATE, 
+                        '1 month'
+                    )::date AS d
+                ) d
+                ORDER BY d ASC
+            </otherwise>
+        </choose>
     </select>
 
     <!-- 통계(기관별 병목): 자치구별 미처리 민원 현황 TOP 10 조회 (주소 기반) -->
@@ -504,7 +659,7 @@
           AND created_date &lt; (CURRENT_TIMESTAMP - INTERVAL '3 days')
           AND address LIKE '서울특별시 %'
         ORDER BY created_date ASC
-        LIMIT 20
+        LIMIT 100
     </select>
 
 </mapper>

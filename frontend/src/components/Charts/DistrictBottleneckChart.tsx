@@ -1,18 +1,24 @@
 /**
- * 자치구별 미처리 또는 지연된 민원 건수 TOP 10을 보여주는 병목 분석 차트 컴포넌트입니다.
+ * 자치구별 병목 현황 분석 차트 (Horizontal Bar Chart)
+ * 
+ * 주요 기능:
+ * 1. '미처리(unprocessed)' 또는 '지연(overdue)' 민원 상위 10개 자치구 랭킹 표시
+ * 2. 타입(type) prop에 따라 서로 다른 색상 테마(Blue/Red) 적용
+ * 3. refreshKey 연동을 통한 실시간 순위 변동 반영
  */
 import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
 interface DistrictBottleneckChartProps {
     type: 'unprocessed' | 'overdue';
+    refreshKey?: number;
 }
 
-const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type }) => {
+const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type, refreshKey }) => {
     const [data, setData] = useState<{ x: string, y: number }[]>([]);
 
     useEffect(() => {
-        // Fetch Dashboard Stats including bottleneck data
+        // 대시보드 통계 API 호출 (병목 데이터 포함)
         fetch(`/api/complaints/stats/dashboard`)
             .then(res => res.json())
             .then(data => {
@@ -23,7 +29,7 @@ const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type 
                     sourceData = data.bottleneckOverdue || [];
                 }
 
-                // Formatting to match chart data structure {x, y}
+                // 차트 데이터 구조 {x, y}에 맞춰 포맷팅
                 const formatted = sourceData.map((d: any) => ({
                     x: d.name,
                     y: parseInt(d.count)
@@ -31,7 +37,7 @@ const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type 
                 setData(formatted);
             })
             .catch(err => console.error("Failed to fetch bottleneck stats:", err));
-    }, [type]);
+    }, [type, refreshKey]);
 
 
 
@@ -40,7 +46,7 @@ const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type 
     const bgColor = type === 'unprocessed' ? '#EFF6FF' : '#FEF2F2';
     const title = type === 'unprocessed' ? '구별 미처리 TOP 10' : '구별 지연(Overdue) TOP 10';
     const maxY = Math.max(...currentData.map((d) => d.y));
-    const xMax = Math.ceil(maxY * 1.3); // 1.2~1.35 사이로 취향 조절
+    const xMax = Math.ceil(maxY * 1.3); // 여백 확보를 위한 배수 조정 (1.3배)
 
     const options = {
         chart: {

@@ -1,22 +1,26 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
-    Download
+    Download,
+    HelpCircle
 } from 'lucide-react';
 import { complaintsAPI } from '../utils/api';
 import ComplaintTrendChart from '../components/Charts/ComplaintTrendChart';
 import ComplaintCategoryChart from '../components/Charts/ComplaintCategoryChart';
 import AgeGroupChart from '../components/Charts/AgeGroupChart';
 import DistrictBottleneckChart from '../components/Charts/DistrictBottleneckChart';
+import ComplaintGrowthTrendChart from '../components/Charts/ComplaintGrowthTrendChart';
 
 
-
-
-// --- 임시 데이터 (Mock) ---
-// MOCK_OVERDUE_DATA removed
-
-
-
+/**
+ * 관리자 대시보드 메인 페이지
+ * 
+ * 주요 기능:
+ * 1. 30초 주기 자동 데이터 갱신 (카운트다운 타이머 포함)
+ * 2. 민원 현황 KPI 및 다양한 통계 차트(추이, 분류, 연령별, 병목 등) 렌더링
+ * 3. 자식 컴포넌트(차트)에 refreshKey를 전파하여 일괄 업데이트 유도
+ */
 const Dashboard = () => {
     const [stats, setStats] = useState({
         total: 0,
@@ -28,31 +32,59 @@ const Dashboard = () => {
     });
     const navigate = useNavigate();
     const [overdueList, setOverdueList] = useState<any[]>([]);
+    const [showSlaTooltip, setShowSlaTooltip] = useState(false);
+
+    const [selectedCategory, setSelectedCategory] = useState('전체');
+    const [timeBasis, setTimeBasis] = useState<'DAY' | 'MONTH' | 'YEAR'>('MONTH');
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const ITEMS_PER_PAGE = 5;
+
+    // 자동 갱신 타이머 (Auto-refresh)
+    // 30초 자동 갱신을 위한 타이머 및 키 상태 관리
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(30);
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const res = await fetch('/api/complaints/stats/dashboard');
-                const data = await res.json();
-
-                if (data) {
-                    if (data.summary) {
-                        setStats(data.summary);
-                    }
-                    if (data.overdueList) {
-                        setOverdueList(data.overdueList);
-                    }
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => {
+                // 1초 이하일 때 키 업데이트(갱신 트리거) 및 타이머 초기화
+                if (prev <= 1) {
+                    setRefreshKey((k) => k + 1);
+                    return 30;
                 }
-            } catch (error) {
-                console.error('Failed to fetch dashboard stats:', error);
-            }
-        };
-        fetchDashboardData();
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
     }, []);
 
-    const [selectedCategory, setSelectedCategory] = useState('도로');
-    const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 5;
+    const fetchDashboardData = useCallback(async () => {
+        try {
+            const params = new URLSearchParams();
+            if (selectedCategory !== '전체') params.append('category', selectedCategory);
+            params.append('timeBasis', timeBasis);
+
+            const response = await fetch(`/api/complaints/stats/dashboard?${params.toString()}`);
+            const data = await response.json();
+
+            if (data) {
+                if (data.summary) {
+                    setStats(data.summary);
+                }
+                if (data.overdueList) {
+                    setOverdueList(data.overdueList);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch dashboard stats:', error);
+        }
+    }, [selectedCategory, timeBasis, refreshKey]); // refreshKey 변경 시 데이터 재조회
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [fetchDashboardData]);
     const overdueListRef = useRef<HTMLDivElement>(null);
 
     const totalPages = Math.ceil(overdueList.length / ITEMS_PER_PAGE);
@@ -118,9 +150,52 @@ const Dashboard = () => {
             .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
           `}</style>
             <div className="dash-container">
-                {/* 상단 타이틀 및 필터 */}
+                {/* 상단 타이틀 및 필터 */}+
                 <div className="dash-header">
-                    <h1 className="dash-title">관리자 대시보드</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <h1 className="dash-title">관리자 대시보드</h1>
+                        <div style={{
+                            fontSize: '14px',
+                            fontWeight: 700,
+                            color: '#64748B',
+                            backgroundColor: '#F1F5F9',
+                            padding: '6px 12px',
+                            borderRadius: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            border: '1px solid #E2E8F0'
+                        }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22C55E' }}></div>
+                            {timeLeft}초 후 갱신
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', backgroundColor: '#E2E8F0', padding: '4px', borderRadius: '12px' }}>
+                        {[
+                            { label: '일별', value: 'DAY' },
+                            { label: '월별', value: 'MONTH' },
+                            { label: '연별', value: 'YEAR' }
+                        ].map((item) => (
+                            <button
+                                key={item.value}
+                                onClick={() => setTimeBasis(item.value as any)}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '10px',
+                                    fontSize: '13px',
+                                    fontWeight: 800,
+                                    backgroundColor: timeBasis === item.value ? 'white' : 'transparent',
+                                    color: timeBasis === item.value ? '#334155' : '#64748B',
+                                    boxShadow: timeBasis === item.value ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* 나의 민원 현황 (KPI Cards) */}
@@ -131,8 +206,7 @@ const Dashboard = () => {
                     padding: '32px',
                     marginBottom: '40px',
                     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                    position: 'relative',
-                    overflow: 'hidden'
+                    position: 'relative'
                 }}>
                     <div style={{
                         position: 'absolute', top: 0, left: 0, right: 0, height: '6px',
@@ -141,7 +215,59 @@ const Dashboard = () => {
 
                     <h3 style={{ marginBottom: '28px', color: '#1e293b', fontWeight: '900', fontSize: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ width: '4px', height: '20px', backgroundColor: '#3B82F6', borderRadius: '2px' }}></span>
-                        민원 처리 현황
+                        민원 처리 현황 {selectedCategory !== '전체' && <span style={{ color: '#3B82F6', marginLeft: 4 }}>[ {selectedCategory} ]</span>}
+                        <div
+                            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: '4px', cursor: 'help' }}
+                            onMouseEnter={() => setShowSlaTooltip(true)}
+                            onMouseLeave={() => setShowSlaTooltip(false)}
+                        >
+                            <HelpCircle size={16} color="#94A3B8" />
+                            {showSlaTooltip && createPortal(
+                                <div style={{
+                                    position: 'fixed',
+                                    top: '190px',
+                                    left: '420px',
+                                    width: '320px',
+                                    padding: '24px',
+                                    backgroundColor: '#0f172a',
+                                    color: 'white',
+                                    borderRadius: '16px',
+                                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                                    zIndex: 10000,
+                                    textAlign: 'left',
+                                    lineHeight: '1.6',
+                                    border: '1px solid #334155',
+                                    pointerEvents: 'none'
+                                }}>
+                                    <div style={{ fontWeight: '900', fontSize: '14px', marginBottom: '10px', color: '#60A5FA', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>SLA (Service Level Agreement)</div>
+                                    <div style={{ marginBottom: '12px', color: '#E2E8F0', fontSize: '12.5px' }}>행정 서비스 수준 협약으로, 민원 접수 후 해결까지의 목표 처리 시간을 의미합니다.</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                                        {[
+                                            '계산 기준: 주말 및 공휴일을 제외한 영업일 기준 3일 이내 처리',
+                                            '공식: (3영업일 내 완료 건수 / 전체 완료 건수) × 100',
+                                            '주말(토, 일)은 처리 기간 산정 시 자동으로 제외됩니다.'
+                                        ].map((detail, i) => (
+                                            <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                                                <span style={{ color: '#60A5FA', marginTop: '2px' }}>•</span>
+                                                <span style={{ color: '#94A3B8', fontSize: '12px' }}>{detail}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div style={{
+                                        marginTop: '12px',
+                                        paddingTop: '12px',
+                                        borderTop: '1px solid #334155',
+                                        fontSize: '11px',
+                                        color: '#64748B',
+                                        textAlign: 'center',
+                                        fontWeight: '600'
+                                    }}>
+                                        ※ 본 지표는 선택된 민원 유형 기준으로 산정됩니다.
+                                    </div>
+                                </div>,
+                                document.body
+                            )}
+                        </div>
                     </h3>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '16px' }}>
@@ -151,8 +277,8 @@ const Dashboard = () => {
                             { label: '처리중', count: stats.processing, color: '#FEF2F2', textColor: '#EF4444' },
                             { label: '처리완료', count: stats.completed, color: '#F0FDF4', textColor: '#16A34A' },
                             { label: 'SLA 준수율', count: `${stats.sla_compliance}%`, color: '#EEF2FF', textColor: '#4F46E5' },
-                            { label: '지연 민원', count: overdueList.length, color: '#FFF1F2', textColor: '#E11D48', isUrgent: true }
-                        ].map((stat, idx) => (
+                            { label: '지연 민원', count: stats.overdue, color: '#FFF1F2', textColor: '#E11D48', isUrgent: true }
+                        ].map((stat: any, idx) => (
                             <div
                                 key={idx}
                                 onClick={stat.isUrgent ? handleOverdueClick : undefined}
@@ -179,30 +305,36 @@ const Dashboard = () => {
                     </div>
                 </section>
 
-                {/* 2. Main Content Grid (Boxed Layout) */}
+                {/* 2. 메인 콘텐츠 그리드 (박스 레이아웃) */}
                 <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-200 shadow-inner mb-8">
                     <div className="dash-main !mb-0">
-                        {/* Left: Donut Chart -> Replaced with ChartTwo */}
+                        {/* 좌측: 분류별 통계 차트 (Category Chart) */}
                         <div className="dash-left">
-                            <ComplaintCategoryChart selectedCategory={selectedCategory} onSelect={setSelectedCategory} />
+                            {/* 분류별 통계: refreshKey 전달하여 동기화 */}
+                            <ComplaintCategoryChart selectedCategory={selectedCategory} onSelect={setSelectedCategory} refreshKey={refreshKey} />
                         </div>
 
-                        {/* Right: Trend Chart + Age Group Chart */}
+                        {/* 우측: 트렌드 차트 + 성장 추이 차트 (Trend + Growth) */}
                         <div className="dash-right">
-                            <ComplaintTrendChart selectedCategory={selectedCategory} />
+                            <ComplaintTrendChart selectedCategory={selectedCategory} timeBasis={timeBasis} refreshKey={refreshKey} />
                             <div style={{ flex: 1 }}>
-                                <AgeGroupChart />
+                                <ComplaintGrowthTrendChart selectedCategory={selectedCategory} timeBasis={timeBasis} refreshKey={refreshKey} />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* 3. Bottom Grid: District Bottleneck Ranking (Bottleneck Analysis) */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '40px' }}>
-                    <DistrictBottleneckChart type="unprocessed" />
-                    <DistrictBottleneckChart type="overdue" />
+                {/* 3. 연령별 현황 차트 (위치 변경됨) */}
+                <div style={{ marginBottom: '32px' }}>
+                    <AgeGroupChart refreshKey={refreshKey} />
                 </div>
-                {/* 4. Delayed Complaint List Section (Drill-down) */}
+
+                {/* 4. 하단 그리드: 자치구 병목 현황 분석 (Bottleneck Analysis) */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '40px' }}>
+                    <DistrictBottleneckChart type="unprocessed" refreshKey={refreshKey} />
+                    <DistrictBottleneckChart type="overdue" refreshKey={refreshKey} />
+                </div>
+                {/* 5. 지연 민원 상세 목록 (Drill-down) */}
                 <section ref={overdueListRef} style={{ marginBottom: '60px' }}>
                     <div className="dash-card shadow-2xl" style={{ border: '2px solid #FB7185', borderRadius: '16px', overflow: 'hidden', backgroundColor: 'white' }}>
                         <div style={{ backgroundColor: '#FFF1F2', padding: '24px 32px', borderBottom: '1px solid #FECDD3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -247,7 +379,7 @@ const Dashboard = () => {
                                 </tbody>
                             </table>
 
-                            {/* Pagination Controls */}
+                            {/* 페이지네이션 컨트롤 */}
                             {totalPages > 1 && (
                                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '20px' }}>
                                     <button

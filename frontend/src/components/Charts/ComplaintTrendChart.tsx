@@ -1,334 +1,403 @@
 /**
- * 선택된 카테고리의 민원 접수, 완료 건수 및 증감률, 백로그 트렌드를 보여주는 복합 차트 컴포넌트입니다.
+ * 민원 처리율 및 SLA 준수율 트렌드 차트 (Stacked Bar Components Integration)
+ * 
+ * 주요 기능:
+ * 1. KPI Cards: 접수/처리/완료/미처리 건수 상태 표시 및 전일/전월/전년 대비 증감율 비교
+ * 2. Trend Chart: 월별 SLA 준수율(파란선) 및 처리율(초록선) 추이 시각화
+ * 3. Backlog(미처리) 통계: 현재 잔량 역산 및 증감 상태(증가/감소)에 따른 색상/아이콘 동적 처리
  */
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import ReactApexChart from 'react-apexcharts';
+import { HelpCircle } from 'lucide-react';
 
 interface ChartOneProps {
     selectedCategory: string;
+    timeBasis: 'DAY' | 'MONTH' | 'YEAR';
+    refreshKey?: number;
 }
 
-const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory }) => {
-    // 지표 표시 상태 관리
-    const [visibility, setVisibility] = useState({
-        received: true,
-        completed: true,
-        growth: true,
-        backlog: true
-    });
+type TrendRow = { date: string; received: number; completed: number; backlog: number; slaRate: number; completionRate: number };
 
-    const [trendData, setTrendData] = useState<{ date: string, received: number, completed: number, backlog: number }[]>([]);
-    const [backlogStats, setBacklogStats] = useState({ current: 0, changePercent: 0, changeType: 'increase' });
+type BacklogStats = {
+    current: number;
+    diff: number;           // 전월 대비 증감(건)
+    changePercent: number | null; // 전월 대비 증감(%). prev=0이면 null(N/A)
+    changeType: 'increase' | 'decrease';
+    avgDays: number;        // 평균 처리일수
+    completionRate: number; // 완료율
+    longTermRate: number;   // 장기 미처리 비율
+};
 
-    useEffect(() => {
-        // 백엔드 API 호출: /api/complaints/stats/dashboard
-        const url = `/api/complaints/stats/dashboard?category=${encodeURIComponent(selectedCategory)}`;
+// KPI 카드 컴포넌트: 지표 타이틀, 값, 비교 텍스트, 상태 컬러 등을 표현
+const KpiCard: React.FC<{
+    title: string;
+    value: React.ReactNode;
+    sub?: React.ReactNode;
+    color?: string;
+    icon?: React.ReactNode;
+    criteria?: string;
+}> = ({ title, value, sub, color = '#3B82F6', icon, criteria }) => {
+    const [showInfo, setShowInfo] = useState(false);
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                // Backend returns { monthlyTrend: [{ month: '2024-01', received: 10, completed: 5 }, ...], ... }
-                // We need { date: string, count: number } for the chart
-                if (data && data.monthlyTrend && data.summary) {
-                    const trends = data.monthlyTrend; // sorted by date asc
-                    const currentProcessing = data.summary.received + data.summary.processing; // Anchor point (Total Pending)
-
-                    // Calculate Backlog backwards
-                    // Backlog[i] = Backlog[i-1] + Received[i] - Completed[i]
-                    // => Backlog[i-1] = Backlog[i] - Received[i] + Completed[i]
-
-                    const processedTrends = [];
-                    let tempBacklog = currentProcessing;
-
-                    // Process from last to first
-                    for (let i = trends.length - 1; i >= 0; i--) {
-                        const item = trends[i];
-                        processedTrends.unshift({
-                            date: item.month,
-                            received: item.received,
-                            completed: item.completed,
-                            backlog: tempBacklog
-                        });
-
-                        // Prepare backlog for previous month
-                        tempBacklog = tempBacklog - item.received + item.completed;
-                        if (tempBacklog < 0) tempBacklog = 0; // Safety clamp
-                    }
-
-                    setTrendData(processedTrends);
-
-                    // Calculate Backlog Change (Last vs Prev)
-                    if (processedTrends.length >= 2) {
-                        const last = processedTrends[processedTrends.length - 1].backlog;
-                        const prev = processedTrends[processedTrends.length - 2].backlog;
-                        const change = last - prev;
-                        const percent = prev === 0 ? 0 : ((change / prev) * 100);
-                        setBacklogStats({
-                            current: last,
-                            changePercent: Math.abs(parseFloat(percent.toFixed(1))),
-                            changeType: change >= 0 ? 'increase' : 'decrease'
-                        });
-                    } else if (processedTrends.length === 1) {
-                        setBacklogStats({
-                            current: processedTrends[0].backlog,
-                            changePercent: 0,
-                            changeType: 'increase'
-                        });
-                    }
-                }
-            })
-            .catch(err => console.error("Failed to fetch dashboard trends:", err));
-    }, [selectedCategory]);
-
-    const receivedData = trendData.map(d => d.received);
-    const completedData = trendData.map(d => d.completed);
-    const backlogData = trendData.map(d => d.backlog);
-    const dates = trendData.map(d => d.date);
-
-    // 1) 증감률 클램프 설정 (가상효과 극대화)
-    const GROWTH_CLAMP = 50; // -50% ~ +50% 범위로 제한
-
-    const growthData = receivedData.map((val, i) => {
-        if (i === 0) return 0;
-        const prev = receivedData[i - 1];
-        if (!prev || prev === 0) return 0;
-        const rawGrowth = parseFloat(((val - prev) / prev * 100).toFixed(1));
-        // 클램프 적용
-        return Math.max(-GROWTH_CLAMP, Math.min(GROWTH_CLAMP, rawGrowth));
-    });
-
-
-    // 임시 데이터 (백로그 지표 추가)
-    const series = [
-        ...(visibility.received ? [{ name: '접수 건수', type: 'area', data: receivedData }] : []),
-        ...(visibility.completed ? [{ name: '완료 건수', type: 'line', data: completedData }] : []),
-        ...(visibility.growth ? [{ name: '증감률 (%)', type: 'column', data: growthData }] : []), // column으로 변경
-        ...(visibility.backlog ? [{ name: '미처리 잔량 (Backlog)', type: 'line', data: backlogData }] : []),
-    ];
-
-    // 선택된 지표에 따라 색상과 스타일 동적 생성
-    const activeColors = [
-        ...(visibility.received ? ['#3B82F6'] : []),
-        ...(visibility.completed ? ['#10B981'] : []),
-        ...(visibility.growth ? ['#FF3B30'] : []),
-        ...(visibility.backlog ? ['#F59E0B'] : []), // 백로그: 주황색
-    ];
-
-    const activeMarkersSize = [
-        ...(visibility.received ? [5] : []),
-        ...(visibility.completed ? [5] : []),
-        ...(visibility.growth ? [0] : []), // Column은 마커 제외
-        ...(visibility.backlog ? [6] : []),
-    ];
-
-    const options = {
-        legend: { show: false },
-        colors: activeColors,
-        annotations: {
-            yaxis: visibility.growth ? [{
-                y: 0,
-                yAxisIndex: 1, // 증감률 축에 고정
-                borderColor: '#FF3B30',
-                strokeDashArray: 4,
-                width: '100%',
-                label: {
-                    text: '0%',
-                    position: 'right',
-                    offsetX: -10,
-                    style: { color: '#fff', background: '#FF3B30', fontWeight: 700 }
-                }
-            }] : []
-        },
-        chart: {
-            fontFamily: 'Pretendard, sans-serif',
-            height: 350,
-            type: 'line' as const,
-            dropShadow: {
-                enabled: true,
-                color: '#000',
-                top: 5,
-                blur: 8,
-                left: 0,
-                opacity: 0.15,
-                enabledOnSeries: visibility.backlog ? [activeColors.length - 1] : [] // 백로그 선에만 그림자 효과를 주어 '앞에 있는 느낌' 강화
-            },
-            toolbar: { show: false },
-        },
-        stroke: {
-            width: [
-                ...(visibility.received ? [3] : []),
-                ...(visibility.completed ? [3] : []),
-                ...(visibility.growth ? [0] : []), // Column stroke width는 0으로
-                ...(visibility.backlog ? [4] : []),
-            ],
-            curve: 'smooth' as const,
-            dashArray: [
-                ...(visibility.received ? [0] : []),
-                ...(visibility.completed ? [0] : []),
-                ...(visibility.growth ? [0] : []),
-                ...(visibility.backlog ? [4] : []),
-            ]
-        },
-        fill: {
-            type: 'gradient',
-            gradient: {
-                shade: 'light',
-                type: 'vertical',
-                shadeIntensity: 0.5,
-                inverseColors: false,
-                opacityFrom: [
-                    ...(visibility.received ? [0.45] : []),
-                    ...(visibility.completed ? [0.45] : []),
-                    ...(visibility.growth ? [0.85] : []),
-                    ...(visibility.backlog ? [1.0] : []),
-                ],
-                opacityTo: [
-                    ...(visibility.received ? [0.1] : []),
-                    ...(visibility.completed ? [0.1] : []),
-                    ...(visibility.growth ? [0.85] : []),
-                    ...(visibility.backlog ? [1.0] : []),
-                ],
-                stops: [0, 100]
-            }
-        },
-        grid: {
-            borderColor: '#f1f5f9',
-            strokeDashArray: 4,
-            xaxis: { lines: { show: true } },
-            yaxis: { lines: { show: true } }
-        },
-        dataLabels: { enabled: false },
-        markers: {
-            size: activeMarkersSize,
-            colors: '#fff',
-            strokeColors: activeColors,
-            strokeWidth: 3,
-            hover: { size: 9 }
-        },
-        xaxis: {
-            type: 'category' as const,
-            categories: dates,
-            axisBorder: { show: false },
-            axisTicks: { show: false },
-            labels: { style: { colors: '#64748B', fontWeight: 700 } }
-        },
-        yaxis: [
-            {
-                seriesName: ['접수 건수', '완료 건수', '미처리 잔량 (Backlog)'],
-                show: visibility.received || visibility.completed || visibility.backlog,
-                title: { text: '건수', style: { color: '#64748B', fontWeight: 800 } },
-                labels: { style: { colors: '#64748B', fontWeight: 700 } },
-                min: 0,
-            },
-            {
-                seriesName: '증감률 (%)',
-                opposite: true,
-                show: visibility.growth,
-                title: { text: '증감률 (%)', style: { color: '#FF3B30', fontWeight: 800 } },
-                labels: { style: { colors: '#FF3B30', fontWeight: 700 } },
-                min: -GROWTH_CLAMP,
-                max: GROWTH_CLAMP,
-                tickAmount: 5,
-            }
-        ],
-        tooltip: {
-            theme: 'light',
-            shared: true,
-            intersect: false,
-            y: {
-                formatter: (val: number, { seriesIndex }: any) => {
-                    const seriesName = series[seriesIndex]?.name;
-                    if (seriesName === '증감률 (%)') return `${val}%`;
-                    return `${val} 건`;
-                }
-            }
-        }
-    };
-
-    const toggleSeries = (key: keyof typeof visibility) => {
-        setVisibility(prev => ({ ...prev, [key]: !prev[key] }));
+    const handleMouseEnter = (e: React.MouseEvent) => {
+        setMousePos({ x: e.clientX, y: e.clientY });
+        setShowInfo(true);
     };
 
     return (
-        <div className="w-full" style={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '16px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)', padding: '24px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+        <div
+            style={{
+                flex: 1,
+                border: `1px solid #E2E8F0`,
+                borderTop: `5px solid ${color}`,
+                borderRadius: 12,
+                padding: '18px 22px',
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 10px 15px -3px rgba(15, 23, 42, 0.04)',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+            }}
+            className="hover:shadow-lg hover:translate-y-[-2px]"
+        >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#64748B', letterSpacing: '-0.01em' }}>{title}</div>
+                    {criteria && (
+                        <div
+                            style={{ cursor: 'help', display: 'flex', alignItems: 'center' }}
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={() => setShowInfo(false)}
+                        >
+                            <HelpCircle size={14} color="#94A3B8" />
+                        </div>
+                    )}
+                </div>
+                {icon}
+            </div>
+            <div style={{ fontSize: 30, fontWeight: 950, color: color === '#94A3B8' ? '#94A3B8' : '#0F172A', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                {value}
+            </div>
+            <div style={{ marginTop: 10, fontSize: 11.5, fontWeight: 700, minHeight: '1.2em' }}>
+                {sub}
+            </div>
+
+            {showInfo && criteria && createPortal(
+                <div style={{
+                    position: 'fixed',
+                    top: mousePos.y + 15,
+                    left: mousePos.x + 15,
+                    backgroundColor: '#1E293B',
+                    color: 'white',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    zIndex: 10001,
+                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)',
+                    maxWidth: '260px',
+                    pointerEvents: 'none',
+                    lineHeight: '1.6'
+                }}>
+                    <div style={{ color: '#94A3B8', marginBottom: '6px', fontSize: '11px', fontWeight: 800 }}>지표 정의와 기준</div>
+                    <div style={{ whiteSpace: 'pre-line' }}>{criteria}</div>
+                    <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #334155', color: '#94A3B8', fontSize: '10px', fontWeight: 500 }}>
+                        ※ 본 지표는 선택된 민원 유형 기준으로 산정됩니다.
+                    </div>
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+};
+
+const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBasis, refreshKey }) => {
+    const [trendData, setTrendData] = useState<TrendRow[]>([]);
+    const [backlogStats, setBacklogStats] = useState<BacklogStats>({
+        current: 0,
+        diff: 0,
+        changePercent: null,
+        changeType: 'increase',
+        avgDays: 0,
+        completionRate: 0,
+        longTermRate: 0
+    });
+
+    useEffect(() => {
+        const params = new URLSearchParams();
+        if (selectedCategory !== '전체') params.append('category', selectedCategory);
+        params.append('timeBasis', timeBasis);
+
+        const url = `/api/complaints/stats/dashboard?${params.toString()}`;
+
+        fetch(url)
+            .then((res) => res.json())
+            .then((data) => {
+                if (!data?.monthlyTrend || !data?.summary) return;
+
+                const trends = data.monthlyTrend as Array<{ month: string; received: number; completed: number; sla_rate: number }>;
+
+                const anchorPending = (data.summary.received ?? 0) + (data.summary.processing ?? 0);
+
+                const processed: TrendRow[] = [];
+                let tempBacklog = anchorPending;
+
+                // 최신 데이터부터 과거로 역산하여 월별 잔량(Backlog) 추정
+                for (let i = trends.length - 1; i >= 0; i--) {
+                    const item = trends[i];
+                    const cRate = item.received > 0 ? Math.min(100, Math.round((item.completed / item.received) * 1000) / 10) : 0;
+
+                    processed.unshift({
+                        date: item.month,
+                        received: item.received ?? 0,
+                        completed: item.completed ?? 0,
+                        backlog: tempBacklog,
+                        slaRate: item.sla_rate ?? 0,
+                        completionRate: cRate
+                    });
+
+                    tempBacklog = tempBacklog - (item.received ?? 0) + (item.completed ?? 0);
+                    if (tempBacklog < 0) tempBacklog = 0;
+                }
+
+                setTrendData(processed);
+
+                setTrendData(processed);
+
+                // 최근 2개월 데이터를 비교하여 Backlog 증감율 및 상태 도출
+                let bStats = {
+                    current: anchorPending,
+                    diff: 0,
+                    changePercent: null as number | null,
+                    changeType: 'increase' as 'increase' | 'decrease',
+                    avgDays: data.summary?.avg_processing_days ?? 0,
+                    completionRate: data.summary?.completion_rate ?? 0,
+                    longTermRate: data.summary?.long_term_unprocessed_rate ?? 0
+                };
+
+                if (processed.length >= 2) {
+                    const last = processed[processed.length - 1].backlog;
+                    const prev = processed[processed.length - 2].backlog;
+                    const diffValue = last - prev;
+                    const percent = prev === 0 ? null : (diffValue / prev) * 100;
+
+                    bStats = {
+                        ...bStats,
+                        current: last,
+                        diff: diffValue,
+                        changePercent: percent === null ? null : Math.abs(parseFloat(percent.toFixed(1))),
+                        changeType: diffValue >= 0 ? 'increase' : 'decrease'
+                    };
+                }
+                setBacklogStats(bStats);
+            })
+            // 데이터 로드 실패 시 에러 처리
+            .catch((err) => console.error('Failed to fetch dashboard trends:', err));
+    }, [selectedCategory, timeBasis, refreshKey]);
+
+    const dates = useMemo(() => trendData.map((d) => d.date), [trendData]);
+    const receivedData = useMemo(() => trendData.map((d) => d.received), [trendData]);
+    const completedData = useMemo(() => trendData.map((d) => d.completed), [trendData]);
+    const slaData = useMemo(() => trendData.map((d) => d.slaRate), [trendData]);
+    const completionRateData = useMemo(() => trendData.map((d) => d.completionRate), [trendData]);
+
+    // KPI (이번 달 접수/완료)
+    const kpi = useMemo(() => {
+        const last = trendData.at(-1);
+        return {
+            receivedLast: last?.received ?? 0,
+            completedLast: last?.completed ?? 0,
+        };
+    }, [trendData]);
+
+    // 공통: 축/그리드/툴팁 스타일
+    const baseOptions = useMemo(
+        () => ({
+            chart: {
+                fontFamily: 'Pretendard, sans-serif',
+                toolbar: { show: false },
+                animations: { enabled: true },
+                zoom: { enabled: false }
+            },
+            dataLabels: { enabled: false },
+            grid: { borderColor: '#F1F5F9', strokeDashArray: 4 },
+            xaxis: {
+                categories: dates,
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+                labels: { style: { colors: '#64748B', fontWeight: 600 } },
+            },
+            yaxis: {
+                min: 0,
+                max: 100,
+                labels: {
+                    style: { colors: '#64748B', fontWeight: 600 },
+                    formatter: (val: number) => `${val}%`
+                },
+            },
+            tooltip: { theme: 'light', shared: true, intersect: false },
+            markers: { size: 4, strokeWidth: 2, strokeColors: '#fff', hover: { size: 7 } },
+            stroke: { curve: 'smooth' as const, width: 3 },
+            legend: { show: false },
+        }),
+        [dates]
+    );
+
+    // 차트 A: 접수/완료
+    const seriesA = useMemo(
+        () => [
+            { name: 'SLA 준수율', type: 'line' as const, data: slaData },
+            { name: '처리율', type: 'line' as const, data: completionRateData },
+        ],
+        [slaData, completionRateData]
+    );
+
+    const optionsA = useMemo(
+        () => ({
+            ...baseOptions,
+            colors: ['#3B82F6', '#10B981'],
+            tooltip: {
+                ...baseOptions.tooltip,
+                y: {
+                    formatter: (val: number) => `${val}%`,
+                },
+            },
+        }),
+        [baseOptions]
+    );
+
+
+    const backlogSubText = useMemo(() => {
+        if (backlogStats.changePercent === null) return <span style={{ color: '#94A3B8' }}>변동 없음</span>;
+        const arrow = backlogStats.changeType === 'increase' ? '▲' : '▼';
+        // Color for the text itself can still indicate trend, but the Card color should be stable
+        const color = backlogStats.changeType === 'increase'
+            ? (backlogStats.changePercent > 10 ? '#EF4444' : '#F59E0B')
+            : '#3B82F6';
+
+        const periodLabel = timeBasis === 'DAY' ? '전일 대비' : timeBasis === 'YEAR' ? '전년 대비' : '전월 대비';
+
+        return (
+            <span style={{ color }}>
+                {periodLabel} {arrow} {backlogStats.changePercent}%
+            </span>
+        );
+    }, [backlogStats, timeBasis]); // timeBasis 변경 시 재계산
+
+    return (
+        <div
+            className="w-full"
+            style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+                borderRadius: 16,
+                boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.05)',
+                padding: 24,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 24,
+            }}
+        >
+            {/* Header Area */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{ width: '4px', height: '24px', backgroundColor: '#3B82F6', borderRadius: '2px', marginRight: '12px' }}></div>
-                    <h5 style={{ fontSize: '20px', fontWeight: '950', color: '#1e293b' }}>
+                    <div style={{ width: 4, height: 24, backgroundColor: '#3B82F6', borderRadius: 2, marginRight: 12 }} />
+                    <h5 style={{ fontSize: 20, fontWeight: 950, color: '#0F172A', margin: 0 }}>
                         [{selectedCategory}] 상세 분석 및 트렌드
                     </h5>
                 </div>
+            </div>
 
-                {/* Backlog Summary Overlay */}
-                <div style={{ textAlign: 'right', backgroundColor: '#FFF7ED', padding: '12px 20px', borderRadius: '12px', border: '1px solid #FFEDD5' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#9A3412', marginBottom: '4px' }}>현재 미처리 잔량 (Backlog)</div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                        <span style={{ fontSize: '24px', fontWeight: '950', color: '#EA580C' }}>{backlogStats.current}</span>
-                        <span style={{ fontSize: '14px', fontWeight: '900', color: backlogStats.changeType === 'increase' ? '#C2410C' : '#16A34A' }}>
-                            <span style={{ marginRight: '4px' }}>{backlogStats.changeType === 'increase' ? '▲' : '▼'}</span>
-                            {backlogStats.changePercent}% <span style={{ fontSize: '12px', color: '#9A3412', fontWeight: '700' }}>(전월 대비)</span>
+            {/* KPI 행: flex 레이아웃으로 하단 차트와 너비 동기화 */}
+            <div style={{ display: 'flex', gap: 24, width: '100%', boxSizing: 'border-box' }}>
+                {/* 1. 현재 미처리 건수 */}
+                <KpiCard
+                    title="현재 미처리 건수"
+                    value={`${backlogStats.current} 건`}
+                    sub={backlogSubText}
+                    color='#3B82F6' // 혼동 방지를 위해 정적 파란색(Blue) 사용
+                    criteria={`현재 처리되지 않은 민원 총 건수입니다.\n해당 유형의 행정 업무 부담 규모를 나타냅니다.`}
+                />
+
+                {/* 2. 평균 처리 기간 */}
+                <KpiCard
+                    title="평균 처리 기간"
+                    value={backlogStats.avgDays > 0 ? `${backlogStats.avgDays} 일` : '–'}
+                    sub={(() => {
+                        if (backlogStats.avgDays === 0) return <span style={{ color: '#94A3B8' }}>당월 완료 민원 없음</span>;
+                        if (backlogStats.avgDays <= 3) return <span style={{ color: '#3B82F6' }}>처리 속도 정상</span>;
+                        if (backlogStats.avgDays <= 7) return <span style={{ color: '#F59E0B' }}>처리 지연 주의</span>;
+                        return <span style={{ color: '#EF4444' }}>즉시 대응 필요</span>;
+                    })()}
+                    color={(() => {
+                        if (backlogStats.avgDays === 0) return '#94A3B8'; // Neutral
+                        if (backlogStats.avgDays <= 3) return '#3B82F6';
+                        if (backlogStats.avgDays <= 7) return '#F59E0B';
+                        return '#EF4444';
+                    })()}
+                    criteria={`민원 접수일부터 처리 완료까지\n소요된 평균 기간(일)입니다.\n완료된 민원만을 기준으로 산정됩니다.`}
+                />
+
+                {/* 3. 처리율 */}
+                <KpiCard
+                    title="처리율"
+                    value={backlogStats.completionRate > 0 ? `${backlogStats.completionRate}%` : '–'}
+                    sub={(() => {
+                        if (backlogStats.completionRate === 0) return <span style={{ color: '#94A3B8' }}>당월 완료 또는 접수 0건</span>;
+                        if (backlogStats.completionRate >= 80) return <span style={{ color: '#3B82F6' }}>목표 달성 (우수)</span>;
+                        if (backlogStats.completionRate >= 50) return <span style={{ color: '#F59E0B' }}>처리 속도 관리 필요</span>;
+                        return <span style={{ color: '#EF4444' }}>대응 인력 부족 위험</span>;
+                    })()}
+                    color={(() => {
+                        if (backlogStats.completionRate === 0) return '#94A3B8';
+                        if (backlogStats.completionRate >= 80) return '#3B82F6';
+                        if (backlogStats.completionRate >= 50) return '#F59E0B';
+                        return '#EF4444';
+                    })()}
+                    criteria={`당월 접수된 민원 중\n처리 완료된 민원의 비율입니다.`}
+                />
+
+                {/* 4. 장기 미처리 비율 */}
+                <KpiCard
+                    title="장기 미처리 비율"
+                    value={backlogStats.longTermRate > 0 ? `${backlogStats.longTermRate}%` : (backlogStats.longTermRate === 0 ? '0%' : '–')}
+                    sub={(() => {
+                        if (backlogStats.longTermRate === 0) return <span style={{ color: '#3B82F6' }}>장기 방치 민원 없음</span>;
+                        if (backlogStats.longTermRate < 5) return <span style={{ color: '#3B82F6' }}>양호</span>;
+                        if (backlogStats.longTermRate < 15) return <span style={{ color: '#F59E0B' }}>지연 관리 필요</span>;
+                        return <span style={{ color: '#EF4444' }}>즉시 점검 필요</span>;
+                    })()}
+                    color={(() => {
+                        if (backlogStats.longTermRate === 0) return '#3B82F6';
+                        if (backlogStats.longTermRate < 5) return '#3B82F6';
+                        if (backlogStats.longTermRate < 15) return '#F59E0B';
+                        return '#EF4444';
+                    })()}
+                    criteria={`기준일을 초과하여 처리되지 않은\n미처리 민원의 비율입니다.`}
+                />
+            </div>
+
+            {/* 차트 영역 (단일 패널) */}
+            <div style={{ border: '1px solid #E2E8F0', borderRadius: 14, padding: 20, width: '100%', boxSizing: 'border-box' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+                    <div style={{ fontSize: 16, fontWeight: 900, color: '#0F172A' }}>
+                        {timeBasis === 'DAY' ? '일별' : timeBasis === 'YEAR' ? '연도별' : '월별'} 민원 처리 효율 및 SLA 트렌드 (%)
+                    </div>
+                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#475569', fontWeight: 800, fontSize: 13 }}>
+                            <span style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: '#3B82F6', display: 'inline-block' }} />
+                            SLA 준수율
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#475569', fontWeight: 800, fontSize: 13 }}>
+                            <span style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: '#10B981', display: 'inline-block' }} />
+                            처리율
                         </span>
                     </div>
                 </div>
-            </div>
-
-            <div style={{ flex: 1, minHeight: '350px' }}>
-                <ReactApexChart options={options as any} series={series} type="line" height={350} />
-            </div>
-
-            {/* Custom Interactive Legend / Filters */}
-            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '24px', borderTop: '1px solid #f1f5f9', paddingTop: '24px', flexWrap: 'wrap' }}>
-                <button
-                    onClick={() => toggleSeries('received')}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', border: 'none', background: 'none',
-                        opacity: visibility.received ? 1 : 0.4, transition: 'all 0.2s'
-                    }}
-                >
-                    <div style={{ width: '16px', height: '16px', borderRadius: '4px', backgroundColor: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {visibility.received && <div style={{ width: '6px', height: '6px', backgroundColor: 'white', borderRadius: '1px' }}></div>}
-                    </div>
-                    <span style={{ fontSize: '15px', fontWeight: '900', color: '#1e293b' }}>접수</span>
-                </button>
-
-                <button
-                    onClick={() => toggleSeries('completed')}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', border: 'none', background: 'none',
-                        opacity: visibility.completed ? 1 : 0.4, transition: 'all 0.2s'
-                    }}
-                >
-                    <div style={{ width: '16px', height: '16px', borderRadius: '4px', backgroundColor: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {visibility.completed && <div style={{ width: '6px', height: '6px', backgroundColor: 'white', borderRadius: '1px' }}></div>}
-                    </div>
-                    <span style={{ fontSize: '15px', fontWeight: '900', color: '#1e293b' }}>완료</span>
-                </button>
-
-                <button
-                    onClick={() => toggleSeries('growth')}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', border: 'none', background: 'none',
-                        opacity: visibility.growth ? 1 : 0.4, transition: 'all 0.2s'
-                    }}
-                >
-                    <div style={{ width: '16px', height: '16px', borderRadius: '4px', backgroundColor: '#FF3B30', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {visibility.growth && <div style={{ width: '6px', height: '6px', backgroundColor: 'white', borderRadius: '1px' }}></div>}
-                    </div>
-                    <span style={{ fontSize: '15px', fontWeight: '900', color: '#1e293b' }}>증감률</span>
-                </button>
-
-                <button
-                    onClick={() => toggleSeries('backlog')}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', border: 'none', background: 'none',
-                        opacity: visibility.backlog ? 1 : 0.4, transition: 'all 0.2s'
-                    }}
-                >
-                    <div style={{ width: '16px', height: '16px', borderRadius: '4px', backgroundColor: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {visibility.backlog && <div style={{ width: '6px', height: '6px', backgroundColor: 'white', borderRadius: '1px' }}></div>}
-                    </div>
-                    <span style={{ fontSize: '15px', fontWeight: '900', color: '#1e293b' }}>Backlog(잔량)</span>
-                </button>
+                <ReactApexChart options={optionsA as any} series={seriesA as any} type="line" height={320} />
             </div>
         </div>
     );

@@ -187,13 +187,13 @@ public class ComplaintServiceImpl implements ComplaintService {
      * 대시보드용 각종 통계 정보 조회 및 조립
      */
     @Override
-    public Map<String, Object> getDashboardStats(Long agencyNo, String category) {
+    public Map<String, Object> getDashboardStats(Long agencyNo, String category, String timeBasis) {
         log.info("대시보드 통계 조회 시작 - 기관: {}, 카테고리: {}", agencyNo, category);
 
         Map<String, Object> stats = new java.util.HashMap<>();
 
         // 1. 상태별 요약 정보 (전체, 오늘, 접수, 처리중, 완료 및 SLA 준수율 포함)
-        com.safeguard.dto.ComplaintStatsDTO summary = complaintMapper.selectComplaintStats(agencyNo);
+        com.safeguard.dto.ComplaintStatsDTO summary = complaintMapper.selectComplaintStats(agencyNo, category);
         if (summary != null) {
             stats.put("summary", summary);
         } else {
@@ -203,8 +203,9 @@ public class ComplaintServiceImpl implements ComplaintService {
         // 2. 카테고리별 민원 건수 분포
         stats.put("categoryStats", complaintMapper.selectCategoryStats(agencyNo));
 
-        // 3. 최근 6개월간 월별 접수/완료 추이 (카테고리 필터링 적용)
-        stats.put("monthlyTrend", complaintMapper.selectMonthlyTrend(category));
+        // 3. 최근 N기간 트렌드 추이 (카테고리 필터링 및 시간 단위 적용)
+        log.info("트렌드 조회 - 카테고리: {}, 시간단위: {}", category, timeBasis);
+        stats.put("monthlyTrend", complaintMapper.selectMonthlyTrend(category, timeBasis));
 
         // 4. 자치구별 미처리 민원이 많은 곳 (병목 구간 TOP 10)
         stats.put("bottleneck", complaintMapper.selectAgencyBottleneck());

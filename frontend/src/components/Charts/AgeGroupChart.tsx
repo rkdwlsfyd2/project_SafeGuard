@@ -1,10 +1,14 @@
 /**
- * 연령별 민원접수 현황을 보여주는 바 차트 컴포넌트입니다.
+ * 연령별 민원접수 현황 차트 (Vertical Bar Chart)
+ * 
+ * 주요 기능:
+ * 1. 10대부터 60대 이상까지 연령대별 민원 접수 분포 시각화
+ * 2. 부모 컴포넌트로부터 전달받은 refreshKey에 따라 실시간 데이터 갱신
  */
 import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
-const AgeGroupChart: React.FC = () => {
+const AgeGroupChart: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
     const [series, setSeries] = useState([{
         name: '민원 접수 건수',
         data: [] as number[]
@@ -25,7 +29,7 @@ const AgeGroupChart: React.FC = () => {
                 }
             })
             .catch(err => console.error("Failed to fetch age group stats:", err));
-    }, []);
+    }, [refreshKey]);
 
 
     const options = {

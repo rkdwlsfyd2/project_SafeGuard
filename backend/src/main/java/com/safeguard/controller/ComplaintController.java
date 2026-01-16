@@ -295,7 +295,8 @@ public class ComplaintController {
      */
     @GetMapping("/stats/dashboard")
     public ResponseEntity<Map<String, Object>> getDashboardStats(
-            @RequestParam(required = false) String category) {
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "MONTH") String timeBasis) {
 
         Long agencyNo = null;
         var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
@@ -307,7 +308,7 @@ public class ComplaintController {
             }
         }
 
-        Map<String, Object> stats = complaintService.getDashboardStats(agencyNo, category);
+        Map<String, Object> stats = complaintService.getDashboardStats(agencyNo, category, timeBasis);
         return ResponseEntity.ok(stats);
     }
 
@@ -349,7 +350,7 @@ public class ComplaintController {
             }
         }
 
-        ComplaintStatsDTO stats = complaintMapper.selectComplaintStats(agencyNo);
+        ComplaintStatsDTO stats = complaintMapper.selectComplaintStats(agencyNo, null);
         if (stats == null) {
             stats = new ComplaintStatsDTO();
         }
