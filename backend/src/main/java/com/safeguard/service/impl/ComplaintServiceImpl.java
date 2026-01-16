@@ -248,6 +248,14 @@ public class ComplaintServiceImpl implements ComplaintService {
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.NOT_FOUND, "Complaint not found"));
 
+        // 🎯 [Strict] Java Logic: assignedAgencyNos 기반으로 isAssignedToMe 재계산
+        if (viewerAgencyNo != null) {
+            java.util.List<Long> assignedList = c.getAssignedAgencyNos();
+            if (assignedList.contains(viewerAgencyNo)) {
+                c.setIsAssignedToMe(true);
+            }
+        }
+
         // [Strict Access Control] 비공개 민원 접근 제어
         if (Boolean.FALSE.equals(c.getIsPublic())) {
             boolean isWriter = Boolean.TRUE.equals(c.getIsMyPost());
@@ -281,6 +289,8 @@ public class ComplaintServiceImpl implements ComplaintService {
         result.put("assignedAgencyText", c.getAssignedAgencyText());
         result.put("myReaction", c.getMyReaction());
         result.put("isMyPost", c.getIsMyPost());
+        result.put("isAssignedToMe", c.getIsAssignedToMe()); // Frontend Logic Key
+        result.put("assignedAgencyNos", c.getAssignedAgencyNos()); // For Debug
         result.put("likeCount", c.getLikeCount());
         result.put("dislikeCount", c.getDislikeCount());
         result.put("imagePath", c.getImagePath());

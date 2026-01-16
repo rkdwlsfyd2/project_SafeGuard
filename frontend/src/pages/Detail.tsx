@@ -201,9 +201,21 @@ function Detail() {
         return name[0] + '*' + name[name.length - 1];
     };
 
-    const myAgencyNo = user?.agencyNo || localStorage.getItem('agencyNo');
+    // 🔍 [Debug] 권한 디버깅 (추측 금지, 실제 값 확인)
+    console.log('=== Permission Debug ===');
+    console.log('user.role:', user?.role);
+    console.log('user.agencyNo:', user?.agencyNo);
+    console.log('localStorage.agencyNo:', localStorage.getItem('agencyNo'));
+    console.log('report:', report);
+    console.log('report.agencyNo:', report?.agencyNo);
+    console.log('report.assignedAgencyNo:', report?.assignedAgencyNo); // 필드 확인 필요
+    console.log('report.assignedAgencyText:', report?.assignedAgencyText);
+
+    const myAgencyNo = Number(user?.agencyNo ?? localStorage.getItem('agencyNo'));
     const myRole = user?.role || localStorage.getItem('role');
-    const isMyComplaint = myRole === 'AGENCY' && report && String(report.agencyNo) === String(myAgencyNo);
+
+    // 🎯 [Strict] 권한 판단: 백엔드에서 계산된 isAssignedToMe 사용
+    const isAssignedAgencyAdmin = (myRole === 'AGENCY') && (report?.isAssignedToMe === true);
 
     return (
         <div className="detail-page" style={{ padding: '40px 0', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
@@ -332,7 +344,7 @@ function Detail() {
                                 <span style={{ fontSize: '0.75rem', fontWeight: '700' }}>{report.dislikeCount || 0}</span>
                             </button>
 
-                            {isMyComplaint && (
+                            {isAssignedAgencyAdmin && (
                                 <button
                                     onClick={async () => {
                                         if (window.confirm('정말 삭제하시겠습니까? (복구 불가)')) {
@@ -429,8 +441,8 @@ function Detail() {
                                                 }}>
                                                     {step.label}
                                                 </div>
-                                                {/* 1️⃣ 상태 변경 기능 차단: isMyComplaint일 때만 렌더링 */}
-                                                {isMyComplaint && !isCurrent && (
+                                                {/* 1️⃣ 상태 변경 기능 차단: isAssignedAgencyAdmin일 때만 렌더링 */}
+                                                {isAssignedAgencyAdmin && !isCurrent && (
                                                     <button
                                                         onClick={() => handleStatusChange(step.key)}
                                                         style={{
@@ -485,8 +497,8 @@ function Detail() {
                         <div>
                             <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '16px', color: '#1e293b', paddingLeft: '12px', borderLeft: '4px solid #22c55e' }}>담당자 답변</h3>
 
-                            {/* 2️⃣ 담당자 답변 기능 차단: isMyComplaint일 때만 렌더링 */}
-                            {isMyComplaint ? (
+                            {/* 2️⃣ 담당자 답변 기능 차단: isAssignedAgencyAdmin일 때만 렌더링 */}
+                            {isAssignedAgencyAdmin ? (
                                 (!report.answer || isEditing) ? (
                                     <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                                         <div style={{ marginBottom: '12px', fontWeight: '600', color: '#475569' }}>답변 작성</div>
@@ -565,7 +577,7 @@ function Detail() {
                                         </>
                                     ) : (
                                         <div style={{ color: '#94a3b8' }}>
-                                            {localStorage.getItem('role') === 'AGENCY' && !isMyComplaint ? (
+                                            {myRole === 'AGENCY' && !isAssignedAgencyAdmin ? (
                                                 <>
                                                     <div style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.5 }}>🚫</div>
                                                     <p style={{ fontSize: '1.1rem', fontWeight: '500', color: '#64748b' }}>담당 기관만 답변을 등록할 수 있습니다.</p>

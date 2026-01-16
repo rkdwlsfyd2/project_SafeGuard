@@ -214,12 +214,22 @@ public class ComplaintController {
         ComplaintDTO complaint = complaintMapper.findByComplaintNo(id, user.getUserNo(), null)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Complaint not found"));
 
-        // 🎯 판별 기준: 민원 담당 기관과 로그인한 관리자(AGENCY)의 소속 기관 일치 여부
-        boolean isMyComplaint = (user.getRole() == UserRole.AGENCY)
-                && (user.getAgencyNo() != null)
-                && (java.util.Objects.equals(user.getAgencyNo(), complaint.getAgencyNo()));
+        // 🔍 [Debug] 백엔드 권한 디버깅 (Java Logic)
+        java.util.List<Long> assignedAgencyNos = complaint.getAssignedAgencyNos();
+        log.error("=== BACKEND PERMISSION DEBUG ===");
+        log.error("loginUserId: {}", user.getUserId());
+        log.error("loginUserRole: {}", user.getRole());
+        log.error("loginUserAgencyNo: {}", user.getAgencyNo());
+        log.error("complaintId: {}", id);
+        log.error("complaint.assignedAgencyNos: {}", assignedAgencyNos);
 
-        if (!isMyComplaint) {
+        // 🎯 판별 기준: 민원 배정 기관 목록에 내 기관 번호가 포함되어 있는지 확인
+        boolean isAssignedAgencyAdmin = (user.getRole() == UserRole.AGENCY)
+                && (user.getAgencyNo() != null)
+                && (assignedAgencyNos.contains(user.getAgencyNo()));
+
+        if (!isAssignedAgencyAdmin) {
+            log.error(">>> ACCESS DENIED: (MyAgency={} vs AssignedList={})", user.getAgencyNo(), assignedAgencyNos);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "담당 민원이 아닙니다."));
         }
 
@@ -252,12 +262,23 @@ public class ComplaintController {
         ComplaintDTO complaint = complaintMapper.findByComplaintNo(id, user.getUserNo(), null)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Complaint not found"));
 
-        // 🎯 판별 기준: 민원 담당 기관과 로그인한 관리자(AGENCY)의 소속 기관 일치 여부
-        boolean isMyComplaint = (user.getRole() == UserRole.AGENCY)
-                && (user.getAgencyNo() != null)
-                && (java.util.Objects.equals(user.getAgencyNo(), complaint.getAgencyNo()));
+        // 🔍 [Debug] 백엔드 권한 디버깅 (Java Logic)
+        java.util.List<Long> assignedAgencyNos = complaint.getAssignedAgencyNos();
+        log.error("=== BACKEND PERMISSION DEBUG ===");
+        log.error("loginUserId: {}", user.getUserId());
+        log.error("loginUserRole: {}", user.getRole());
+        log.error("loginUserAgencyNo: {}", user.getAgencyNo());
+        log.error("complaintId: {}", id);
+        log.error("complaint.assignedAgencyNos: {}", assignedAgencyNos);
 
-        if (!isMyComplaint) {
+        // 🎯 판별 기준: 민원 배정 기관 목록에 내 기관 번호가 포함되어 있는지 확인
+        boolean isAssignedAgencyAdmin = (user.getRole() == UserRole.AGENCY)
+                && (user.getAgencyNo() != null)
+                && (assignedAgencyNos.contains(user.getAgencyNo()));
+
+        if (!isAssignedAgencyAdmin) {
+
+            log.error(">>> ACCESS DENIED: (MyAgency={} vs AssignedList={})", user.getAgencyNo(), assignedAgencyNos);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "담당 민원이 아닙니다."));
         }
 

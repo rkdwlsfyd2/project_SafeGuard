@@ -102,7 +102,8 @@
                 ) THEN TRUE 
                 ELSE FALSE 
             END AS isAssignedToMe,
-            MAX(ca.agency_no) AS agencyNo,
+            MAX(ca.agency_no) AS agencyNo, -- Legacy support
+            STRING_AGG(CAST(ca.agency_no AS text), ',') AS assignedAgencyIdsStr,
             MAX(a.agency_name) AS agencyName,
             MAX(a.region_code) AS regionCode,
             MAX(CASE 
