@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { complaintsAPI } from '../utils/api';
+import StatusBadge from '../components/StatusBadge';
 
 function List() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -185,28 +186,7 @@ function List() {
         }
     };
 
-    const getStatusBadge = (status: any) => {
-        const statusMap: any = {
-            'UNPROCESSED': { text: '미처리', bg: '#fee2e2', color: '#dc2626' }, // 빨간색
-            'IN_PROGRESS': { text: '처리중', bg: '#fef3c7', color: '#d97706' }, // 노란색
-            'COMPLETED': { text: '처리완료', bg: '#dcfce7', color: '#16a34a' },
-            'REJECTED': { text: '반려', bg: '#f1f5f9', color: '#64748b' },
-            'CANCELLED': { text: '취소', bg: '#f1f5f9', color: '#64748b' }
-        };
-        const s = statusMap[status] || { text: status, bg: '#f1f5f9', color: '#64748b' };
-        return (
-            <span style={{
-                padding: '6px 12px',
-                borderRadius: '20px',
-                fontSize: '0.8rem',
-                fontWeight: '600',
-                backgroundColor: s.bg,
-                color: s.color
-            }}>
-                {s.text}
-            </span>
-        );
-    };
+
 
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('ko-KR', {
@@ -531,7 +511,9 @@ function List() {
                                                         cursor: c.regionCode ? 'pointer' : 'default'
                                                     }}>{c.regionName || ''}</span>
                                             </td>
-                                            <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>{getStatusBadge(c.status)}</td>
+                                            <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>
+                                                <StatusBadge status={c.status} size="small" />
+                                            </td>
                                             <td style={{ padding: '18px 20px', color: '#94a3b8', fontSize: '0.9rem', borderBottom: '1px solid #f1f5f9' }}>{formatDate(c.createdDate)}</td>
                                             <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>
                                                 <span style={{ color: '#ef4444', fontWeight: '600' }}>❤️ {c.likeCount}</span>
