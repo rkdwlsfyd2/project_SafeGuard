@@ -3,7 +3,6 @@ package com.safeguard.controller;
 import com.safeguard.dto.ComplaintDTO;
 import com.safeguard.dto.ComplaintStatsDTO;
 import com.safeguard.dto.UserDTO;
-import com.safeguard.enums.ComplaintStatus;
 import com.safeguard.enums.UserRole;
 import com.safeguard.mapper.ComplaintMapper;
 import com.safeguard.mapper.UserMapper;
@@ -211,22 +210,16 @@ public class ComplaintController {
         UserDTO user = userMapper.findByUserId(userDetails.getUsername())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
 
-        ComplaintDTO complaint = complaintMapper.findByComplaintNo(id, user.getUserNo(), null)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Complaint not found"));
-
-        // 🎯 판별 기준: 민원 담당 기관과 로그인한 관리자(AGENCY)의 소속 기관 일치 여부
-        boolean isMyComplaint = (user.getRole() == UserRole.AGENCY)
-                && (user.getAgencyNo() != null)
-                && (java.util.Objects.equals(user.getAgencyNo(), complaint.getAgencyNo()));
-
-        if (!isMyComplaint) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "담당 민원이 아닙니다."));
-        }
-
         try {
-            ComplaintStatus status = ComplaintStatus.valueOf(body.get("status"));
-            complaintMapper.updateStatus(id, status.name());
+            complaintService.updateComplaintStatus(id, user.getUserNo(),
+                    (user.getRole() != null) ? user.getRole().name() : null,
+                    user.getAgencyNo(),
+                    body.get("status"));
             return ResponseEntity.ok(Map.of("message", "Status updated"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status"));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getReason()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", "Update failed: " + e.getMessage()));
         }
@@ -249,21 +242,14 @@ public class ComplaintController {
         UserDTO user = userMapper.findByUserId(userDetails.getUsername())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
 
-        ComplaintDTO complaint = complaintMapper.findByComplaintNo(id, user.getUserNo(), null)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Complaint not found"));
-
-        // 🎯 판별 기준: 민원 담당 기관과 로그인한 관리자(AGENCY)의 소속 기관 일치 여부
-        boolean isMyComplaint = (user.getRole() == UserRole.AGENCY)
-                && (user.getAgencyNo() != null)
-                && (java.util.Objects.equals(user.getAgencyNo(), complaint.getAgencyNo()));
-
-        if (!isMyComplaint) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "담당 민원이 아닙니다."));
-        }
-
         try {
-            complaintMapper.updateAnswer(id, body.get("answer"));
+            complaintService.updateComplaintAnswer(id, user.getUserNo(),
+                    (user.getRole() != null) ? user.getRole().name() : null,
+                    user.getAgencyNo(),
+                    body.get("answer"));
             return ResponseEntity.ok(Map.of("message", "Answer updated"));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getReason()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", "Update failed: " + e.getMessage()));
         }

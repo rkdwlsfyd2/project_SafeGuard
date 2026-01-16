@@ -209,6 +209,26 @@ function Detail() {
         });
     };
 
+    const formatDateTime = (dateString: string) => {
+        if (!dateString) return '-';
+        const d = new Date(dateString);
+
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+
+        const hours24 = d.getHours();
+        const isPM = hours24 >= 12;
+        const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+
+        const minutes = d.getMinutes();
+        const seconds = d.getSeconds();
+
+        const ampm = isPM ? '오후' : '오전';
+
+        return `${yyyy}. ${mm}. ${dd} ${ampm} ${hours12}시 ${minutes}분 ${seconds}초`;
+    };
+
     const steps = [
         { key: 'UNPROCESSED', label: '미처리', icon: '📥' },
         { key: 'IN_PROGRESS', label: '처리중', icon: '🛠️' },
@@ -230,7 +250,21 @@ function Detail() {
         return name[0] + '*' + name[name.length - 1];
     };
 
-    const isMyComplaint = user && report && user.role === 'AGENCY' && String(report.agencyNo) === String(user.agencyNo);
+    // 🔍 [Debug] 권한 디버깅 (추측 금지, 실제 값 확인)
+    console.log('=== Permission Debug ===');
+    console.log('user.role:', user?.role);
+    console.log('user.agencyNo:', user?.agencyNo);
+    console.log('localStorage.agencyNo:', localStorage.getItem('agencyNo'));
+    console.log('report:', report);
+    console.log('report.agencyNo:', report?.agency);
+    console.log('report.assignedAgencyNo:', report?.assignedAgencyNo); // 필드 확인 필요
+    console.log('report.assignedAgencyText:', report?.assignedAgencyText);
+
+    const myAgencyNo = Number(user?.agencyNo ?? localStorage.getItem('agencyNo'));
+    const myRole = user?.role || localStorage.getItem('role');
+
+    // 🎯 [Strict] 권한 판단: 백엔드에서 계산된 isAssignedToMe 사용
+    const isAssignedAgencyAdmin = (myRole === 'AGENCY') && (report?.isAssignedToMe === true);
 
     return (
         <div className="detail-page" style={{ padding: '40px 0', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
@@ -359,7 +393,7 @@ function Detail() {
                                 <span style={{ fontSize: '0.75rem', fontWeight: '700' }}>{report.dislikeCount || 0}</span>
                             </button>
 
-                            {isMyComplaint && (
+                            {isAssignedAgencyAdmin && (
                                 <button
                                     onClick={async () => {
                                         if (window.confirm('정말 삭제하시겠습니까? (복구 불가)')) {
@@ -455,8 +489,8 @@ function Detail() {
                                                 }}>
                                                     {step.label}
                                                 </div>
-                                                {/* 1️⃣ 상태 변경 기능 차단: isMyComplaint일 때만 렌더링 */}
-                                                {isMyComplaint && !isCurrent && (
+                                                {/* 1️⃣ 상태 변경 기능 차단: isAssignedAgencyAdmin일 때만 렌더링 */}
+                                                {isAssignedAgencyAdmin && !isCurrent && (
                                                     <button
                                                         onClick={() => handleStatusChange(step.key)}
                                                         style={{
@@ -511,8 +545,8 @@ function Detail() {
                         <div>
                             <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '16px', color: '#1e293b', paddingLeft: '12px', borderLeft: '4px solid #22c55e' }}>담당자 답변</h3>
 
-                            {/* 2️⃣ 담당자 답변 기능 차단: isMyComplaint일 때만 렌더링 */}
-                            {isMyComplaint ? (
+                            {/* 2️⃣ 담당자 답변 기능 차단: isAssignedAgencyAdmin일 때만 렌더링 */}
+                            {isAssignedAgencyAdmin ? (
                                 (!report.answer || isEditing) ? (
                                     <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                                         <div style={{ marginBottom: '12px', fontWeight: '600', color: '#475569' }}>답변 작성</div>
@@ -568,7 +602,7 @@ function Detail() {
                                             {report.answer}
                                         </div>
                                         <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px dashed #bbf7d0', fontSize: '0.9rem', color: '#64748b' }}>
-                                            담당자: {user?.name || '관리자'} | 처리일시: {formatDate(new Date().toISOString())} {/* 실제로는 답변 시간을 DB에 저장해야 함 */}
+                                            담당자: {report.agencyName || '관리자'} | 처리일시: {formatDateTime(report.updatedDate || report.completedDate || report.createdDate)}
                                         </div>
                                     </div>
                                 )
@@ -591,9 +625,19 @@ function Detail() {
                                         </>
                                     ) : (
                                         <div style={{ color: '#94a3b8' }}>
-                                            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⏳</div>
-                                            <p style={{ fontSize: '1.1rem', fontWeight: '500' }}>아직 답변이 등록되지 않았습니다.</p>
-                                            <p style={{ fontSize: '0.9rem' }}>담당자가 내용을 확인 후 빠른 시일 내에 답변해 드리겠습니다.</p>
+                                            {myRole === 'AGENCY' && !isAssignedAgencyAdmin ? (
+                                                <>
+                                                    <div style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.5 }}>🚫</div>
+                                                    <p style={{ fontSize: '1.1rem', fontWeight: '500', color: '#64748b' }}>담당 기관만 답변을 등록할 수 있습니다.</p>
+                                                    <p style={{ fontSize: '0.9rem', marginTop: '4px' }}>이 민원은 귀 기관의 담당 민원이 아닙니다.</p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⏳</div>
+                                                    <p style={{ fontSize: '1.1rem', fontWeight: '500' }}>아직 답변이 등록되지 않았습니다.</p>
+                                                    <p style={{ fontSize: '0.9rem' }}>담당자가 내용을 확인 후 빠른 시일 내에 답변해 드리겠습니다.</p>
+                                                </>
+                                            )}
                                         </div>
                                     )}
                                 </div>

@@ -288,6 +288,14 @@ public class ComplaintServiceImpl implements ComplaintService {
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.NOT_FOUND, "Complaint not found"));
 
+        // 🎯 [Strict] Java Logic: assignedAgencyNos 기반으로 isAssignedToMe 재계산
+        if (viewerAgencyNo != null) {
+            java.util.List<Long> assignedList = c.getAssignedAgencyNos();
+            if (assignedList.contains(viewerAgencyNo)) {
+                c.setIsAssignedToMe(true);
+            }
+        }
+
         // [Strict Access Control] 비공개 민원 접근 제어
         if (Boolean.FALSE.equals(c.getIsPublic())) {
             boolean isWriter = Boolean.TRUE.equals(c.getIsMyPost());
@@ -313,6 +321,8 @@ public class ComplaintServiceImpl implements ComplaintService {
         result.put("category", c.getCategory());
         result.put("status", c.getStatus());
         result.put("createdDate", c.getCreatedDate());
+        result.put("updatedDate", c.getUpdatedDate());
+        result.put("completedDate", c.getCompletedDate());
         result.put("isPublic", c.getIsPublic());
         result.put("regionName", c.getRegionName());
         result.put("agencyName", c.getAgencyName());
@@ -321,6 +331,8 @@ public class ComplaintServiceImpl implements ComplaintService {
         result.put("assignedAgencyText", c.getAssignedAgencyText());
         result.put("myReaction", c.getMyReaction());
         result.put("isMyPost", c.getIsMyPost());
+        result.put("isAssignedToMe", c.getIsAssignedToMe()); // Frontend Logic Key
+        result.put("assignedAgencyNos", c.getAssignedAgencyNos()); // For Debug
         result.put("likeCount", c.getLikeCount());
         result.put("dislikeCount", c.getDislikeCount());
         result.put("imagePath", c.getImagePath());
@@ -356,5 +368,57 @@ public class ComplaintServiceImpl implements ComplaintService {
         // 4. Soft Delete 수행
         complaintMapper.updateStatus(complaintNo, ComplaintStatus.DELETED.name());
         log.info("민원 삭제 처리 완료 (Soft Delete) - ID: {}, User: {}, Agency: {}", complaintNo, userNo, agencyNo);
+    }
+
+    @Override
+    @Transactional
+    public void updateComplaintStatus(Long complaintNo, Long userNo, String role, Long agencyNo, String status) {
+        // 1. Role Check
+        if (role == null || !role.equals("AGENCY")) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "권한이 없습니다 (기관 담당자 전용)");
+        }
+
+        // 2. Load Complaint
+        com.safeguard.dto.ComplaintDTO c = complaintMapper.findByComplaintNo(complaintNo, userNo, agencyNo)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Complaint not found"));
+
+        // 3. Permission Check (Java Logic)
+        java.util.List<Long> assignedAgencyNos = c.getAssignedAgencyNos();
+        if (agencyNo == null || !assignedAgencyNos.contains(agencyNo)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "담당 민원이 아닙니다. (MyAgency=" + agencyNo + ")");
+        }
+
+        // 4. Update
+        complaintMapper.updateStatus(complaintNo, status);
+        log.info("민원 상태 변경(Service) - ID: {}, Status: {}, By: {}", complaintNo, status, userNo);
+    }
+
+    @Override
+    @Transactional
+    public void updateComplaintAnswer(Long complaintNo, Long userNo, String role, Long agencyNo, String answer) {
+        // 1. Role Check
+        if (role == null || !role.equals("AGENCY")) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "권한이 없습니다 (기관 담당자 전용)");
+        }
+
+        // 2. Load Complaint
+        com.safeguard.dto.ComplaintDTO c = complaintMapper.findByComplaintNo(complaintNo, userNo, agencyNo)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Complaint not found"));
+
+        // 3. Permission Check (Java Logic)
+        java.util.List<Long> assignedAgencyNos = c.getAssignedAgencyNos();
+        if (agencyNo == null || !assignedAgencyNos.contains(agencyNo)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "담당 민원이 아닙니다. (MyAgency=" + agencyNo + ")");
+        }
+
+        // 4. Update
+        complaintMapper.updateAnswer(complaintNo, answer);
+        log.info("민원 답변 등록(Service) - ID: {}, By: {}", complaintNo, userNo);
     }
 }

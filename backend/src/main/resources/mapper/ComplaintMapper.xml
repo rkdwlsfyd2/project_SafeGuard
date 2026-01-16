@@ -75,6 +75,8 @@
             c.category,
             c.status,
             c.created_date AS createdDate,
+            c.updated_date AS updatedDate,
+            c.completed_date AS completedDate,
             c.address,
             c.latitude,
             c.longitude,
@@ -102,7 +104,8 @@
                 ) THEN TRUE 
                 ELSE FALSE 
             END AS isAssignedToMe,
-            MAX(ca.agency_no) AS agencyNo,
+            MAX(ca.agency_no) AS agencyNo, -- Legacy support
+            STRING_AGG(CAST(ca.agency_no AS text), ',') AS assignedAgencyIdsStr,
             MAX(a.agency_name) AS agencyName,
             MAX(a.region_code) AS regionCode,
             MAX(CASE 
@@ -268,13 +271,15 @@
 
     <update id="updateStatus">
         UPDATE complaint
-        SET status = #{status}
+        SET status = #{status},
+            updated_date = CURRENT_TIMESTAMP
         WHERE complaint_no = #{complaintNo}
     </update>
 
     <update id="updateAnswer">
         UPDATE complaint
-        SET answer = #{answer}
+        SET answer = #{answer},
+            updated_date = CURRENT_TIMESTAMP
         WHERE complaint_no = #{complaintNo}
     </update>
 
