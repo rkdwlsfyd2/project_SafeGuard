@@ -196,11 +196,33 @@ public class ComplaintController {
 
     /**
      * 민원 처리 상태 변경 (관리자 전용)
+     * - 담당 기관(AGENCY) 관리자만 변경 가능 (403 Check)
      */
     @PatchMapping("/{id}/status")
     public ResponseEntity<Map<String, String>> updateStatus(
             @PathVariable Long id,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserDTO user = userMapper.findByUserId(userDetails.getUsername())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+
+        ComplaintDTO complaint = complaintMapper.findByComplaintNo(id, user.getUserNo(), null)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Complaint not found"));
+
+        // 🎯 판별 기준: 민원 담당 기관과 로그인한 관리자(AGENCY)의 소속 기관 일치 여부
+        boolean isMyComplaint = (user.getRole() == UserRole.AGENCY)
+                && (user.getAgencyNo() != null)
+                && (java.util.Objects.equals(user.getAgencyNo(), complaint.getAgencyNo()));
+
+        if (!isMyComplaint) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "담당 민원이 아닙니다."));
+        }
+
         try {
             ComplaintStatus status = ComplaintStatus.valueOf(body.get("status"));
             complaintMapper.updateStatus(id, status.name());
@@ -212,11 +234,33 @@ public class ComplaintController {
 
     /**
      * 민원 답변 등록 및 수정
+     * - 담당 기관(AGENCY) 관리자만 변경 가능 (403 Check)
      */
     @PatchMapping("/{id}/answer")
     public ResponseEntity<Map<String, String>> updateAnswer(
             @PathVariable Long id,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserDTO user = userMapper.findByUserId(userDetails.getUsername())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+
+        ComplaintDTO complaint = complaintMapper.findByComplaintNo(id, user.getUserNo(), null)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Complaint not found"));
+
+        // 🎯 판별 기준: 민원 담당 기관과 로그인한 관리자(AGENCY)의 소속 기관 일치 여부
+        boolean isMyComplaint = (user.getRole() == UserRole.AGENCY)
+                && (user.getAgencyNo() != null)
+                && (java.util.Objects.equals(user.getAgencyNo(), complaint.getAgencyNo()));
+
+        if (!isMyComplaint) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "담당 민원이 아닙니다."));
+        }
+
         try {
             complaintMapper.updateAnswer(id, body.get("answer"));
             return ResponseEntity.ok(Map.of("message", "Answer updated"));

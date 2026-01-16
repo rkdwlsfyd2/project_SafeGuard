@@ -184,6 +184,8 @@ function Detail() {
         return name[0] + '*' + name[name.length - 1];
     };
 
+    const isMyComplaint = user && report && user.role === 'AGENCY' && String(report.agencyNo) === String(user.agencyNo);
+
     return (
         <div className="detail-page" style={{ padding: '40px 0', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
             <div className="container" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 20px' }}>
@@ -320,7 +322,7 @@ function Detail() {
                                 <span style={{ fontSize: '0.75rem', fontWeight: '700' }}>{report.dislikeCount || 0}</span>
                             </button>
 
-                            {user && user.role === 'AGENCY' && String(report.agencyNo) === String(user.agencyNo) && (
+                            {isMyComplaint && (
                                 <button
                                     onClick={async () => {
                                         if (window.confirm('정말 삭제하시겠습니까? (복구 불가)')) {
@@ -381,8 +383,8 @@ function Detail() {
                                     {steps.map((step, index) => {
                                         const isActive = index <= currentIndex;
                                         const isCurrent = index === currentIndex;
-                                        // 권한 체크: AGENCY 회원이고, 민원의 담당 기관 번호와 일치하는 경우에만 버튼 활성화
-                                        const canChangeStatus = user && user.role === 'AGENCY' && String(report.agencyNo) === String(user.agencyNo);
+
+
 
                                         return (
                                             <div
@@ -416,7 +418,8 @@ function Detail() {
                                                 }}>
                                                     {step.label}
                                                 </div>
-                                                {canChangeStatus && !isCurrent && (
+                                                {/* 1️⃣ 상태 변경 기능 차단: isMyComplaint일 때만 렌더링 */}
+                                                {isMyComplaint && !isCurrent && (
                                                     <button
                                                         onClick={() => handleStatusChange(step.key)}
                                                         style={{
@@ -478,7 +481,8 @@ function Detail() {
                         <div>
                             <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '16px', color: '#1e293b', paddingLeft: '12px', borderLeft: '4px solid #22c55e' }}>담당자 답변</h3>
 
-                            {user && user.role === 'AGENCY' && String(report.agencyNo) === String(user.agencyNo) ? (
+                            {/* 2️⃣ 담당자 답변 기능 차단: isMyComplaint일 때만 렌더링 */}
+                            {isMyComplaint ? (
                                 (!report.answer || isEditing) ? (
                                     <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                                         <div style={{ marginBottom: '12px', fontWeight: '600', color: '#475569' }}>답변 작성</div>
