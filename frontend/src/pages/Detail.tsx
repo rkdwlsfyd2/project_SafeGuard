@@ -46,11 +46,13 @@ function Detail() {
         title: string;
         message: string;
         callback?: () => void;
+        onConfirm?: () => void;
+        confirmText?: string;
+        cancelText?: string;
     }>({
         isOpen: false,
         title: '',
         message: '',
-        callback: undefined
     });
 
     const showAlert = (title: string, message: string, callback?: () => void) => {
@@ -58,7 +60,21 @@ function Detail() {
             isOpen: true,
             title,
             message,
-            callback
+            callback,
+            onConfirm: undefined,
+            cancelText: undefined,
+            confirmText: '확인'
+        });
+    };
+
+    const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            onConfirm,
+            confirmText: '확인',
+            cancelText: '취소'
         });
     };
 
@@ -395,15 +411,15 @@ function Detail() {
 
                             {isAssignedAgencyAdmin && (
                                 <button
-                                    onClick={async () => {
-                                        if (window.confirm('정말 삭제하시겠습니까? (복구 불가)')) {
+                                    onClick={() => {
+                                        showConfirm('삭제 확인', '정말 삭제하시겠습니까?\n삭제된 민원은 복구할 수 없습니다.', async () => {
                                             try {
                                                 await complaintsAPI.delete(id);
-                                                showAlert('알림', '삭제되었습니다.', handleBack);
+                                                showAlert('알림', '삭제가 완료되었습니다.', handleBack);
                                             } catch (err: any) {
                                                 showAlert('오류', err.message || '삭제 실패');
                                             }
-                                        }
+                                        });
                                     }}
                                     style={{
                                         width: '56px',
@@ -675,6 +691,9 @@ function Detail() {
                 isOpen={modalConfig.isOpen}
                 onClose={closeModal}
                 title={modalConfig.title}
+                onConfirm={modalConfig.onConfirm}
+                confirmText={modalConfig.confirmText}
+                cancelText={modalConfig.cancelText}
             >
                 {modalConfig.message}
             </Modal>

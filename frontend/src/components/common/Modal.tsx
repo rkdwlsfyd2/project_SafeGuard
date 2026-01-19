@@ -6,6 +6,7 @@ interface ModalProps {
     title: string;
     children: React.ReactNode;
     confirmText?: string;
+    cancelText?: string;
     onConfirm?: () => void;
 }
 
@@ -15,6 +16,7 @@ const Modal: React.FC<ModalProps> = ({
     title,
     children,
     confirmText = '확인',
+    cancelText,
     onConfirm
 }) => {
 
@@ -117,8 +119,29 @@ const Modal: React.FC<ModalProps> = ({
                     padding: '16px 24px',
                     backgroundColor: '#f8fafc',
                     display: 'flex',
-                    justifyContent: 'flex-end'
+                    justifyContent: 'flex-end',
+                    gap: '10px'
                 }}>
+                    {cancelText && (
+                        <button
+                            onClick={onClose}
+                            style={{
+                                padding: '10px 24px',
+                                backgroundColor: 'white',
+                                color: '#64748b',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '8px',
+                                fontSize: '0.95rem',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                        >
+                            {cancelText}
+                        </button>
+                    )}
                     <button
                         onClick={handleConfirm}
                         style={{

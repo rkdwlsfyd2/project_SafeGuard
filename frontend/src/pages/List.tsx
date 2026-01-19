@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { complaintsAPI } from '../utils/api';
 import StatusBadge from '../components/StatusBadge';
+import Modal from '../components/common/Modal';
 
 function List() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -24,6 +25,51 @@ function List() {
 
     // 검색 입력값 관리를 위한 로컬 상태
     const [searchInput, setSearchInput] = useState(search);
+
+    // 모달 상태
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        callback?: () => void;
+        onConfirm?: () => void;
+        confirmText?: string;
+        cancelText?: string;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+    });
+
+    const showAlert = (title: string, message: string, callback?: () => void) => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            callback,
+            onConfirm: undefined,
+            cancelText: undefined,
+            confirmText: '확인'
+        });
+    };
+
+    const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            onConfirm,
+            confirmText: '확인',
+            cancelText: '취소'
+        });
+    };
+
+    const closeModal = () => {
+        setModalConfig(prev => ({ ...prev, isOpen: false }));
+        if (modalConfig.callback) {
+            modalConfig.callback();
+        }
+    };
 
     useEffect(() => {
         fetchComplaints();
@@ -172,18 +218,15 @@ function List() {
 
     const handleDelete = async (e: React.MouseEvent, complaintNo: number) => {
         e.stopPropagation(); // Prevent row click navigation
-        if (!window.confirm('정말 이 민원을 삭제하시겠습니까? (삭제 후 복구 불가)')) {
-            return;
-        }
 
-        try {
-            await complaintsAPI.delete(complaintNo);
-            alert('민원이 삭제되었습니다.');
-            // Refresh list
-            fetchComplaints();
-        } catch (err: any) {
-            alert(err.message || '삭제 중 오류가 발생했습니다.');
-        }
+        showConfirm('삭제 확인', '정말 이 민원을 삭제하시겠습니까?\n삭제된 민원은 복구할 수 없습니다.', async () => {
+            try {
+                await complaintsAPI.delete(complaintNo);
+                showAlert('알림', '삭제가 완료되었습니다.', fetchComplaints);
+            } catch (err: any) {
+                showAlert('오류', err.message || '삭제 중 오류가 발생했습니다.');
+            }
+        });
     };
 
 
@@ -607,6 +650,17 @@ function List() {
                     )}
                 </div>
             </div>
+            {/* 공통 모달 적용 */}
+            <Modal
+                isOpen={modalConfig.isOpen}
+                onClose={closeModal}
+                title={modalConfig.title}
+                onConfirm={modalConfig.onConfirm}
+                confirmText={modalConfig.confirmText}
+                cancelText={modalConfig.cancelText}
+            >
+                {modalConfig.message}
+            </Modal>
         </div >
     );
 }
