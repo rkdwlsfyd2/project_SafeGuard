@@ -492,6 +492,9 @@ MOIS_SCORE_CAP_WHEN_NO_CONTEXT = 0.8
 CONFIDENCE_FLOOR = 0.45
 TOP1_TOP2_GAP_FLOOR = 0.40
 
+# 최소 검색 품질 기준 (이 점수보다 낮으면 '노이즈'로 간주하여 무시)
+MIN_VECTOR_SCORE_THRESHOLD = 0.63
+
 
 # ======================================================
 # 유틸리티 함수
@@ -653,6 +656,11 @@ def classify_complaint(user_query: str) -> dict:
 
         weight = 1.0
         score_value = float(r.get("score", 0.0))
+
+        # (0) 최소 품질 검증 (Vector 전용)
+        if rtype == "vector" and score_value < MIN_VECTOR_SCORE_THRESHOLD:
+            logger.info("  -> Skip low quality vector result (score: %.4f)", score_value)
+            continue
 
         # 검색 타입별 가중치 (Vector vs BM25)
         if rtype == "vector":
