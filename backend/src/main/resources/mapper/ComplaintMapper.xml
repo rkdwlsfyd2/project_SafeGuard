@@ -388,7 +388,7 @@
     <select id="selectComplaintStats" resultMap="StatsResultMap">
         SELECT
             COUNT(DISTINCT c.complaint_no) AS total,
-            COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CAST(NOW() AS DATE) THEN c.complaint_no END) AS today,
+            COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE THEN c.complaint_no END) AS today,
             COUNT(DISTINCT CASE WHEN c.status = 'UNPROCESSED' THEN c.complaint_no END) AS received,
             COUNT(DISTINCT CASE WHEN c.status = 'IN_PROGRESS' THEN c.complaint_no END) AS processing,
             COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' THEN c.complaint_no END) AS completed,
@@ -405,15 +405,15 @@
             COUNT(DISTINCT CASE 
                 WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') AND (
                     SELECT count(*) 
-                    FROM generate_series(c.created_date::date + 1, now()::date, '1 day') AS d 
+                    FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
                     WHERE extract(dow from d) NOT IN (0, 6)
                 ) > 3 THEN c.complaint_no 
             END) AS overdue,
             
             <!-- Summary Bar용 기간별 집계: 오늘/어제/이번달/지난달/올해/작년 데이터를 한 번에 조회 -->
             <!-- CASE WHEN 구문을 활용하여 조건부 카운팅 수행 (DB 접근 최소화) -->
-            COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CAST(NOW() AS DATE) THEN c.complaint_no END) AS todayCount,
-            COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CAST(NOW() - INTERVAL '1 day' AS DATE) THEN c.complaint_no END) AS yesterdayCount,
+            COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE THEN c.complaint_no END) AS todayCount,
+            COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE - INTERVAL '1 day' THEN c.complaint_no END) AS yesterdayCount,
             COUNT(DISTINCT CASE WHEN TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(NOW(), 'YYYY-MM') THEN c.complaint_no END) AS monthCount,
             COUNT(DISTINCT CASE WHEN TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(NOW() - INTERVAL '1 month', 'YYYY-MM') THEN c.complaint_no END) AS lastMonthCount,
             COUNT(DISTINCT CASE WHEN TO_CHAR(c.created_date, 'YYYY') = TO_CHAR(NOW(), 'YYYY') THEN c.complaint_no END) AS yearCount,
@@ -427,7 +427,11 @@
                 NULLIF(COUNT(DISTINCT CASE WHEN TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(NOW(), 'YYYY-MM') THEN c.complaint_no END), 0)) * 100, 1
             ), 0) AS completion_rate,
             COALESCE(ROUND(
-                (COUNT(DISTINCT CASE WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') AND (CURRENT_DATE - c.created_date::date) > 14 THEN c.complaint_no END)::numeric /
+                (COUNT(DISTINCT CASE WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') AND (
+                    SELECT count(*) 
+                    FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
+                    WHERE extract(dow from d) NOT IN (0, 6)
+                ) > 14 THEN c.complaint_no END)::numeric /
                 NULLIF(COUNT(DISTINCT CASE WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') THEN c.complaint_no END), 0)) * 100, 1
             ), 0) AS long_term_unprocessed_rate
         FROM complaint c
@@ -484,13 +488,13 @@
     <select id="selectCategoryStats" resultType="map">
         SELECT 
             category AS name, 
-            COUNT(*)::int AS value,
+            COUNT(DISTINCT c.complaint_no)::int AS value,
             COALESCE(ROUND(
                 (
-                    (SUM(CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE THEN 1 ELSE 0 END) - 
-                     SUM(CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE - INTERVAL '1 day' THEN 1 ELSE 0 END))::numeric
+                    (COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE THEN c.complaint_no END) - 
+                     COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE - INTERVAL '1 day' THEN c.complaint_no END))::numeric
                     / 
-                    NULLIF(SUM(CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE - INTERVAL '1 day' THEN 1 ELSE 0 END), 0)
+                    NULLIF(COUNT(DISTINCT CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE - INTERVAL '1 day' THEN c.complaint_no END), 0)
                 ) * 100, 1
             ), 0) AS change
         FROM complaint c
@@ -499,6 +503,7 @@
             <if test="agencyNo != null">
                 AND ca.agency_no = #{agencyNo}
             </if>
+            AND c.status != 'DELETED'
         </where>
         GROUP BY category
         ORDER BY value DESC
@@ -514,6 +519,7 @@
                         SELECT COUNT(*)::int 
                         FROM complaint c 
                         WHERE TO_CHAR(c.created_date, 'YYYY') = TO_CHAR(d, 'YYYY')
+                        AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -522,6 +528,7 @@
                         SELECT COUNT(*)::int 
                         FROM complaint c 
                         WHERE TO_CHAR(c.completed_date, 'YYYY') = TO_CHAR(d, 'YYYY')
+                        AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -557,6 +564,7 @@
                         SELECT COUNT(*)::int 
                         FROM complaint c 
                         WHERE TO_CHAR(c.created_date, 'MM-DD') = TO_CHAR(d, 'MM-DD')
+                        AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -565,6 +573,7 @@
                         SELECT COUNT(*)::int 
                         FROM complaint c 
                         WHERE TO_CHAR(c.completed_date, 'MM-DD') = TO_CHAR(d, 'MM-DD')
+                        AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -601,6 +610,7 @@
                         SELECT COUNT(*)::int 
                         FROM complaint c 
                         WHERE TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
+                        AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -609,6 +619,7 @@
                         SELECT COUNT(*)::int 
                         FROM complaint c 
                         WHERE TO_CHAR(c.completed_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
+                        AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -646,7 +657,7 @@
             SPLIT_PART(address, ' ', 2) AS name,
             COUNT(CASE WHEN status IN ('UNPROCESSED', 'IN_PROGRESS') THEN 1 END)::int AS count
         FROM complaint
-        WHERE address LIKE '서울특별시 %'
+        WHERE address IS NOT NULL
         GROUP BY SPLIT_PART(address, ' ', 2)
         ORDER BY count DESC
         LIMIT 10
@@ -657,10 +668,14 @@
         SELECT
             SPLIT_PART(address, ' ', 2) AS name,
             COUNT(*)::int AS count
-        FROM complaint
+        FROM complaint c
         WHERE status IN ('UNPROCESSED', 'IN_PROGRESS')
-          AND created_date &lt; (CURRENT_TIMESTAMP - INTERVAL '3 days')
-          AND address LIKE '서울특별시 %'
+          AND (
+                SELECT count(*) 
+                FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
+                WHERE extract(dow from d) NOT IN (0, 6)
+            ) > 3
+          AND address IS NOT NULL
         GROUP BY SPLIT_PART(address, ' ', 2)
         ORDER BY count DESC
         LIMIT 10
@@ -702,12 +717,19 @@
                 '미배정'
             ) AS agency,
             CONCAT(
-                EXTRACT(DAY FROM (CURRENT_TIMESTAMP - c.created_date)), '일 지연'
+                (
+                    SELECT count(*) 
+                    FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
+                    WHERE extract(dow from d) NOT IN (0, 6)
+                ), '일 지연 (영업일 기준)'
             ) AS overdueTime
         FROM complaint c
         WHERE c.status IN ('UNPROCESSED', 'IN_PROGRESS')
-          AND c.created_date &lt; (CURRENT_TIMESTAMP - INTERVAL '3 days')
-          AND c.address LIKE '서울특별시 %'
+          AND (
+                SELECT count(*) 
+                FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
+                WHERE extract(dow from d) NOT IN (0, 6)
+            ) > 3
         ORDER BY c.created_date ASC
         LIMIT 100
     </select>
