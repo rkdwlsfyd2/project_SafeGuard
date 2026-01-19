@@ -298,7 +298,7 @@ function ApplyText() {
             }
 
             const result = await complaintsAPI.create(submitData);
-            showAlert('접수 완료', `민원이 접수되었습니다. (접수번호: ${result.complaintNo})`, () => navigate('/list'));
+            showAlert('접수 완료', `민원이 접수되었습니다. (접수번호: ${result.complaintNo})`, () => navigate('/list', { state: { fromSubmission: true } }));
         } catch (err: any) {
             showAlert('오류', err.message);
         } finally {
