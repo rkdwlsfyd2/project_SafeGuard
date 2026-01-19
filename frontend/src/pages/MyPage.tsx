@@ -87,8 +87,46 @@ function MyPage() {
         }).open();
     };
 
+    // 휴대전화 번호 자동 포맷팅
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/[^0-9]/g, '');
+        let formatted = '';
+
+        if (value.length <= 3) {
+            formatted = value;
+        } else if (value.length <= 7) {
+            formatted = `${value.slice(0, 3)}-${value.slice(3)}`;
+        } else {
+            formatted = `${value.slice(0, 3)}-${value.slice(3, 7)}-${value.slice(7, 11)}`;
+        }
+
+        setEditData(prev => ({ ...prev, phone: formatted }));
+    };
+
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // 유효성 검사
+        if (!editData.name.trim()) {
+            showAlert('오류', '이름을 입력해주세요.');
+            return;
+        }
+        if (!editData.addr.trim()) {
+            showAlert('오류', '주소를 입력해주세요.');
+            return;
+        }
+        if (!editData.phone.trim()) {
+            showAlert('오류', '연락처를 입력해주세요.');
+            return;
+        }
+
+        // 휴대전화 유효성 검사
+        const phoneRegex = /^01(?:0|1|[6-9])-(?:\d{3}|\d{4})-\d{4}$/;
+        if (!phoneRegex.test(editData.phone)) {
+            showAlert('오류', '올바른 휴대전화 번호 형식이 아닙니다.\n(예: 010-1234-5678)');
+            return;
+        }
+
         try {
             await usersAPI.updateProfile(editData);
             showAlert('정보 수정', '정보가 성공적으로 수정되었습니다.');
@@ -400,7 +438,14 @@ function MyPage() {
                             </div>
                             <div style={inputGroupStyle}>
                                 <label style={inputLabelStyle}>연락처</label>
-                                <input type="text" value={editData.phone} onChange={e => setEditData({ ...editData, phone: e.target.value })} style={inputStyle} />
+                                <input
+                                    type="tel"
+                                    value={editData.phone}
+                                    onChange={handlePhoneChange}
+                                    placeholder="예: 010-1234-5678"
+                                    style={inputStyle}
+                                    maxLength={13}
+                                />
                             </div>
                             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                                 <button type="submit" style={primaryButtonStyle}>저장하기</button>

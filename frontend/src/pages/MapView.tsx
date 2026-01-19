@@ -248,6 +248,9 @@ function MapView() {
   // [추가] 필터링된 민원 목록 계산 (메모이제이션)
   const filteredLocations = useMemo(() => {
     return locations.filter(loc => {
+      // 0. 삭제된 민원 제외
+      if (loc.status === 'DELETED') return false;
+
       // 1. 기본 맵 필터 (완료 민원 표시 여부)
       if (!showCompleted && loc.status === 'COMPLETED') return false;
 
@@ -317,7 +320,7 @@ function MapView() {
 
     // 상태 필터링 및 이미지 설정
     const markers = locations
-      .filter((loc) => showCompleted ? true : loc.status !== 'COMPLETED')
+      .filter((loc) => loc.status !== 'DELETED' && (showCompleted ? true : loc.status !== 'COMPLETED'))
       .map((loc) => {
         const lat = Number(loc.lat);
         const lng = Number(loc.lng);
@@ -775,7 +778,7 @@ function MapView() {
           display: 'grid',
           gridTemplateColumns: '1fr 380px',
           gap: '24px',
-          marginTop: '-40px',
+          marginTop: '40px',
           position: 'relative',
           zIndex: 10
         }}>
@@ -785,7 +788,7 @@ function MapView() {
             borderRadius: '24px',
             overflow: 'hidden',
             boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-            height: '650px',
+            height: '1000px',
             position: 'relative'
           }}>
             <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }}>
@@ -1041,7 +1044,7 @@ function MapView() {
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            height: '650px'
+            height: '1000px'
           }}>
             <div style={{
               padding: '24px',
