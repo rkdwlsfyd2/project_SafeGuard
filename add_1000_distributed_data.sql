@@ -15,13 +15,13 @@ DECLARE
 BEGIN
     -- 랜덤 선택을 위한 사용자 및 기관 ID 목록 가져오기
     SELECT array_agg(user_no) INTO user_ids FROM app_user WHERE role = 'USER';
-    -- agency_name 컬럼 확인됨
-    SELECT array_agg(agency_no) INTO agency_ids FROM agency WHERE agency_name LIKE '%구청%';
+    -- agency_name 컬럼 확인됨 (Local Gov or Central)
+    SELECT array_agg(agency_no) INTO agency_ids FROM agency;
 
     -- 1,000건 루프 생성
     FOR i IN 1..1000 LOOP
-        -- 1. 날짜 결정: 최근 4년 내 랜덤 (과거 데이터 ~ 현재까지)
-        target_date := CURRENT_TIMESTAMP - (random() * interval '4 years');
+        -- 1. 날짜 결정: 최근 3년 내 랜덤 (과거 데이터 ~ 현재까지)
+        target_date := CURRENT_TIMESTAMP - (random() * interval '3 years');
         
         -- 2. SLA 준수 여부 결정 (약 87% 확률)
         is_sla_compliant := random() < 0.87;
@@ -58,8 +58,7 @@ BEGIN
             WHERE complaint_no = complaint_id;
         END IF;
 
-        -- 5. 기관 매핑 (자치구)
-        -- agency_ids가 비어있을 경우 고정값이나 예외 처리
+        -- 5. 기관 매핑 (랜덤)
         IF array_length(agency_ids, 1) > 0 THEN
             INSERT INTO complaint_agency (complaint_no, agency_no)
             VALUES (complaint_id, agency_ids[floor(random() * array_length(agency_ids, 1)) + 1]);
