@@ -154,8 +154,8 @@ frontend/src/
 | **UI Framework** | **React** | **v19.2.0** | Server Components 호환, 최신 렌더링 엔진 |
 | **Build Tool** | **Vite** | **v7.2.4** | ESModules 기반의 초고속 HMR 제공 |
 | **Styling** | **Tailwind CSS** | **v4.1.18** | Utility-first, Design Token 기반의 일관성 유지 |
-| **Charts** | **ApexCharts** | **v3.45** | 복잡한 인터랙션(Zoom, Pan, Tooltip) 내장 지원 |
-| **Icons** | **Lucide React** | **v0.3** | 1KB 미만의 경량 벡터 아이콘 |
+| **Charts** | **ApexCharts** | **v5.3.6** | 복잡한 인터랙션(Zoom, Pan, Tooltip) 내장 지원 |
+| **Icons** | **Lucide React** | **v0.562.0** | 1KB 미만의 경량 벡터 아이콘 |
 
 ### 4.2 Design System (TailAdmin Based)
 엔터프라이즈급 가독성을 위해 **TailAdmin**의 디자인 토큰을 커스터마이징하여 사용합니다.
