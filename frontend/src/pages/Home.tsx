@@ -2,7 +2,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getToken } from '../utils/api';
 
-function Home() {
+interface HomeProps {
+    showAlert: (title: string, message: string, callback?: () => void) => void;
+}
+
+function Home({ showAlert }: HomeProps) {
     const navigate = useNavigate();
     const [statsData, setStatsData] = React.useState({ total: 0, today: 0, processing: 0, completed: 0 });
     const [topLiked, setTopLiked] = React.useState([]);
@@ -156,8 +160,7 @@ function Home() {
                                 key={card.path}
                                 onClick={() => {
                                     if (!getToken()) {
-                                        alert('로그인이 필요합니다.');
-                                        navigate('/login');
+                                        showAlert('알림', '로그인이 필요합니다.', () => navigate('/login'));
                                     } else {
                                         navigate(card.path);
                                     }

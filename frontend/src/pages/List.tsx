@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { complaintsAPI } from '../utils/api';
 import StatusBadge from '../components/StatusBadge';
 import Modal from '../components/common/Modal';
@@ -7,6 +7,13 @@ import Modal from '../components/common/Modal';
 function List() {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.state?.fromSubmission) {
+            window.scrollTo(0, 0);
+        }
+    }, [location]);
 
     // URL 파라미터에서 초기값 읽기
     const page = parseInt(searchParams.get('page') || '1');

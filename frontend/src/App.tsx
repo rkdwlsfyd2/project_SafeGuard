@@ -171,7 +171,7 @@ function App() {
 
         {/* Page Routes */}
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home showAlert={showAlert} />} />
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

@@ -473,7 +473,7 @@ function ApplyVoice() {
 
             const res = await complaintsAPI.create(submitData);
 
-            showAlert('접수 완료', `음성 민원이 접수되었습니다. (접수번호: ${res.complaintNo})`, () => navigate('/list'));
+            showAlert('접수 완료', `음성 민원이 접수되었습니다. (접수번호: ${res.complaintNo})`, () => navigate('/list', { state: { fromSubmission: true } }));
         } catch (err: any) {
             showAlert('오류', err.message);
         } finally {

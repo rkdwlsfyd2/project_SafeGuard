@@ -252,6 +252,12 @@ function Register() {
             return;
         }
 
+        // 주소 유효성 검사 (필수)
+        if (!formData.addr) {
+            showAlert('오류', '주소를 입력해주세요.');
+            return;
+        }
+
         // 기관 선택 유효성 검사
         if ((userType === 'AGENCY_CENTRAL' || userType === 'AGENCY_LOCAL') && !formData.agencyNo) {
             showAlert('오류', '소속 기관을 선택해주세요.');
@@ -284,7 +290,9 @@ function Register() {
 
             // 회원가입 성공 모달 -> 확인 클릭 시 로그인 페이지로 이동
             showAlert('회원가입 성공', '회원가입이 완료되었습니다. 로그인해주세요.', () => {
-                navigate('/login');
+                showAlert('회원가입 성공', '회원가입이 완료되었습니다. 로그인해주세요.', () => {
+                    navigate('/login', { state: { fromRegistration: true } });
+                });
             });
         } catch (err: any) {
             console.error(err);

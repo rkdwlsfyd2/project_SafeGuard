@@ -8,7 +8,7 @@ function About() {
         <div className="about-page" style={{ padding: '60px 0', backgroundColor: '#F8FAFC' }}>
             <div className="container">
                 {/* Main Intro */}
-                <div style={{ backgroundColor: 'white', padding: '50px', borderRadius: '16px', boxShadow: '0 5px 25px rgba(0,0,0,0.05)', display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '40px', alignItems: 'center', marginBottom: '50px' }}>
+                <div style={{ backgroundColor: 'white', padding: '50px', borderRadius: '16px', boxShadow: '0 5px 25px rgba(0,0,0,0.05)', marginBottom: '50px' }}>
                     <div>
                         <h2 style={{ fontSize: '2.5rem', color: 'var(--primary-color)', marginBottom: '20px', fontWeight: '800' }}>모두의 민원이란?</h2>
                         <p style={{ fontSize: '1.1rem', color: '#555', marginBottom: '20px', lineHeight: '1.8' }}>
@@ -16,9 +16,7 @@ function About() {
                             복잡한 행정 구조를 국민이 이해할 필요 없이, 하나의 창구에서 민원을 접수하면 AI가 내용을 이해하고 분류하여 처리 흐름을 안내합니다.
                         </p>
                     </div>
-                    <div style={{ textAlign: 'center' }}>
-                        <img src="https://via.placeholder.com/300x200?text=Service+Illustration" alt="Illustration" style={{ maxWidth: '100%', borderRadius: '12px' }} />
-                    </div>
+
                 </div>
 
                 {/* Pain Points */}

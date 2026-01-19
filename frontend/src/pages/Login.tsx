@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authAPI } from '../utils/api';
 
 function Login() {
@@ -8,6 +8,14 @@ function Login() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // 회원가입 후 이동했을 때만 스크롤 최상단 이동
+    React.useEffect(() => {
+        if (location.state?.fromRegistration) {
+            window.scrollTo(0, 0);
+        }
+    }, [location]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

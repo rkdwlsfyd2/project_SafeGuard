@@ -244,7 +244,7 @@ function ApplyImage() {
             // 이미지는 이미 업로드되었으므로 file 파트는 보내지 않음 (null 처리 or 생략)
 
             const result = await complaintsAPI.create(submitData);
-            showAlert('접수 완료', `이미지 민원이 접수되었습니다. (접수번호: ${result.complaintNo})`, () => navigate('/list'));
+            showAlert('접수 완료', `이미지 민원이 접수되었습니다. (접수번호: ${result.complaintNo})`, () => navigate('/list', { state: { fromSubmission: true } }));
         } catch (err: any) {
             showAlert('오류', err.message);
         } finally {
