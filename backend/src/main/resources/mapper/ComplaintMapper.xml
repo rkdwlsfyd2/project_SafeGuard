@@ -23,11 +23,22 @@
             c.like_count AS likeCount,
             ca.agency_no AS agencyNo,
             a.agency_name AS agencyName,
-            a.region_code AS regionCode,
-            CASE 
-                WHEN a.agency_type = 'LOCAL' THEN a.agency_name
-                ELSE NULL
-            END AS regionName
+            (
+                SELECT a_reg.region_code
+                FROM complaint_agency ca_reg
+                JOIN agency a_reg ON ca_reg.agency_no = a_reg.agency_no
+                WHERE ca_reg.complaint_no = c.complaint_no AND a_reg.agency_type = 'LOCAL'
+                ORDER BY a_reg.agency_no ASC
+                LIMIT 1
+            ) AS regionCode,
+            (
+                SELECT a_reg.agency_name
+                FROM complaint_agency ca_reg
+                JOIN agency a_reg ON ca_reg.agency_no = a_reg.agency_no
+                WHERE ca_reg.complaint_no = c.complaint_no AND a_reg.agency_type = 'LOCAL'
+                ORDER BY a_reg.agency_no ASC
+                LIMIT 1
+            ) AS regionName
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
@@ -64,6 +75,8 @@
             c.category,
             c.status,
             c.created_date AS createdDate,
+            c.updated_date AS updatedDate,
+            c.completed_date AS completedDate,
             c.address,
             c.latitude,
             c.longitude,
@@ -91,7 +104,8 @@
                 ) THEN TRUE 
                 ELSE FALSE 
             END AS isAssignedToMe,
-            MAX(ca.agency_no) AS agencyNo,
+            MAX(ca.agency_no) AS agencyNo, -- Legacy support
+            STRING_AGG(CAST(ca.agency_no AS text), ',') AS assignedAgencyIdsStr,
             MAX(a.agency_name) AS agencyName,
             MAX(a.region_code) AS regionCode,
             MAX(CASE 
@@ -199,11 +213,22 @@
             c.like_count AS likeCount,
             MAX(ca.agency_no) AS agencyNo,
             MAX(a.agency_name) AS agencyName,
-            MAX(a.region_code) AS regionCode,
-            MAX(CASE 
-                WHEN a.agency_type = 'LOCAL' THEN a.agency_name
-                ELSE NULL
-            END) AS regionName
+            (
+                SELECT a_reg.region_code
+                FROM complaint_agency ca_reg
+                JOIN agency a_reg ON ca_reg.agency_no = a_reg.agency_no
+                WHERE ca_reg.complaint_no = c.complaint_no AND a_reg.agency_type = 'LOCAL'
+                ORDER BY a_reg.agency_no ASC
+                LIMIT 1
+            ) AS regionCode,
+            (
+                SELECT a_reg.agency_name
+                FROM complaint_agency ca_reg
+                JOIN agency a_reg ON ca_reg.agency_no = a_reg.agency_no
+                WHERE ca_reg.complaint_no = c.complaint_no AND a_reg.agency_type = 'LOCAL'
+                ORDER BY a_reg.agency_no ASC
+                LIMIT 1
+            ) AS regionName
         FROM complaint c
         LEFT JOIN complaint_agency ca
             ON c.complaint_no = ca.complaint_no
@@ -246,13 +271,15 @@
 
     <update id="updateStatus">
         UPDATE complaint
-        SET status = #{status}
+        SET status = #{status},
+            updated_date = CURRENT_TIMESTAMP
         WHERE complaint_no = #{complaintNo}
     </update>
 
     <update id="updateAnswer">
         UPDATE complaint
-        SET answer = #{answer}
+        SET answer = #{answer},
+            updated_date = CURRENT_TIMESTAMP
         WHERE complaint_no = #{complaintNo}
     </update>
 
@@ -453,9 +480,19 @@
         WHERE user_no = #{userNo}
     </delete>
 
-    <!-- 통계(카테고리별): 민원 카테고리별 건수 분포 조회 -->
+    <!-- 통계(카테고리별): 민원 카테고리별 건수 분포 및 전일 대비 증감률 조회 -->
     <select id="selectCategoryStats" resultType="map">
-        SELECT category AS name, COUNT(*)::int AS value
+        SELECT 
+            category AS name, 
+            COUNT(*)::int AS value,
+            COALESCE(ROUND(
+                (
+                    (SUM(CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE THEN 1 ELSE 0 END) - 
+                     SUM(CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE - INTERVAL '1 day' THEN 1 ELSE 0 END))::numeric
+                    / 
+                    NULLIF(SUM(CASE WHEN CAST(c.created_date AS DATE) = CURRENT_DATE - INTERVAL '1 day' THEN 1 ELSE 0 END), 0)
+                ) * 100, 1
+            ), 0) AS change
         FROM complaint c
         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
         <where>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { complaintsAPI, getToken, analyzeText } from '../utils/api';
+import Modal from '../components/common/Modal';
 
 const MAX_CONTENT_LENGTH = 1000;
 
@@ -24,8 +25,36 @@ function ApplyText() {
     const [loading, setLoading] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
     const [aiResult, setAiResult] = useState(null);
-    const [error, setError] = useState('');
     const [currentStep, setCurrentStep] = useState(1);
+
+    // 모달 상태 (Register.tsx 참조)
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        callback?: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        callback: undefined
+    });
+
+    const showAlert = (title: string, message: string, callback?: () => void) => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            callback
+        });
+    };
+
+    const closeModal = () => {
+        setModalConfig(prev => ({ ...prev, isOpen: false }));
+        if (modalConfig.callback) {
+            modalConfig.callback();
+        }
+    };
 
     // 카카오 지도 초기화
     useEffect(() => {
@@ -133,7 +162,7 @@ function ApplyText() {
         if (selectedFile) {
             // 1. 이미지 파일 검증
             if (!selectedFile.type.startsWith('image/')) {
-                alert("이미지 파일만 업로드 가능합니다.");
+                showAlert("알림", "이미지 파일만 업로드 가능합니다.");
                 if (fileInputRef.current) fileInputRef.current.value = '';
                 return;
             }
@@ -141,7 +170,7 @@ function ApplyText() {
             // 2. 용량 체크 (5MB)
             const MAX_SIZE = 5 * 1024 * 1024;
             if (selectedFile.size > MAX_SIZE) {
-                alert("이미지 용량은 5MB 이하만 업로드 가능합니다.");
+                showAlert("알림", "이미지 용량은 5MB 이하만 업로드 가능합니다.");
                 if (fileInputRef.current) fileInputRef.current.value = '';
                 return;
             }
@@ -186,7 +215,7 @@ function ApplyText() {
 
     const handleSearchAddress = () => {
         if (!window.daum || !window.daum.Postcode) {
-            alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            showAlert('알림', '주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
             return;
         }
 
@@ -216,13 +245,12 @@ function ApplyText() {
 
     const handleAnalyze = async () => {
         if (!formData.content || formData.content.length < 8) {
-            alert('민원 내용을 8자 이상 입력해주세요.');
+            showAlert('알림', '민원 내용을 8자 이상 입력해주세요.');
             return;
         }
 
 
         setAnalyzing(true);
-        setError(''); // Clear previous errors
         try {
             const result = await analyzeText(formData.content);
             setAiResult(result);
@@ -230,7 +258,7 @@ function ApplyText() {
 
 
         } catch (err: any) {
-            alert('AI 분석에 실패했습니다: ' + err.message);
+            showAlert('오류', 'AI 분석에 실패했습니다: ' + err.message);
         } finally {
             setAnalyzing(false);
         }
@@ -239,16 +267,19 @@ function ApplyText() {
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!getToken()) {
-            alert('로그인이 필요합니다.');
-            navigate('/login');
+            showAlert('알림', '로그인이 필요합니다.', () => navigate('/login'));
             return;
         }
         if (!formData.title || !formData.content) {
-            setError('제목과 내용을 입력해주세요.');
+            showAlert('알림', '제목과 내용을 입력해주세요.');
+            return;
+        }
+
+        if (!aiResult) {
+            showAlert('알림', 'AI 분석을 진행해주세요.');
             return;
         }
         setLoading(true);
-        setError('');
         try {
             const complaintData = {
                 category: aiResult?.category ?? '기타',
@@ -267,10 +298,9 @@ function ApplyText() {
             }
 
             const result = await complaintsAPI.create(submitData);
-            alert(`민원이 접수되었습니다. (접수번호: ${result.complaintNo})`);
-            navigate('/list');
+            showAlert('접수 완료', `민원이 접수되었습니다. (접수번호: ${result.complaintNo})`, () => navigate('/list'));
         } catch (err: any) {
-            setError(err.message);
+            showAlert('오류', err.message);
         } finally {
             setLoading(false);
         }
@@ -367,19 +397,6 @@ function ApplyText() {
                         </div>
 
                         <form onSubmit={handleSubmit} style={{ padding: '30px' }}>
-                            {error && (
-                                <div style={{
-                                    padding: '14px 18px',
-                                    backgroundColor: '#fef2f2',
-                                    border: '1px solid #fecaca',
-                                    borderRadius: '12px',
-                                    color: '#dc2626',
-                                    marginBottom: '20px',
-                                    fontSize: '0.9rem'
-                                }}>
-                                    ⚠️ {error}
-                                </div>
-                            )}
 
                             {/* 제목 입력 */}
                             <div style={{ marginBottom: '24px' }}>
@@ -748,6 +765,15 @@ function ApplyText() {
                     </div>
                 </div>
             </div>
+
+            {/* 공통 모달 적용 */}
+            <Modal
+                isOpen={modalConfig.isOpen}
+                onClose={closeModal}
+                title={modalConfig.title}
+            >
+                {modalConfig.message}
+            </Modal>
         </div>
     );
 }

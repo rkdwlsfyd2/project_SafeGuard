@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { complaintsAPI } from '../utils/api';
+import StatusBadge from '../components/StatusBadge';
 
 function List() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -102,38 +103,71 @@ function List() {
         setSearchParams({ page: String(newPage), search, category, status: statusParams, region: regionParams, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
-    const downloadExcel = () => {
-        if (complaints.length === 0) {
-            alert('데이터가 없습니다.');
-            return;
+    const downloadExcel = async () => {
+        try {
+            // Detect admin mode from URL
+            const isAdminPath = window.location.pathname.startsWith('/admin');
+            const role = localStorage.getItem('role');
+            const agencyNo = localStorage.getItem('agencyNo');
+
+            // 엑셀 다운로드용 파라미터 (현재 필터 조건 유지, limit은 전체 조회용으로 크게 설정)
+            const params: any = {
+                page: 1,
+                limit: 1000000,
+                search,
+                category,
+                status: statusParams,
+                sort,
+                order,
+                adminMode: isAdminPath,
+                myAgencyOnly
+            };
+
+            if (regionParams && regionParams !== '전체') {
+                params.region = regionParams;
+            }
+
+            if (isAdminPath && role === 'AGENCY' && agencyNo) {
+                params.agencyNo = agencyNo;
+            }
+
+            const data = await complaintsAPI.getList(params);
+            const allComplaints = data.complaints;
+
+            if (!allComplaints || allComplaints.length === 0) {
+                alert('데이터가 없습니다.');
+                return;
+            }
+
+            // CSV Header
+            const headers = ['민원번호', '제목', '카테고리', '지역', '상태', '작성일', '좋아요'];
+            const rows = allComplaints.map((c: any) => [
+                c.complaintNo,
+                `"${c.title.replace(/"/g, '""')}"`, // Escape quotes
+                c.category,
+                c.regionName || '-',
+                c.status,
+                formatDate(c.createdDate),
+                c.likeCount
+            ]);
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map((row: any[]) => row.join(','))
+            ].join('\n');
+
+            // Add BOM for Excel UTF-8 compatibility
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `complaints_export_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err: any) {
+            alert('엑셀 다운로드 중 오류가 발생했습니다: ' + err.message);
         }
-
-        // CSV Header
-        const headers = ['민원번호', '제목', '카테고리', '지역', '상태', '작성일', '좋아요'];
-        const rows = complaints.map((c: any) => [
-            c.complaintNo,
-            `"${c.title.replace(/"/g, '""')}"`, // Escape quotes
-            c.category,
-            c.regionName || '-',
-            c.status,
-            formatDate(c.createdDate),
-            c.likeCount
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.join(','))
-        ].join('\n');
-
-        // Add BOM for Excel UTF-8 compatibility
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `complaints_export_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     };
 
     const handleDelete = async (e: React.MouseEvent, complaintNo: number) => {
@@ -152,28 +186,7 @@ function List() {
         }
     };
 
-    const getStatusBadge = (status: any) => {
-        const statusMap: any = {
-            'UNPROCESSED': { text: '미처리', bg: '#fee2e2', color: '#dc2626' }, // 빨간색
-            'IN_PROGRESS': { text: '처리중', bg: '#fef3c7', color: '#d97706' }, // 노란색
-            'COMPLETED': { text: '처리완료', bg: '#dcfce7', color: '#16a34a' },
-            'REJECTED': { text: '반려', bg: '#f1f5f9', color: '#64748b' },
-            'CANCELLED': { text: '취소', bg: '#f1f5f9', color: '#64748b' }
-        };
-        const s = statusMap[status] || { text: status, bg: '#f1f5f9', color: '#64748b' };
-        return (
-            <span style={{
-                padding: '6px 12px',
-                borderRadius: '20px',
-                fontSize: '0.8rem',
-                fontWeight: '600',
-                backgroundColor: s.bg,
-                color: s.color
-            }}>
-                {s.text}
-            </span>
-        );
-    };
+
 
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('ko-KR', {
@@ -460,7 +473,7 @@ function List() {
                                     {complaints.map((c) => (
                                         <tr
                                             key={c.complaintNo}
-                                            onClick={() => navigate(`/reports/${c.complaintNo}`)}
+                                            onClick={() => navigate(`/reports/${c.complaintNo}`, { state: { searchParams: searchParams.toString() } })}
                                             style={{
                                                 cursor: 'pointer',
                                                 transition: 'background-color 0.2s'
@@ -498,7 +511,9 @@ function List() {
                                                         cursor: c.regionCode ? 'pointer' : 'default'
                                                     }}>{c.regionName || ''}</span>
                                             </td>
-                                            <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>{getStatusBadge(c.status)}</td>
+                                            <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>
+                                                <StatusBadge status={c.status} size="small" />
+                                            </td>
                                             <td style={{ padding: '18px 20px', color: '#94a3b8', fontSize: '0.9rem', borderBottom: '1px solid #f1f5f9' }}>{formatDate(c.createdDate)}</td>
                                             <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>
                                                 <span style={{ color: '#ef4444', fontWeight: '600' }}>❤️ {c.likeCount}</span>

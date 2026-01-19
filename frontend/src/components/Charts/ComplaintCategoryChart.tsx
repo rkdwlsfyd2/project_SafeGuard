@@ -36,7 +36,7 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                     const transformed = data.categoryStats.map((d: any, i: number) => ({
                         name: d.name,
                         value: d.value,
-                        change: Number((Math.random() * 20 - 10).toFixed(1)), // 더미 증감율 유지 (데모용)
+                        change: d.change || 0, // 백엔드에서 제공하는 change 값 사용 (없으면 0)
                         rank: i + 1
                     }));
 

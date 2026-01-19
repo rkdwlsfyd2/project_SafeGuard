@@ -15,6 +15,7 @@ import FindAccount from './pages/FindAccount';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import Modal from './components/common/Modal'; // Modal Import
 import { agenciesAPI } from './utils/api';
 import './index.css';
 
@@ -23,6 +24,35 @@ function App() {
   const [role, setRole] = useState(localStorage.getItem('role') || 'USER');
   const [agencyName, setAgencyName] = useState('');
   const [title, setTitle] = useState('모두의 민원');
+
+  // 모달 상태
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    callback?: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    callback: undefined
+  });
+
+  const showAlert = (title: string, message: string, callback?: () => void) => {
+    setModalConfig({
+      isOpen: true,
+      title,
+      message,
+      callback
+    });
+  };
+
+  const closeModal = () => {
+    setModalConfig(prev => ({ ...prev, isOpen: false }));
+    if (modalConfig.callback) {
+      modalConfig.callback();
+    }
+  };
 
   // localStorage 변경을 다른 탭/창에서도 반영 (선택사항이지만 유용)
   useEffect(() => {
@@ -111,14 +141,14 @@ function App() {
               <ul className="nav__list">
                 {isAdminUser ? (
                   <>
+                    <li className="nav__item"><Link to="/admin/dashboard">대시보드(관리자)</Link></li>
                     <li className="nav__item"><Link to="/admin/list">민원 목록(관리자)</Link></li>
                     <li className="nav__item"><Link to="/admin/map">신고현황 지도(관리자)</Link></li>
-                    <li className="nav__item"><Link to="/admin/dashboard">대시보드(관리자)</Link></li>
                   </>
                 ) : (
                   <>
                     <li className="nav__item nav-dropdown">
-                      <span onClick={() => { if (!token) { alert('로그인이 필요한 서비스입니다.'); window.location.href = '/login'; } }} style={{ cursor: 'pointer' }}>
+                      <span onClick={() => { if (!token) { showAlert('알림', '로그인이 필요한 서비스입니다.', () => window.location.href = '/login'); } }} style={{ cursor: 'pointer' }}>
                         민원접수 ▾
                       </span>
                       {token && (
@@ -175,8 +205,18 @@ function App() {
             &copy; {new Date().getFullYear()} 모두의 민원. All rights reserved.
           </div>
         </footer>
-      </div>
-    </Router>
+
+
+        {/* 공통 모달 적용 */}
+        <Modal
+          isOpen={modalConfig.isOpen}
+          onClose={closeModal}
+          title={modalConfig.title}
+        >
+          {modalConfig.message}
+        </Modal>
+      </div >
+    </Router >
   );
 }
 

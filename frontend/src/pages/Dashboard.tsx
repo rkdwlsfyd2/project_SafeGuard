@@ -150,7 +150,7 @@ const Dashboard = () => {
             .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
           `}</style>
             <div className="dash-container">
-                {/* 상단 타이틀 및 필터 */}+
+                {/* 상단 타이틀 및 필터 */}
                 <div className="dash-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <h1 className="dash-title">관리자 대시보드</h1>

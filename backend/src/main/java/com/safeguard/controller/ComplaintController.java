@@ -3,7 +3,6 @@ package com.safeguard.controller;
 import com.safeguard.dto.ComplaintDTO;
 import com.safeguard.dto.ComplaintStatsDTO;
 import com.safeguard.dto.UserDTO;
-import com.safeguard.enums.ComplaintStatus;
 import com.safeguard.enums.UserRole;
 import com.safeguard.mapper.ComplaintMapper;
 import com.safeguard.mapper.UserMapper;
@@ -196,15 +195,31 @@ public class ComplaintController {
 
     /**
      * 민원 처리 상태 변경 (관리자 전용)
+     * - 담당 기관(AGENCY) 관리자만 변경 가능 (403 Check)
      */
     @PatchMapping("/{id}/status")
     public ResponseEntity<Map<String, String>> updateStatus(
             @PathVariable Long id,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserDTO user = userMapper.findByUserId(userDetails.getUsername())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+
         try {
-            ComplaintStatus status = ComplaintStatus.valueOf(body.get("status"));
-            complaintMapper.updateStatus(id, status.name());
+            complaintService.updateComplaintStatus(id, user.getUserNo(),
+                    (user.getRole() != null) ? user.getRole().name() : null,
+                    user.getAgencyNo(),
+                    body.get("status"));
             return ResponseEntity.ok(Map.of("message", "Status updated"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status"));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getReason()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", "Update failed: " + e.getMessage()));
         }
@@ -212,14 +227,29 @@ public class ComplaintController {
 
     /**
      * 민원 답변 등록 및 수정
+     * - 담당 기관(AGENCY) 관리자만 변경 가능 (403 Check)
      */
     @PatchMapping("/{id}/answer")
     public ResponseEntity<Map<String, String>> updateAnswer(
             @PathVariable Long id,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserDTO user = userMapper.findByUserId(userDetails.getUsername())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+
         try {
-            complaintMapper.updateAnswer(id, body.get("answer"));
+            complaintService.updateComplaintAnswer(id, user.getUserNo(),
+                    (user.getRole() != null) ? user.getRole().name() : null,
+                    user.getAgencyNo(),
+                    body.get("answer"));
             return ResponseEntity.ok(Map.of("message", "Answer updated"));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getReason()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", "Update failed: " + e.getMessage()));
         }

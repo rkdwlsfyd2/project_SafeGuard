@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { authAPI } from '../utils/api';
+import Modal from '../components/common/Modal';
 
 function ResetPassword() {
     const navigate = useNavigate();
@@ -11,8 +12,36 @@ function ResetPassword() {
 
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // 모달 상태
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        callback?: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        callback: undefined
+    });
+
+    const showAlert = (title: string, message: string, callback?: () => void) => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            callback
+        });
+    };
+
+    const closeModal = () => {
+        setModalConfig(prev => ({ ...prev, isOpen: false }));
+        if (modalConfig.callback) {
+            modalConfig.callback();
+        }
+    };
 
     // Redirect if direct access without state
     if (!userId || !phone || !birthDate) { // birthDate 체크 추가
@@ -28,24 +57,33 @@ function ResetPassword() {
         e.preventDefault();
 
         if (newPassword !== confirmPassword) {
-            setError('비밀번호가 일치하지 않습니다.');
+            showAlert('오류', '비밀번호가 일치하지 않습니다.');
             return;
         }
 
-        if (newPassword.length < 4) {
-            setError('비밀번호는 4자 이상이어야 합니다.');
+        if (newPassword.length < 8) {
+            showAlert('오류', '비밀번호는 8자 이상이어야 합니다.');
+            return;
+        }
+
+        if (newPassword.includes(' ')) {
+            showAlert('오류', '비밀번호에 공백을 포함할 수 없습니다.');
+            return;
+        }
+
+        const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+        if (!specialCharRegex.test(newPassword)) {
+            showAlert('오류', '비밀번호는 특수문자를 최소 1개 이상 포함해야 합니다.');
             return;
         }
 
         setLoading(true);
-        setError('');
 
         try {
             await authAPI.updatePassword({ userId, phone, newPassword, birthDate });
-            alert('비밀번호가 성공적으로 변경되었습니다. 다시 로그인해 주세요.');
-            navigate('/login');
+            showAlert('변경 완료', '비밀번호가 성공적으로 변경되었습니다. 다시 로그인해 주세요.', () => navigate('/login'));
         } catch (err) {
-            setError(err.message);
+            showAlert('오류', err.message);
         } finally {
             setLoading(false);
         }
@@ -101,20 +139,7 @@ function ResetPassword() {
                 </div>
 
                 <div style={{ padding: '30px 40px 40px' }}>
-                    {error && (
-                        <div style={{
-                            padding: '14px 18px',
-                            backgroundColor: '#fef2f2',
-                            border: '1px solid #fecaca',
-                            borderRadius: '12px',
-                            color: '#dc2626',
-                            marginBottom: '20px',
-                            fontSize: '0.9rem',
-                            textAlign: 'center'
-                        }}>
-                            ⚠️ {error}
-                        </div>
-                    )}
+
 
                     <form onSubmit={handleSubmit}>
                         <div style={{ marginBottom: '20px' }}>
@@ -160,6 +185,15 @@ function ResetPassword() {
                     </form>
                 </div>
             </div>
+
+            {/* 공통 모달 적용 */}
+            <Modal
+                isOpen={modalConfig.isOpen}
+                onClose={closeModal}
+                title={modalConfig.title}
+            >
+                {modalConfig.message}
+            </Modal>
         </div>
     );
 }

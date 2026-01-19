@@ -1,6 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { complaintsAPI, authAPI } from '../utils/api';
+import StatusBadge from '../components/StatusBadge';
+import Modal from '../components/common/Modal'; // Modal Import
+import { STATUS_STYLES } from '../utils/statusStyles';
+
+const ImageDisplay = ({ src }: { src?: string | null }) => {
+    const [imgError, setImgError] = useState(false);
+
+    if (!src || imgError) {
+        return (
+            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', backgroundColor: '#f8fafc' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.5 }}>📸</div>
+                <span style={{ fontSize: '1rem', fontWeight: '500', color: '#64748b' }}>
+                    {src ? '이미지를 불러올 수 없습니다' : '등록된 이미지가 없습니다'}
+                </span>
+            </div>
+        );
+    }
+
+    return (
+        <img
+            src={src}
+            alt="현장 사진"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={() => setImgError(true)}
+        />
+    );
+};
 
 function Detail() {
     const { id } = useParams();
@@ -11,7 +38,36 @@ function Detail() {
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(true);
-    const [accessDenied, setAccessDenied] = useState(false); // New state for explicit private handling if needed
+    const [accessDenied, setAccessDenied] = useState(false);
+
+    // 모달 상태
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        callback?: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        callback: undefined
+    });
+
+    const showAlert = (title: string, message: string, callback?: () => void) => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            callback
+        });
+    };
+
+    const closeModal = () => {
+        setModalConfig(prev => ({ ...prev, isOpen: false }));
+        if (modalConfig.callback) {
+            modalConfig.callback();
+        }
+    };
 
     const fetchDetail = async () => {
         try {
@@ -49,9 +105,9 @@ function Detail() {
         try {
             await complaintsAPI.updateStatus(id, newStatus);
             setReport(prev => ({ ...prev, status: newStatus }));
-            alert('상태가 변경되었습니다.');
+            showAlert('알림', '상태가 변경되었습니다.');
         } catch (err) {
-            alert(err.message);
+            showAlert('오류', err.message);
         }
     };
 
@@ -61,17 +117,16 @@ function Detail() {
             await complaintsAPI.updateAnswer(id, answerText);
             setReport(prev => ({ ...prev, answer: answerText }));
             setIsEditing(false); // Exit edit mode
-            alert('답변이 등록되었습니다.');
+            showAlert('알림', '답변이 등록되었습니다.');
         } catch (err) {
-            alert(err.message);
+            showAlert('오류', err.message);
         }
     };
 
     const handleReaction = async (type) => {
         const token = localStorage.getItem('token');
         if (!token) {
-            alert('로그인이 필요한 서비스입니다.');
-            navigate('/login');
+            showAlert('알림', '로그인이 필요한 서비스입니다.', () => navigate('/login'));
             return;
         }
 
@@ -89,10 +144,10 @@ function Detail() {
             }));
         } catch (err) {
             if (err.message && err.message.includes('본인 글')) {
-                alert('본인 글에는 반응할 수 없습니다.');
+                showAlert('알림', '본인 글에는 반응할 수 없습니다.');
             } else {
                 console.error('Failed to update reaction:', err);
-                alert('처리 실패');
+                showAlert('오류', '처리 실패');
             }
         }
     };
@@ -105,6 +160,17 @@ function Detail() {
         return <div className="container" style={{ padding: '100px', textAlign: 'center' }}>게시물을 찾을 수 없습니다.</div>;
     }
 
+    const location = useLocation();
+
+    const handleBack = () => {
+        const prevParams = location.state?.searchParams;
+        if (prevParams) {
+            navigate(`/list?${prevParams}`);
+        } else {
+            navigate('/list');
+        }
+    };
+
     // [Strict Access Control] 비공개 게시물 처리
     if (report.message === "비공개된 게시물입니다") {
         return (
@@ -115,7 +181,7 @@ function Detail() {
                     작성자와 담당 기관 관계자만 열람할 수 있습니다.
                 </p>
                 <button
-                    onClick={() => navigate('/list')}
+                    onClick={handleBack}
                     style={{
                         marginTop: '30px',
                         padding: '10px 20px',
@@ -132,13 +198,7 @@ function Detail() {
         );
     }
 
-    const statusMap = {
-        'UNPROCESSED': '미처리',
-        'IN_PROGRESS': '처리중',
-        'COMPLETED': '처리완료',
-        'REJECTED': '반려',
-        'CANCELLED': '취소'
-    };
+
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
@@ -147,6 +207,26 @@ function Detail() {
             month: '2-digit',
             day: '2-digit'
         });
+    };
+
+    const formatDateTime = (dateString: string) => {
+        if (!dateString) return '-';
+        const d = new Date(dateString);
+
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+
+        const hours24 = d.getHours();
+        const isPM = hours24 >= 12;
+        const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+
+        const minutes = d.getMinutes();
+        const seconds = d.getSeconds();
+
+        const ampm = isPM ? '오후' : '오전';
+
+        return `${yyyy}. ${mm}. ${dd} ${ampm} ${hours12}시 ${minutes}분 ${seconds}초`;
     };
 
     const steps = [
@@ -159,21 +239,7 @@ function Detail() {
     const currentIndex = Math.max(statusOrder.indexOf(report.status), 0);
     const progressPercent = (currentIndex / (statusOrder.length - 1)) * 100;
 
-    const getStepStyle = (index) => {
-        const isActive = index <= currentIndex;
-        return {
-            width: '56px',
-            height: '56px',
-            borderRadius: '16px',
-            background: isActive ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' : '#e2e8f0',
-            color: isActive ? 'white' : '#94a3b8',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.4rem',
-            boxShadow: isActive ? '0 10px 24px rgba(99, 102, 241, 0.3)' : 'none'
-        };
-    };
+
 
     const maskName = (name: string) => {
         if (!name) return '';
@@ -184,6 +250,22 @@ function Detail() {
         return name[0] + '*' + name[name.length - 1];
     };
 
+    // 🔍 [Debug] 권한 디버깅 (추측 금지, 실제 값 확인)
+    console.log('=== Permission Debug ===');
+    console.log('user.role:', user?.role);
+    console.log('user.agencyNo:', user?.agencyNo);
+    console.log('localStorage.agencyNo:', localStorage.getItem('agencyNo'));
+    console.log('report:', report);
+    console.log('report.agencyNo:', report?.agency);
+    console.log('report.assignedAgencyNo:', report?.assignedAgencyNo); // 필드 확인 필요
+    console.log('report.assignedAgencyText:', report?.assignedAgencyText);
+
+    const myAgencyNo = Number(user?.agencyNo ?? localStorage.getItem('agencyNo'));
+    const myRole = user?.role || localStorage.getItem('role');
+
+    // 🎯 [Strict] 권한 판단: 백엔드에서 계산된 isAssignedToMe 사용
+    const isAssignedAgencyAdmin = (myRole === 'AGENCY') && (report?.isAssignedToMe === true);
+
     return (
         <div className="detail-page" style={{ padding: '40px 0', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
             <div className="container" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 20px' }}>
@@ -191,7 +273,7 @@ function Detail() {
                 <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#64748b' }}>
                     <span style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>홈</span>
                     <span>&gt;</span>
-                    <span style={{ cursor: 'pointer' }} onClick={() => navigate('/list')}>민원 목록</span>
+                    <span style={{ cursor: 'pointer' }} onClick={handleBack}>민원 목록</span>
                     <span>&gt;</span>
                     <span style={{ color: 'var(--primary-color)', fontWeight: '600' }}>상세 보기</span>
                 </div>
@@ -205,16 +287,7 @@ function Detail() {
                         {/* LEFT: Info Block */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                                <span style={{
-                                    padding: '4px 10px',
-                                    borderRadius: '6px',
-                                    backgroundColor: report.status === 'COMPLETED' ? '#dcfce7' : '#e0e7ff',
-                                    color: report.status === 'COMPLETED' ? '#166534' : '#4338ca',
-                                    fontSize: '0.8rem',
-                                    fontWeight: '700'
-                                }}>
-                                    {statusMap[report.status] || report.status}
-                                </span>
+                                <StatusBadge status={report.status} style={{ fontSize: '0.85rem' }} />
                                 <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No. {report.complaintNo}</span>
                             </div>
 
@@ -320,16 +393,15 @@ function Detail() {
                                 <span style={{ fontSize: '0.75rem', fontWeight: '700' }}>{report.dislikeCount || 0}</span>
                             </button>
 
-                            {user && user.role === 'AGENCY' && String(report.agencyNo) === String(user.agencyNo) && (
+                            {isAssignedAgencyAdmin && (
                                 <button
                                     onClick={async () => {
                                         if (window.confirm('정말 삭제하시겠습니까? (복구 불가)')) {
                                             try {
                                                 await complaintsAPI.delete(id);
-                                                alert('삭제되었습니다.');
-                                                navigate('/list');
+                                                showAlert('알림', '삭제되었습니다.', handleBack);
                                             } catch (err: any) {
-                                                alert(err.message || '삭제 실패');
+                                                showAlert('오류', err.message || '삭제 실패');
                                             }
                                         }
                                     }}
@@ -381,9 +453,10 @@ function Detail() {
                                     {steps.map((step, index) => {
                                         const isActive = index <= currentIndex;
                                         const isCurrent = index === currentIndex;
-                                        // 권한 체크: AGENCY 회원이고, 민원의 담당 기관 번호와 일치하는 경우에만 버튼 활성화
-                                        const canChangeStatus = user && user.role === 'AGENCY' && String(report.agencyNo) === String(user.agencyNo);
 
+
+
+                                        const stepStyle = STATUS_STYLES[step.key];
                                         return (
                                             <div
                                                 key={step.key}
@@ -393,15 +466,15 @@ function Detail() {
                                                     width: '56px',
                                                     height: '56px',
                                                     borderRadius: '50%',
-                                                    backgroundColor: isActive ? 'white' : '#f8fafc',
-                                                    border: isCurrent ? '3px solid #6366f1' : (isActive ? '2px solid #6366f1' : '2px solid #e2e8f0'),
-                                                    color: isActive ? '#6366f1' : '#94a3b8',
+                                                    backgroundColor: isActive ? stepStyle.bg : '#f8fafc',
+                                                    border: isCurrent ? `3px solid ${stepStyle.color}` : (isActive ? `2px solid ${stepStyle.color}` : '2px solid #e2e8f0'),
+                                                    color: isActive ? stepStyle.color : '#94a3b8',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     fontSize: '1.5rem',
                                                     margin: '0 auto 12px',
-                                                    boxShadow: isCurrent ? '0 0 0 4px rgba(99, 102, 241, 0.2), 0 4px 6px rgba(0,0,0,0.1)' : 'none',
+                                                    boxShadow: isCurrent ? `0 0 0 4px ${stepStyle.bg}, 0 4px 6px rgba(0,0,0,0.1)` : 'none',
                                                     transform: isCurrent ? 'scale(1.1)' : 'scale(1)',
                                                     opacity: isActive ? 1 : 0.6,
                                                     transition: 'all 0.3s ease'
@@ -416,7 +489,8 @@ function Detail() {
                                                 }}>
                                                     {step.label}
                                                 </div>
-                                                {canChangeStatus && !isCurrent && (
+                                                {/* 1️⃣ 상태 변경 기능 차단: isAssignedAgencyAdmin일 때만 렌더링 */}
+                                                {isAssignedAgencyAdmin && !isCurrent && (
                                                     <button
                                                         onClick={() => handleStatusChange(step.key)}
                                                         style={{
@@ -446,15 +520,8 @@ function Detail() {
 
                         {/* Complaint Content Grid */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '40px', marginBottom: '60px' }}>
-                            <div style={{ width: '100%', aspectRatio: '4/3', backgroundColor: '#f8fafc', borderRadius: '16px', overflow: 'hidden', border: '1px solid #f1f5f9' }}>
-                                {report.imagePath ? (
-                                    <img src={report.imagePath} alt="현장 사진" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : (
-                                    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
-                                        <span style={{ fontSize: '2rem', marginBottom: '10px' }}>📷</span>
-                                        <span>등록된 이미지가 없습니다</span>
-                                    </div>
-                                )}
+                            <div style={{ width: '100%', aspectRatio: '4/3', backgroundColor: '#f8fafc', borderRadius: '16px', overflow: 'hidden', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <ImageDisplay src={report.imagePath} />
                             </div>
 
                             <div>
@@ -478,7 +545,8 @@ function Detail() {
                         <div>
                             <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '16px', color: '#1e293b', paddingLeft: '12px', borderLeft: '4px solid #22c55e' }}>담당자 답변</h3>
 
-                            {user && user.role === 'AGENCY' && String(report.agencyNo) === String(user.agencyNo) ? (
+                            {/* 2️⃣ 담당자 답변 기능 차단: isAssignedAgencyAdmin일 때만 렌더링 */}
+                            {isAssignedAgencyAdmin ? (
                                 (!report.answer || isEditing) ? (
                                     <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                                         <div style={{ marginBottom: '12px', fontWeight: '600', color: '#475569' }}>답변 작성</div>
@@ -534,7 +602,7 @@ function Detail() {
                                             {report.answer}
                                         </div>
                                         <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px dashed #bbf7d0', fontSize: '0.9rem', color: '#64748b' }}>
-                                            담당자: {user?.name || '관리자'} | 처리일시: {formatDate(new Date().toISOString())} {/* 실제로는 답변 시간을 DB에 저장해야 함 */}
+                                            담당자: {report.agencyName || '관리자'} | 처리일시: {formatDateTime(report.updatedDate || report.completedDate || report.createdDate)}
                                         </div>
                                     </div>
                                 )
@@ -557,9 +625,19 @@ function Detail() {
                                         </>
                                     ) : (
                                         <div style={{ color: '#94a3b8' }}>
-                                            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⏳</div>
-                                            <p style={{ fontSize: '1.1rem', fontWeight: '500' }}>아직 답변이 등록되지 않았습니다.</p>
-                                            <p style={{ fontSize: '0.9rem' }}>담당자가 내용을 확인 후 빠른 시일 내에 답변해 드리겠습니다.</p>
+                                            {myRole === 'AGENCY' && !isAssignedAgencyAdmin ? (
+                                                <>
+                                                    <div style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.5 }}>🚫</div>
+                                                    <p style={{ fontSize: '1.1rem', fontWeight: '500', color: '#64748b' }}>담당 기관만 답변을 등록할 수 있습니다.</p>
+                                                    <p style={{ fontSize: '0.9rem', marginTop: '4px' }}>이 민원은 귀 기관의 담당 민원이 아닙니다.</p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⏳</div>
+                                                    <p style={{ fontSize: '1.1rem', fontWeight: '500' }}>아직 답변이 등록되지 않았습니다.</p>
+                                                    <p style={{ fontSize: '0.9rem' }}>담당자가 내용을 확인 후 빠른 시일 내에 답변해 드리겠습니다.</p>
+                                                </>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -569,7 +647,7 @@ function Detail() {
                         {/* List Button */}
                         <div style={{ marginTop: '60px', textAlign: 'center' }}>
                             <button
-                                onClick={() => navigate('/list')}
+                                onClick={handleBack}
                                 style={{
                                     padding: '14px 48px',
                                     backgroundColor: 'white',
@@ -590,8 +668,20 @@ function Detail() {
                     </div>
                 </div >
             </div >
+
+
+            {/* 공통 모달 적용 */}
+            <Modal
+                isOpen={modalConfig.isOpen}
+                onClose={closeModal}
+                title={modalConfig.title}
+            >
+                {modalConfig.message}
+            </Modal>
         </div >
     );
 }
+
+
 
 export default Detail;

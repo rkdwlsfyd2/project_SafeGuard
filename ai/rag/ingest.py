@@ -1,38 +1,44 @@
-'''
-    rag/ingest.py
-    : 법령 PDF를 임베딩하여 Milvus(Vector DB)에 저장하는 스크립트
-    ※ 이 파일은 최초 1회(또는 데이터 갱신 시)에만 실행
+"""
+rag/ingest.py
+: 법령 데이터 임베딩 및 적재 스크립트
 
-    [처리 대상]
-    - rag_data/*.pdf (법령·시행령·시행규칙 PDF)
+[역할]
+- PDF 형태의 법령 데이터를 추출하여 처리 가능한 텍스트로 변환
+- 벡터 임베딩(SentenceTransformer) 및 키워드 인덱스(BM25) 생성
+- Milvus(Vector DB) 및 로컬 스토리지에 데이터 저장
 
-    [동작 요약]
-    - ../rag_data/*.pdf 읽기
-    - 텍스트 분할 (청킹)
-    - 임베딩 생성
-    - Milvus insert (저장)
+[주요 기능]
+- ingest_pdfs: 전체 파이프라인(PDF 읽기 -> 청킹 -> 임베딩 -> 저장) 실행
+- PDF 텍스트 추출 및 청킹 (500자 단위, overlap 100자)
+- BM25 역색인 파일 생성 (bm25_index.pkl)
+- Milvus 컬렉션 초기화 및 벡터 데이터 삽입
 
-    *** 청킹은 get_collection 함수 밖에서 PDF를 읽은 직후 Milvus에 저장하기 직전에 수행
-'''
+[시스템 흐름]
+1. `rag_data` 폴더에서 PDF 파일 목록 로드
+2. 텍스트 추출 및 Chunking (분할)
+3. BM25 인덱스 빌드 및 pickle 로컬 저장 (키워드 검색용)
+4. 임베딩 모델 로드 및 벡터 생성 (의미 기반 검색용)
+5. Milvus DB 접속 -> 기존 데이터 삭제(초기화) -> 새 데이터 적재
+
+[파일의 핵심목적]
+- RAG 시스템 구동의 핵심 데이터(Knowledge Base)를 구축하는 '초기화(Initialization) 스크립트'
+- ※ 서버 실행 전 반드시 1회 실행되어야 함
+"""
+
 import os
 import pdfplumber
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
 from milvus_client import get_collection
 
+# 사용할 임베딩 모델 (다국어 지원 MiniLM)
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2" 
-
-
 
 def ingest_pdfs():
     """
-    PDF 문서를 읽어 텍스트를 추출하고, 임베딩 및 BM25 인덱스를 생성하여 저장합니다.
-    1. PDF 텍스트 추출 및 청킹
-    2. SentenceTransformer를 이용한 벡터 임베딩 생성
-    3. Kiwi 형태소 분석기를 이용한 BM25 인덱스 생성 및 저장
-    4. Milvus DB에 벡터 및 메타데이터 적재
+    PDF 문서를 처리하여 검색 가능한 형태로 변환 및 저장합니다. (동기화 로직 없음, 전체 재구축)
     """
-    # Paths
+    # 데이터 디렉토리 경로 설정
     base_dir = os.path.dirname(os.path.abspath(__file__))
     rag_data_dir = os.path.join(base_dir, 'rag_data')
     
@@ -60,10 +66,10 @@ def ingest_pdfs():
                     if extracted:
                         text_content += extracted + "\n"
             
-            # Chunking
+            # Chunking (텍스트 분할)
             for i in range(0, len(text_content), chunk_size - overlap):
                 chunk = text_content[i:i+chunk_size]
-                if len(chunk) > 50:
+                if len(chunk) > 50: # 너무 짧은 청크는 제외
                     data_texts.append(chunk)
                     data_sources.append(filename)
                     
@@ -77,6 +83,7 @@ def ingest_pdfs():
     print(f"Total chunks: {len(data_texts)}")
 
     # 2. BM25 인덱스 생성 및 저장 (메모리 최적화를 위해 먼저 수행 후 객체 해제)
+    # RAG 검색 시 키워드 매칭(BM25)을 위해 별도 인덱스 파일 생성
     print("Building BM25 index...")
     try:
         from kiwipiepy import Kiwi
@@ -90,6 +97,7 @@ def ingest_pdfs():
             tokens = [token.form for token in kiwi.tokenize(text)]
             tokenized_corpus.append(tokens)
 
+        # BM25 인덱스 생성
         bm25 = BM25Okapi(tokenized_corpus)
         
         data_to_save = {
@@ -98,12 +106,13 @@ def ingest_pdfs():
             "sources": data_sources
         }
         
+        # 파일로 저장 (서버 런타임에서 로드하여 사용)
         bm25_path = os.path.join(rag_data_dir, "bm25_index.pkl")
         with open(bm25_path, "wb") as f:
             pickle.dump(data_to_save, f)
         print(f"BM25 index saved to {bm25_path}")
         
-        # 메모리 해제
+        # 메모리 정리
         del kiwi
         del bm25
         del tokenized_corpus
@@ -123,8 +132,7 @@ def ingest_pdfs():
     embeddings = model.encode(data_texts, batch_size=32, show_progress_bar=True)
 
     # Insert into Milvus
-    # Insert into Milvus
-    collection = get_collection(drop_old=True)
+    collection = get_collection(drop_old=True) # 기존 데이터 삭제 후 재생성
     
     print("Inserting data into Milvus...")
     insert_data = [

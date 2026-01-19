@@ -29,4 +29,14 @@ public interface ComplaintService {
      * 민원 상세 조회 (접근 권한 엄격 제어)
      */
     java.util.Map<String, Object> getComplaintDetail(Long complaintNo, Long userNo, String role, Long agencyNo);
+
+    /**
+     * 민원 상태 변경 (AGENCY 권한 필수)
+     */
+    void updateComplaintStatus(Long complaintNo, Long userNo, String role, Long agencyNo, String status);
+
+    /**
+     * 민원 답변 등록/수정 (AGENCY 권한 필수)
+     */
+    void updateComplaintAnswer(Long complaintNo, Long userNo, String role, Long agencyNo, String answer);
 }

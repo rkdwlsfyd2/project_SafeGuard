@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { complaintsAPI, sttAPI, getToken, analyzeText, generateTitle } from '../utils/api';
+import Modal from '../components/common/Modal';
 
 function ApplyVoice() {
     const navigate = useNavigate();
@@ -19,9 +20,37 @@ function ApplyVoice() {
 
     const [loading, setLoading] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
-    const [error, setError] = useState('');
     const [currentStep, setCurrentStep] = useState(1);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    // 모달 상태
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        callback?: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        callback: undefined
+    });
+
+    const showAlert = (title: string, message: string, callback?: () => void) => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            callback
+        });
+    };
+
+    const closeModal = () => {
+        setModalConfig(prev => ({ ...prev, isOpen: false }));
+        if (modalConfig.callback) {
+            modalConfig.callback();
+        }
+    };
     const [ragResult, setRagResult] = useState(null);
 
     // Recording state
@@ -134,7 +163,6 @@ function ApplyVoice() {
                 }
 
                 setIsTranscribing(true); // 변환 중 표시
-                setError('');
 
                 try {
                     // [Fix] PR #52: 브라우저 인식 텍스트(previewText)를 서버로 전달하여
@@ -177,7 +205,7 @@ function ApplyVoice() {
                     }
 
                 } catch (err) {
-                    setError('음성 인식에 실패했습니다: ' + err.message);
+                    showAlert('오류', '음성 인식에 실패했습니다: ' + err.message);
                 } finally {
                     setIsTranscribing(false);
                     stream.getTracks().forEach(t => t.stop());
@@ -205,7 +233,7 @@ function ApplyVoice() {
 
         } catch (err) {
             console.error(err);
-            setError('마이크 접근 권한이 필요합니다.');
+            showAlert('오류', '마이크 접근 권한이 필요합니다.');
         }
     };
 
@@ -340,7 +368,7 @@ function ApplyVoice() {
 
     const handleSearchAddress = () => {
         if (!window.daum || !window.daum.Postcode) {
-            alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            showAlert('알림', '주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
             return;
         }
 
@@ -373,8 +401,8 @@ function ApplyVoice() {
         try {
             const result = await analyzeText(formData.content);
             setRagResult(result);
-        } catch (err) {
-            setError('AI 분석 실패: ' + err.message);
+        } catch (err: any) {
+            showAlert('오류', 'AI 분석 실패: ' + err.message);
         } finally {
             setIsAnalyzing(false);
         }
@@ -389,7 +417,7 @@ function ApplyVoice() {
         if (selectedFile) {
             // 1. 이미지 파일 검증
             if (!selectedFile.type.startsWith('image/')) {
-                alert("이미지 파일만 업로드 가능합니다.");
+                showAlert("알림", "이미지 파일만 업로드 가능합니다.");
                 if (fileInputRef.current) fileInputRef.current.value = '';
                 return;
             }
@@ -397,7 +425,7 @@ function ApplyVoice() {
             // 2. 용량 체크 (5MB)
             const MAX_SIZE = 5 * 1024 * 1024;
             if (selectedFile.size > MAX_SIZE) {
-                alert("이미지 용량은 5MB 이하만 업로드 가능합니다.");
+                showAlert("알림", "이미지 용량은 5MB 이하만 업로드 가능합니다.");
                 if (fileInputRef.current) fileInputRef.current.value = '';
                 return;
             }
@@ -426,18 +454,21 @@ function ApplyVoice() {
         e.preventDefault();
 
         if (!getToken()) {
-            alert('로그인이 필요합니다.');
-            navigate('/login');
+            showAlert('알림', '로그인이 필요합니다.', () => navigate('/login'));
             return;
         }
 
         if (!formData.title || !formData.content) {
-            setError('제목과 음성 인식을 완료해주세요.');
+            showAlert('알림', '제목과 음성 인식을 완료해주세요.');
+            return;
+        }
+
+        if (!ragResult) {
+            showAlert('알림', 'AI 분석을 진행해주세요.');
             return;
         }
 
         setLoading(true);
-        setError('');
 
         try {
             const complaintData = {
@@ -458,10 +489,9 @@ function ApplyVoice() {
 
             const res = await complaintsAPI.create(submitData);
 
-            alert(`음성 민원이 접수되었습니다. (접수번호: ${res.complaintNo})`);
-            navigate('/list');
+            showAlert('접수 완료', `음성 민원이 접수되었습니다. (접수번호: ${res.complaintNo})`, () => navigate('/list'));
         } catch (err: any) {
-            setError(err.message);
+            showAlert('오류', err.message);
         } finally {
             setLoading(false);
         }
@@ -556,19 +586,6 @@ function ApplyVoice() {
                         </div>
 
                         <form onSubmit={handleSubmit} style={{ padding: '30px' }}>
-                            {error && (
-                                <div style={{
-                                    padding: '14px 18px',
-                                    backgroundColor: '#fef2f2',
-                                    border: '1px solid #fecaca',
-                                    borderRadius: '12px',
-                                    color: '#dc2626',
-                                    marginBottom: '20px',
-                                    fontSize: '0.9rem'
-                                }}>
-                                    ⚠️ {error}
-                                </div>
-                            )}
 
                             {/* 제목 입력 */}
                             <div style={{ marginBottom: '24px' }}>
@@ -968,6 +985,15 @@ function ApplyVoice() {
                     </div>
                 </div>
             </div>
+
+            {/* 공통 모달 적용 */}
+            <Modal
+                isOpen={modalConfig.isOpen}
+                onClose={closeModal}
+                title={modalConfig.title}
+            >
+                {modalConfig.message}
+            </Modal>
         </div>
     );
 }

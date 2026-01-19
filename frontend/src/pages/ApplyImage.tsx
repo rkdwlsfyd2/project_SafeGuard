@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { complaintsAPI, getToken, analyzeImage } from '../utils/api';
+import Modal from '../components/common/Modal';
 
 function ApplyImage() {
     const navigate = useNavigate();
@@ -30,10 +31,36 @@ function ApplyImage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [aiResult, setAiResult] = useState({ type: '-', agency: '-' });
     const [loading, setLoading] = useState(false);
-
-
-    const [error, setError] = useState('');
     const [currentStep, setCurrentStep] = useState(1);
+
+    // 모달 상태
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        callback?: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        callback: undefined
+    });
+
+    const showAlert = (title: string, message: string, callback?: () => void) => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            callback
+        });
+    };
+
+    const closeModal = () => {
+        setModalConfig(prev => ({ ...prev, isOpen: false }));
+        if (modalConfig.callback) {
+            modalConfig.callback();
+        }
+    };
 
     // 카카오 지도 초기화
     useEffect(() => {
@@ -132,13 +159,13 @@ function ApplyImage() {
 
         // --- 1. 검증 로직을 가장 위로 이동 ---
         if (!file.type.startsWith('image/')) {
-            alert("이미지 파일만 업로드 가능합니다.");
+            showAlert("알림", "이미지 파일만 업로드 가능합니다.");
             return;
         }
         // 2. 용량 체크
         const MAX_SIZE = 5 * 1024 * 1024; // 5MB
         if (file.size > MAX_SIZE) {
-            alert("이미지 용량은 5MB 이하만 업로드 가능합니다.");
+            showAlert("알림", "이미지 용량은 5MB 이하만 업로드 가능합니다.");
             return;
         }
 
@@ -179,16 +206,19 @@ function ApplyImage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!getToken()) {
-            alert('로그인이 필요합니다.');
-            navigate('/login');
+            showAlert('알림', '로그인이 필요합니다.', () => navigate('/login'));
             return;
         }
         if (!formData.title || !selectedImage) {
-            setError('제목과 이미지를 모두 입력해주세요.');
+            showAlert('알림', '제목과 이미지를 모두 입력해주세요.');
+            return;
+        }
+
+        if (!aiResult || aiResult.type === '-' || aiResult.agency === '-') {
+            showAlert('알림', 'AI 분석이 완료되지 않았습니다. 잠시 후 다시 시도해주세요.');
             return;
         }
         setLoading(true);
-        setError('');
         try {
 
             // 1. 이미지를 백엔드 영구 저장소에 업로드
@@ -214,10 +244,9 @@ function ApplyImage() {
             // 이미지는 이미 업로드되었으므로 file 파트는 보내지 않음 (null 처리 or 생략)
 
             const result = await complaintsAPI.create(submitData);
-            alert(`이미지 민원이 접수되었습니다. (접수번호: ${result.complaintNo})`);
-            navigate('/list');
+            showAlert('접수 완료', `이미지 민원이 접수되었습니다. (접수번호: ${result.complaintNo})`, () => navigate('/list'));
         } catch (err: any) {
-            setError(err.message);
+            showAlert('오류', err.message);
         } finally {
             setLoading(false);
         }
@@ -269,7 +298,7 @@ function ApplyImage() {
 
     const handleSearchAddress = () => {
         if (!window.daum || !window.daum.Postcode) {
-            alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            showAlert('알림', '주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
             return;
         }
 
@@ -383,19 +412,6 @@ function ApplyImage() {
                         </div>
 
                         <form onSubmit={handleSubmit} style={{ padding: '30px' }}>
-                            {error && (
-                                <div style={{
-                                    padding: '14px 18px',
-                                    backgroundColor: '#fef2f2',
-                                    border: '1px solid #fecaca',
-                                    borderRadius: '12px',
-                                    color: '#dc2626',
-                                    marginBottom: '20px',
-                                    fontSize: '0.9rem'
-                                }}>
-                                    ⚠️ {error}
-                                </div>
-                            )}
 
                             {/* 제목 입력 */}
                             <div style={{ marginBottom: '24px' }}>
@@ -700,6 +716,15 @@ function ApplyImage() {
                     </div>
                 </div>
             </div>
+
+            {/* 공통 모달 적용 */}
+            <Modal
+                isOpen={modalConfig.isOpen}
+                onClose={closeModal}
+                title={modalConfig.title}
+            >
+                {modalConfig.message}
+            </Modal>
         </div>
     );
 }
