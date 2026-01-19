@@ -688,19 +688,27 @@
     <!-- 통계(지연 상세): 현재 3일 이상 지연된 민원들의 실시간 목록 조회 (상세 대시보드용) -->
     <select id="selectOverdueComplaintList" resultType="map">
         SELECT
-            complaint_no AS id,
-            category,
-            title,
-            SPLIT_PART(address, ' ', 2) AS district,
-            '안전총괄실' AS agency,
+            c.complaint_no AS id,
+            c.category,
+            c.title,
+            SPLIT_PART(c.address, ' ', 2) AS district,
+            COALESCE(
+                (
+                    SELECT STRING_AGG(a.agency_name, ', ')
+                    FROM agency a
+                    JOIN complaint_agency ca ON a.agency_no = ca.agency_no
+                    WHERE ca.complaint_no = c.complaint_no
+                ),
+                '미배정'
+            ) AS agency,
             CONCAT(
-                EXTRACT(DAY FROM (CURRENT_TIMESTAMP - created_date)), '일 지연'
+                EXTRACT(DAY FROM (CURRENT_TIMESTAMP - c.created_date)), '일 지연'
             ) AS overdueTime
-        FROM complaint
-        WHERE status IN ('UNPROCESSED', 'IN_PROGRESS')
-          AND created_date &lt; (CURRENT_TIMESTAMP - INTERVAL '3 days')
-          AND address LIKE '서울특별시 %'
-        ORDER BY created_date ASC
+        FROM complaint c
+        WHERE c.status IN ('UNPROCESSED', 'IN_PROGRESS')
+          AND c.created_date &lt; (CURRENT_TIMESTAMP - INTERVAL '3 days')
+          AND c.address LIKE '서울특별시 %'
+        ORDER BY c.created_date ASC
         LIMIT 100
     </select>
 
