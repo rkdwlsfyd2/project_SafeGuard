@@ -23,8 +23,8 @@ spring:
       region:
         static: ${AWS_REGION:ap-northeast-2}
       credentials:
-        access-key: ${AWS_ACCESS_KEY_ID:none}
-        secret-key: ${AWS_SECRET_ACCESS_KEY:none}
+        access-key: minioadmin
+        secret-key: minioadmin
 
   servlet:
     multipart:

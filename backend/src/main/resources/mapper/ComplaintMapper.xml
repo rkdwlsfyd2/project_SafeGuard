@@ -518,19 +518,27 @@
                     (
                         SELECT COUNT(*)::int 
                         FROM complaint c 
+                        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE TO_CHAR(c.created_date, 'YYYY') = TO_CHAR(d, 'YYYY')
                         AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
+                        <if test="agencyNo != null">
+                            AND ca.agency_no = #{agencyNo}
+                        </if>
                     ) AS received,
                     (
                         SELECT COUNT(*)::int 
                         FROM complaint c 
+                        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE TO_CHAR(c.completed_date, 'YYYY') = TO_CHAR(d, 'YYYY')
                         AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
+                        </if>
+                        <if test="agencyNo != null">
+                            AND ca.agency_no = #{agencyNo}
                         </if>
                     ) AS completed,
                     COALESCE((
@@ -542,10 +550,14 @@
                             ) &lt;= 3 THEN 100.0 ELSE 0.0 END), 1
                         )
                         FROM complaint c 
+                        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE c.status = 'COMPLETED' 
                         AND TO_CHAR(c.completed_date, 'YYYY') = TO_CHAR(d, 'YYYY')
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
+                        </if>
+                        <if test="agencyNo != null">
+                            AND ca.agency_no = #{agencyNo}
                         </if>
                     ), 0) AS sla_rate
                 FROM (
@@ -563,19 +575,27 @@
                     (
                         SELECT COUNT(*)::int 
                         FROM complaint c 
+                        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE TO_CHAR(c.created_date, 'MM-DD') = TO_CHAR(d, 'MM-DD')
                         AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
+                        <if test="agencyNo != null">
+                            AND ca.agency_no = #{agencyNo}
+                        </if>
                     ) AS received,
                     (
                         SELECT COUNT(*)::int 
                         FROM complaint c 
+                        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE TO_CHAR(c.completed_date, 'MM-DD') = TO_CHAR(d, 'MM-DD')
                         AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
+                        </if>
+                        <if test="agencyNo != null">
+                            AND ca.agency_no = #{agencyNo}
                         </if>
                     ) AS completed,
                     COALESCE((
@@ -587,10 +607,14 @@
                             ) &lt;= 3 THEN 100.0 ELSE 0.0 END), 1
                         )
                         FROM complaint c 
+                        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE c.status = 'COMPLETED' 
                         AND TO_CHAR(c.completed_date, 'MM-DD') = TO_CHAR(d, 'MM-DD')
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
+                        </if>
+                        <if test="agencyNo != null">
+                            AND ca.agency_no = #{agencyNo}
                         </if>
                     ), 0) AS sla_rate
                 FROM (
@@ -609,19 +633,27 @@
                     (
                         SELECT COUNT(*)::int 
                         FROM complaint c 
+                        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
                         AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
+                        <if test="agencyNo != null">
+                            AND ca.agency_no = #{agencyNo}
+                        </if>
                     ) AS received,
                     (
                         SELECT COUNT(*)::int 
                         FROM complaint c 
+                        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE TO_CHAR(c.completed_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
                         AND c.status != 'DELETED'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
+                        </if>
+                        <if test="agencyNo != null">
+                            AND ca.agency_no = #{agencyNo}
                         </if>
                     ) AS completed,
                     COALESCE((
@@ -633,10 +665,14 @@
                             ) &lt;= 3 THEN 100.0 ELSE 0.0 END), 1
                         )
                         FROM complaint c 
+                        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE c.status = 'COMPLETED' 
                         AND TO_CHAR(c.completed_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
+                        </if>
+                        <if test="agencyNo != null">
+                            AND ca.agency_no = #{agencyNo}
                         </if>
                     ), 0) AS sla_rate
                 FROM (
@@ -656,9 +692,14 @@
         SELECT
             SPLIT_PART(address, ' ', 2) AS name,
             COUNT(CASE WHEN status IN ('UNPROCESSED', 'IN_PROGRESS') THEN 1 END)::int AS count
-        FROM complaint
-        WHERE address IS NOT NULL
-        GROUP BY SPLIT_PART(address, ' ', 2)
+        FROM complaint c
+        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
+        WHERE c.address IS NOT NULL
+        AND c.address LIKE '서울특별시%'
+        <if test="agencyNo != null">
+            AND ca.agency_no = #{agencyNo}
+        </if>
+        GROUP BY SPLIT_PART(c.address, ' ', 2)
         ORDER BY count DESC
         LIMIT 10
     </select>
@@ -669,14 +710,19 @@
             SPLIT_PART(address, ' ', 2) AS name,
             COUNT(*)::int AS count
         FROM complaint c
-        WHERE status IN ('UNPROCESSED', 'IN_PROGRESS')
+        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
+        WHERE c.status IN ('UNPROCESSED', 'IN_PROGRESS')
           AND (
                 SELECT count(*) 
                 FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
                 WHERE extract(dow from d) NOT IN (0, 6)
             ) > 3
-          AND address IS NOT NULL
-        GROUP BY SPLIT_PART(address, ' ', 2)
+          AND c.address IS NOT NULL
+          AND c.address LIKE '서울특별시%'
+          <if test="agencyNo != null">
+              AND ca.agency_no = #{agencyNo}
+          </if>
+        GROUP BY SPLIT_PART(c.address, ' ', 2)
         ORDER BY count DESC
         LIMIT 10
     </select>
@@ -695,7 +741,11 @@
             COUNT(*)::int AS count
         FROM complaint c
         JOIN app_user u ON c.user_no = u.user_no
+        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
         WHERE u.birth_date IS NOT NULL
+        <if test="agencyNo != null">
+            AND ca.agency_no = #{agencyNo}
+        </if>
         GROUP BY agegroup
         ORDER BY agegroup
     </select>
@@ -724,12 +774,17 @@
                 ), '일 지연 (영업일 기준)'
             ) AS overdueTime
         FROM complaint c
+        LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
         WHERE c.status IN ('UNPROCESSED', 'IN_PROGRESS')
           AND (
                 SELECT count(*) 
                 FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
                 WHERE extract(dow from d) NOT IN (0, 6)
             ) > 3
+          AND c.address LIKE '서울특별시%'
+          <if test="agencyNo != null">
+              AND ca.agency_no = #{agencyNo}
+          </if>
         ORDER BY c.created_date ASC
         LIMIT 100
     </select>

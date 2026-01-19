@@ -8,6 +8,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
+import { complaintsAPI } from '../../utils/api';
 
 interface ChartProps {
     selectedCategory: string;
@@ -35,14 +36,11 @@ const ComplaintGrowthTrendChart: React.FC<ChartProps> = ({ selectedCategory, tim
     const [summary, setSummary] = useState<SummaryData | null>(null);
 
     useEffect(() => {
-        const params = new URLSearchParams();
-        if (selectedCategory !== '전체') params.append('category', selectedCategory);
-        params.append('timeBasis', timeBasis);
+        const params: any = {};
+        if (selectedCategory !== '전체') params.category = selectedCategory;
+        params.timeBasis = timeBasis;
 
-        const url = `/api/complaints/stats/dashboard?${params.toString()}`;
-
-        fetch(url)
-            .then((res) => res.json())
+        complaintsAPI.getDashboardStats(params)
             .then((data) => {
                 if (!data?.monthlyTrend) return;
 
@@ -60,7 +58,7 @@ const ComplaintGrowthTrendChart: React.FC<ChartProps> = ({ selectedCategory, tim
                         const diff = current.received - prev.received;
                         growthRate = (diff / prev.received) * 100;
                     } else if (prev && prev.received === 0 && current.received > 0) {
-                        growthRate = 100;
+                        growthRate = 0; // 0에서 증가는 % 계산 불가 (0으로 처리하여 차트 튀는 것 방지)
                     }
 
                     processed.push({
@@ -135,7 +133,7 @@ const ComplaintGrowthTrendChart: React.FC<ChartProps> = ({ selectedCategory, tim
             yaxis: [
                 {
                     seriesName: '접수 건수',
-                    title: { text: '접수 건수', style: { color: '#3B82F6', fontWeight: 700 } },
+                    // title removed as per user request
                     labels: {
                         style: { colors: '#3B82F6', fontWeight: 600 },
                         formatter: (val: number) => val.toFixed(0)
@@ -145,7 +143,12 @@ const ComplaintGrowthTrendChart: React.FC<ChartProps> = ({ selectedCategory, tim
                     seriesName: '증감율',
                     opposite: true,
                     show: false, // Y축 숨김 (깔끔한 UI를 위해)
-                    title: { text: '증감율 (%)', style: { color: '#EF4444', fontWeight: 700 } },
+                    title: {
+                        text: '증감율 (%)',
+                        rotate: 0,
+                        offsetX: -6,
+                        style: { color: '#EF4444', fontWeight: 700 }
+                    },
                     labels: {
                         style: { colors: '#EF4444', fontWeight: 600 },
                         formatter: (val: number) => `${val.toFixed(0)}%`
@@ -215,9 +218,15 @@ const ComplaintGrowthTrendChart: React.FC<ChartProps> = ({ selectedCategory, tim
 // 하위 컴포넌트: 요약 아이템 (Summary Item)
 const SummaryItem = ({ label, count, prevCount }: { label: string; count: number; prevCount: number }) => {
     const diff = count - prevCount;
-    let growthRate = 0;
-    if (prevCount > 0) growthRate = (diff / prevCount) * 100;
-    else if (prevCount === 0 && count > 0) growthRate = 100;
+    let growthRate: number | null = 0;
+
+    if (prevCount > 0) {
+        growthRate = (diff / prevCount) * 100;
+    } else if (prevCount === 0 && count > 0) {
+        growthRate = null; // 0 -> N 증가는 % 계산 불가 (신규)
+    } else {
+        growthRate = 0;
+    }
 
     const isPositive = diff > 0;
     const isZero = diff === 0;
@@ -227,7 +236,7 @@ const SummaryItem = ({ label, count, prevCount }: { label: string; count: number
             <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', marginBottom: '6px' }}>{label}</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
                 <span style={{ fontSize: '18px', fontWeight: 900, color: '#1E293B' }}>{count.toLocaleString()}건</span>
-                {!isZero && (
+                {!isZero && growthRate !== null && (
                     <span style={{
                         fontSize: '11px',
                         fontWeight: 800,
@@ -236,6 +245,18 @@ const SummaryItem = ({ label, count, prevCount }: { label: string; count: number
                         alignItems: 'center'
                     }}>
                         {isPositive ? '▲' : '▼'} {Math.abs(growthRate).toFixed(1)}%
+                    </span>
+                )}
+                {/* 전 기간 0건에서 증가한 경우 (New) */}
+                {!isZero && growthRate === null && (
+                    <span style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        color: '#EF4444',
+                        display: 'flex',
+                        alignItems: 'center'
+                    }}>
+                        ▲ 신규
                     </span>
                 )}
                 {isZero && (

@@ -245,19 +245,22 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         // 3. 최근 N기간 트렌드 추이 (카테고리 필터링 및 시간 단위 적용)
         log.info("트렌드 조회 - 카테고리: {}, 시간단위: {}", category, timeBasis);
-        stats.put("monthlyTrend", complaintMapper.selectMonthlyTrend(category, timeBasis));
+        stats.put("monthlyTrend", complaintMapper.selectMonthlyTrend(category, timeBasis, agencyNo));
 
         // 4. 자치구별 미처리 민원이 많은 곳 (병목 구간 TOP 10)
-        stats.put("bottleneck", complaintMapper.selectAgencyBottleneck());
+        stats.put("bottleneck", complaintMapper.selectAgencyBottleneck(agencyNo));
 
         // 5. 자치구별 처리가 지연된(3일 초과) 민원 명수 (TOP 10)
-        stats.put("bottleneckOverdue", complaintMapper.selectDistrictOverdue());
+        stats.put("bottleneckOverdue", complaintMapper.selectDistrictOverdue(agencyNo));
 
         // 6. 민원인의 연령대별 분포 통계
-        stats.put("ageGroupStats", complaintMapper.selectAgeGroupStats());
+        stats.put("ageGroupStats", complaintMapper.selectAgeGroupStats(agencyNo));
 
         // 7. 실시간 지연 민원 리스트 (3일 이상 처리 안 된 건들)
-        stats.put("overdueList", complaintMapper.selectOverdueComplaintList());
+        stats.put("overdueList", complaintMapper.selectOverdueComplaintList(agencyNo));
+
+        // [DEBUG] AgencyNo Confirmation
+        stats.put("debugAgencyNo", agencyNo);
 
         return stats;
     }

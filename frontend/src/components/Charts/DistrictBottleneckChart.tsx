@@ -8,6 +8,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
+import { complaintsAPI } from '../../utils/api';
 
 interface DistrictBottleneckChartProps {
     type: 'unprocessed' | 'overdue';
@@ -19,8 +20,7 @@ const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type,
 
     useEffect(() => {
         // 대시보드 통계 API 호출 (병목 데이터 포함)
-        fetch(`/api/complaints/stats/dashboard`)
-            .then(res => res.json())
+        complaintsAPI.getDashboardStats()
             .then(data => {
                 let sourceData = [];
                 if (type === 'unprocessed') {
@@ -118,7 +118,16 @@ const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type,
                 <span style={{ fontSize: '12px', color: '#94A3B8', fontWeight: '600', marginLeft: 'auto' }}>실시간 집계</span>
             </div>
             <div style={{ flex: 1, minHeight: '300px' }}>
-                <ReactApexChart options={options as any} series={series} type="bar" height="100%" />
+                {currentData.length > 0 ? (
+                    <ReactApexChart options={options as any} series={series} type="bar" height="100%" />
+                ) : (
+                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', gap: '12px' }}>
+                        <div style={{ fontSize: '48px', opacity: 0.5 }}>📊</div>
+                        <div style={{ fontSize: '15px', fontWeight: '700' }}>
+                            {type === 'unprocessed' ? '현재 미처리된 민원이 없습니다.' : '현재 지연된 민원이 없습니다.'}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -8,7 +8,7 @@ import {
 import { complaintsAPI } from '../utils/api';
 import ComplaintTrendChart from '../components/Charts/ComplaintTrendChart';
 import ComplaintCategoryChart from '../components/Charts/ComplaintCategoryChart';
-import AgeGroupChart from '../components/Charts/AgeGroupChart';
+
 import DistrictBottleneckChart from '../components/Charts/DistrictBottleneckChart';
 import ComplaintGrowthTrendChart from '../components/Charts/ComplaintGrowthTrendChart';
 
@@ -62,12 +62,11 @@ const Dashboard = () => {
 
     const fetchDashboardData = useCallback(async () => {
         try {
-            const params = new URLSearchParams();
-            if (selectedCategory !== '전체') params.append('category', selectedCategory);
-            params.append('timeBasis', timeBasis);
+            const params: any = {};
+            if (selectedCategory !== '전체') params.category = selectedCategory;
+            params.timeBasis = timeBasis;
 
-            const response = await fetch(`/api/complaints/stats/dashboard?${params.toString()}`);
-            const data = await response.json();
+            const data = await complaintsAPI.getDashboardStats(params);
 
             if (data) {
                 if (data.summary) {
@@ -80,7 +79,7 @@ const Dashboard = () => {
         } catch (error) {
             console.error('Failed to fetch dashboard stats:', error);
         }
-    }, [selectedCategory, timeBasis, refreshKey]); // refreshKey 변경 시 데이터 재조회
+    }, [selectedCategory, timeBasis, refreshKey]);
 
     useEffect(() => {
         fetchDashboardData();
@@ -273,8 +272,8 @@ const Dashboard = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '16px' }}>
                         {[
                             { label: '전 체', count: stats.total, color: '#F1F5F9', textColor: '#334155' },
-                            { label: '접 수', count: stats.received, color: '#EFF6FF', textColor: '#2563EB' },
-                            { label: '처리중', count: stats.processing, color: '#FEF2F2', textColor: '#EF4444' },
+                            { label: '미처리', count: stats.received, color: '#FFF1F2', textColor: '#E11D48' },
+                            { label: '처리중', count: stats.processing, color: '#FFFBEB', textColor: '#B45309' },
                             { label: '처리완료', count: stats.completed, color: '#F0FDF4', textColor: '#16A34A' },
                             { label: 'SLA 준수율', count: `${stats.sla_compliance}%`, color: '#EEF2FF', textColor: '#4F46E5' },
                             { label: '지연 민원', count: stats.overdue, color: '#FFF1F2', textColor: '#E11D48', isUrgent: true }
@@ -320,24 +319,19 @@ const Dashboard = () => {
                             <div style={{ flex: 1 }}>
                                 <ComplaintGrowthTrendChart selectedCategory={selectedCategory} timeBasis={timeBasis} refreshKey={refreshKey} />
                             </div>
+                            {/* 구별 지연 TOP 10: 상단 우측 컬럼으로 이동됨 */}
+                            <DistrictBottleneckChart type="overdue" refreshKey={refreshKey} />
                         </div>
                     </div>
                 </div>
 
-                {/* 3. 연령별 현황 차트 (위치 변경됨) */}
-                <div style={{ marginBottom: '32px' }}>
-                    <AgeGroupChart refreshKey={refreshKey} />
-                </div>
 
-                {/* 4. 하단 그리드: 자치구 병목 현황 분석 (Bottleneck Analysis) */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '40px' }}>
-                    <DistrictBottleneckChart type="unprocessed" refreshKey={refreshKey} />
-                    <DistrictBottleneckChart type="overdue" refreshKey={refreshKey} />
-                </div>
+
+
                 {/* 5. 지연 민원 상세 목록 (Drill-down) */}
                 <section ref={overdueListRef} style={{ marginBottom: '60px' }}>
-                    <div className="dash-card shadow-2xl" style={{ border: '2px solid #FB7185', borderRadius: '16px', overflow: 'hidden', backgroundColor: 'white' }}>
-                        <div style={{ backgroundColor: '#FFF1F2', padding: '24px 32px', borderBottom: '1px solid #FECDD3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="dash-card shadow-2xl" style={{ border: '1px solid #FECDD3', borderRadius: '16px', overflow: 'hidden', backgroundColor: 'white' }}>
+                        <div style={{ backgroundColor: '#FFFFFF', padding: '24px 32px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3 className="font-bold flex items-center gap-3">
                                 <span style={{ fontSize: '22px', fontWeight: '950', color: '#9F1239' }}>지연 민원 상세 관리 (SLA Overdue)</span>
                                 <span style={{ backgroundColor: '#E11D48', color: 'white', padding: '2px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '900' }}>{stats.overdue} 개 민원</span>

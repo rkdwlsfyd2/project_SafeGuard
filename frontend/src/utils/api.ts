@@ -192,9 +192,9 @@ export const complaintsAPI = {
      * (고도화 통계) 대시보드 Map 형태 통계
      * - 백엔드: GET /api/complaints/stats/dashboard?category=...
      */
-    getDashboardStats: (category?: string) => {
-        const query = category ? `?category=${encodeURIComponent(category)}` : '';
-        return apiRequest(`/complaints/stats/dashboard${query}`);
+    getDashboardStats: (params: any = {}) => {
+        const query = new URLSearchParams(params).toString();
+        return apiRequest(`/complaints/stats/dashboard${query ? `?${query}` : ''}`);
     },
 
     // 내가 쓴 민원 목록 가져오기

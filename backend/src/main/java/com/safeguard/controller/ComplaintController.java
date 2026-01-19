@@ -333,9 +333,16 @@ public class ComplaintController {
 
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             UserDTO user = userMapper.findByUserId(auth.getName()).orElse(null);
+            log.info("Dashboard Auth Check - User: {}, Role: {}, AgencyNo: {}",
+                    auth.getName(),
+                    (user != null ? user.getRole() : "null"),
+                    (user != null ? user.getAgencyNo() : "null"));
+
             if (user != null && user.getRole() == UserRole.AGENCY) {
                 agencyNo = user.getAgencyNo();
             }
+        } else {
+            log.info("Dashboard Auth Check - Unauthenticated or Anonymous");
         }
 
         Map<String, Object> stats = complaintService.getDashboardStats(agencyNo, category, timeBasis);

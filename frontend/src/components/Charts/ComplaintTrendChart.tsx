@@ -10,6 +10,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import ReactApexChart from 'react-apexcharts';
 import { HelpCircle } from 'lucide-react';
+import { complaintsAPI } from '../../utils/api';
 
 interface ChartOneProps {
     selectedCategory: string;
@@ -26,7 +27,6 @@ type BacklogStats = {
     changeType: 'increase' | 'decrease';
     avgDays: number;        // 평균 처리일수
     completionRate: number; // 완료율
-    longTermRate: number;   // 장기 미처리 비율
 };
 
 // KPI 카드 컴포넌트: 지표 타이틀, 값, 비교 텍스트, 상태 컬러 등을 표현
@@ -122,19 +122,15 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBa
         changePercent: null,
         changeType: 'increase',
         avgDays: 0,
-        completionRate: 0,
-        longTermRate: 0
+        completionRate: 0
     });
 
     useEffect(() => {
-        const params = new URLSearchParams();
-        if (selectedCategory !== '전체') params.append('category', selectedCategory);
-        params.append('timeBasis', timeBasis);
+        const params: any = {};
+        if (selectedCategory !== '전체') params.category = selectedCategory;
+        params.timeBasis = timeBasis;
 
-        const url = `/api/complaints/stats/dashboard?${params.toString()}`;
-
-        fetch(url)
-            .then((res) => res.json())
+        complaintsAPI.getDashboardStats(params)
             .then((data) => {
                 if (!data?.monthlyTrend || !data?.summary) return;
 
@@ -175,7 +171,7 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBa
                     changeType: 'increase' as 'increase' | 'decrease',
                     avgDays: data.summary?.avg_processing_days ?? 0,
                     completionRate: data.summary?.completion_rate ?? 0,
-                    longTermRate: data.summary?.long_term_unprocessed_rate ?? 0
+
                 };
 
                 if (processed.length >= 2) {
@@ -213,61 +209,7 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBa
         };
     }, [trendData]);
 
-    // 공통: 축/그리드/툴팁 스타일
-    const baseOptions = useMemo(
-        () => ({
-            chart: {
-                fontFamily: 'Pretendard, sans-serif',
-                toolbar: { show: false },
-                animations: { enabled: true },
-                zoom: { enabled: false }
-            },
-            dataLabels: { enabled: false },
-            grid: { borderColor: '#F1F5F9', strokeDashArray: 4 },
-            xaxis: {
-                categories: dates,
-                axisBorder: { show: false },
-                axisTicks: { show: false },
-                labels: { style: { colors: '#64748B', fontWeight: 600 } },
-            },
-            yaxis: {
-                min: 0,
-                max: 100,
-                labels: {
-                    style: { colors: '#64748B', fontWeight: 600 },
-                    formatter: (val: number) => `${val}%`
-                },
-            },
-            tooltip: { theme: 'light', shared: true, intersect: false },
-            markers: { size: 4, strokeWidth: 2, strokeColors: '#fff', hover: { size: 7 } },
-            stroke: { curve: 'smooth' as const, width: 3 },
-            legend: { show: false },
-        }),
-        [dates]
-    );
 
-    // 차트 A: 접수/완료
-    const seriesA = useMemo(
-        () => [
-            { name: 'SLA 준수율', type: 'line' as const, data: slaData },
-            { name: '처리율', type: 'line' as const, data: completionRateData },
-        ],
-        [slaData, completionRateData]
-    );
-
-    const optionsA = useMemo(
-        () => ({
-            ...baseOptions,
-            colors: ['#3B82F6', '#10B981'],
-            tooltip: {
-                ...baseOptions.tooltip,
-                y: {
-                    formatter: (val: number) => `${val}%`,
-                },
-            },
-        }),
-        [baseOptions]
-    );
 
 
     const backlogSubText = useMemo(() => {
@@ -360,45 +302,10 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBa
                     criteria={`당월 접수된 민원 중\n처리 완료된 민원의 비율입니다.`}
                 />
 
-                {/* 4. 장기 미처리 비율 */}
-                <KpiCard
-                    title="장기 미처리 비율"
-                    value={backlogStats.longTermRate > 0 ? `${backlogStats.longTermRate}%` : (backlogStats.longTermRate === 0 ? '0%' : '–')}
-                    sub={(() => {
-                        if (backlogStats.longTermRate === 0) return <span style={{ color: '#3B82F6' }}>장기 방치 민원 없음</span>;
-                        if (backlogStats.longTermRate < 5) return <span style={{ color: '#3B82F6' }}>양호</span>;
-                        if (backlogStats.longTermRate < 15) return <span style={{ color: '#F59E0B' }}>지연 관리 필요</span>;
-                        return <span style={{ color: '#EF4444' }}>즉시 점검 필요</span>;
-                    })()}
-                    color={(() => {
-                        if (backlogStats.longTermRate === 0) return '#3B82F6';
-                        if (backlogStats.longTermRate < 5) return '#3B82F6';
-                        if (backlogStats.longTermRate < 15) return '#F59E0B';
-                        return '#EF4444';
-                    })()}
-                    criteria={`기준일을 초과하여 처리되지 않은\n미처리 민원의 비율입니다.`}
-                />
+
             </div>
 
-            {/* 차트 영역 (단일 패널) */}
-            <div style={{ border: '1px solid #E2E8F0', borderRadius: 14, padding: 20, width: '100%', boxSizing: 'border-box' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: '#0F172A' }}>
-                        {timeBasis === 'DAY' ? '일별' : timeBasis === 'YEAR' ? '연도별' : '월별'} 민원 처리 효율 및 SLA 트렌드 (%)
-                    </div>
-                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#475569', fontWeight: 800, fontSize: 13 }}>
-                            <span style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: '#3B82F6', display: 'inline-block' }} />
-                            SLA 준수율
-                        </span>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#475569', fontWeight: 800, fontSize: 13 }}>
-                            <span style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: '#10B981', display: 'inline-block' }} />
-                            처리율
-                        </span>
-                    </div>
-                </div>
-                <ReactApexChart options={optionsA as any} series={seriesA as any} type="line" height={320} />
-            </div>
+
         </div>
     );
 };

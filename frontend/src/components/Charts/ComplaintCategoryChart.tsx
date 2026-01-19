@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import { RefreshCcw } from 'lucide-react';
+import { complaintsAPI } from '../../utils/api';
 
 
 
@@ -26,10 +27,10 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
     const [categoryData, setCategoryData] = useState<any[]>([]);
 
     useEffect(() => {
-        const url = `/api/complaints/stats/dashboard?category=${encodeURIComponent(selectedCategory)}`;
+        const params: any = {};
+        if (selectedCategory !== '전체') params.category = selectedCategory;
 
-        fetch(url)
-            .then(res => res.json())
+        complaintsAPI.getDashboardStats(params)
             .then(data => {
                 if (data && data.categoryStats) {
                     // Backend returns { categoryStats: [{ name: '불법주정차', value: 10 }, ...], ... }
@@ -155,7 +156,7 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
             </div>
 
             <div
-                className="mb-6 w-full"
+                className="mb-12 w-full"
                 style={{
                     display: 'flex',
                     justifyContent: 'center',
@@ -229,9 +230,6 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                                 {/* 카테고리명 (Category Name) */}
                                 <div style={{ flex: 1, fontSize: '16.5px', fontWeight: '850', color: '#1E293B', whiteSpace: 'nowrap' }}>
                                     <span className="group-hover:text-blue-600 transition-colors">{item.name}</span>
-                                    {selectedCategory === item.name && (
-                                        <span className="ml-2 text-[10px] text-[#2563EB] font-black bg-blue-100/50 px-2 py-0.5 rounded-full border border-blue-200">선택됨</span>
-                                    )}
                                 </div>
 
                                 {/* 접수 건수 및 증감율 (Value & Change) */}
