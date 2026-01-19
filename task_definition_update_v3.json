@@ -170,7 +170,7 @@
             "environment": [
                 {
                     "name": "MILVUS_HOST",
-                    "value": "3.35.198.117"
+                    "value": "13.209.222.178"
                 },
                 {
                     "name": "MILVUS_PORT",
