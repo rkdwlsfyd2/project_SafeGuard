@@ -98,7 +98,7 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
             dataLabels: {
                 enabled: true,
                 formatter: function (val: any, opts: any) {
-                    return opts.w.globals.labels[opts.seriesIndex];
+                    return opts.w.globals.labels[opts.seriesIndex] + ' (' + Math.round(val) + '%)';
                 },
                 style: {
                     fontSize: '14px',
@@ -135,22 +135,23 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                         }}
                         style={{
                             marginLeft: 'auto',
-                            fontSize: '13px',
-                            fontWeight: 700,
-                            color: '#64748B',
+                            fontSize: '14px',
+                            fontWeight: 850,
+                            color: '#2563EB',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 4,
-                            background: 'none',
-                            border: 'none',
+                            gap: 6,
+                            backgroundColor: '#EFF6FF',
+                            border: '1.5px solid #BFDBFE',
                             cursor: 'pointer',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            transition: 'background-color 0.2s'
+                            padding: '6px 14px',
+                            borderRadius: '50px',
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                            boxShadow: '0 2px 4px rgba(37, 99, 235, 0.08)'
                         }}
-                        className="hover:bg-slate-100/80"
+                        className="hover:bg-blue-600 hover:text-white hover:border-blue-600 hover:shadow-lg active:scale-95"
                     >
-                        <RefreshCcw size={14} /> 전체 보기
+                        <RefreshCcw size={15} /> 전체 보기
                     </button>
                 )}
             </div>
