@@ -771,7 +771,7 @@
                     SELECT count(*) 
                     FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
                     WHERE extract(dow from d) NOT IN (0, 6)
-                ), '일 지연 (영업일 기준)'
+                ), '일 지연'
             ) AS overdueTime
         FROM complaint c
         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no

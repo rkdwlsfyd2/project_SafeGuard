@@ -346,7 +346,7 @@ const Dashboard = () => {
                                         <th style={{ padding: '12px 16px' }}>민원 제목</th>
                                         <th style={{ padding: '12px 16px' }}>자치구</th>
                                         <th style={{ padding: '12px 16px' }}>담당 기관</th>
-                                        <th style={{ padding: '12px 16px' }}>지연 시간</th>
+                                        <th style={{ padding: '12px 16px' }}>지연 시간 (영업일 기준)</th>
                                         <th style={{ padding: '12px 16px', textAlign: 'center' }}>조치</th>
                                     </tr>
                                 </thead>
