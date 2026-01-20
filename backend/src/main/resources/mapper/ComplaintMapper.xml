@@ -403,7 +403,7 @@
                 NULLIF(COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' THEN c.complaint_no END), 0)) * 100, 1
             ), 0) AS sla_compliance,
             COUNT(DISTINCT CASE 
-                WHEN c.status IN ('RECEIVED', 'UNPROCESSED', 'IN_PROGRESS') AND (
+                WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') AND (
                     SELECT count(*) 
                     FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
                     WHERE extract(dow from d) NOT IN (0, 6)
@@ -427,12 +427,12 @@
                 NULLIF(COUNT(DISTINCT CASE WHEN TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(NOW(), 'YYYY-MM') THEN c.complaint_no END), 0)) * 100, 1
             ), 0) AS completion_rate,
             COALESCE(ROUND(
-                (COUNT(DISTINCT CASE WHEN c.status IN ('RECEIVED', 'UNPROCESSED', 'IN_PROGRESS') AND (
+                (COUNT(DISTINCT CASE WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') AND (
                     SELECT count(*) 
                     FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
                     WHERE extract(dow from d) NOT IN (0, 6)
                 ) > 14 THEN c.complaint_no END)::numeric /
-                NULLIF(COUNT(DISTINCT CASE WHEN c.status IN ('RECEIVED', 'UNPROCESSED', 'IN_PROGRESS') THEN c.complaint_no END), 0)) * 100, 1
+                NULLIF(COUNT(DISTINCT CASE WHEN c.status IN ('UNPROCESSED', 'IN_PROGRESS') THEN c.complaint_no END), 0)) * 100, 1
             ), 0) AS long_term_unprocessed_rate
         FROM complaint c
         LEFT JOIN complaint_agency ca
@@ -691,7 +691,7 @@
     <select id="selectAgencyBottleneck" resultType="map">
         SELECT
             SPLIT_PART(address, ' ', 2) AS name,
-            COUNT(CASE WHEN status IN ('RECEIVED', 'UNPROCESSED', 'IN_PROGRESS') THEN 1 END)::int AS count
+            COUNT(CASE WHEN status IN ('UNPROCESSED', 'IN_PROGRESS') THEN 1 END)::int AS count
         FROM complaint c
         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
         WHERE c.address IS NOT NULL
@@ -711,7 +711,7 @@
             COUNT(*)::int AS count
         FROM complaint c
         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
-        WHERE c.status IN ('RECEIVED', 'UNPROCESSED', 'IN_PROGRESS')
+        WHERE c.status IN ('UNPROCESSED', 'IN_PROGRESS')
           AND (
                 SELECT count(*) 
                 FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
@@ -771,11 +771,11 @@
                     SELECT count(*) 
                     FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
                     WHERE extract(dow from d) NOT IN (0, 6)
-                ), '일 지연'
+                ), '일 지연 (영업일 기준)'
             ) AS overdueTime
         FROM complaint c
         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
-        WHERE c.status IN ('RECEIVED', 'UNPROCESSED', 'IN_PROGRESS')
+        WHERE c.status IN ('UNPROCESSED', 'IN_PROGRESS')
           AND (
                 SELECT count(*) 
                 FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
