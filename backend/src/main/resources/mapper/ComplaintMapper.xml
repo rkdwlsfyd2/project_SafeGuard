@@ -469,6 +469,26 @@
         ORDER BY created_date DESC
     </select>
 
+    <!-- [추가] 관리자(기관) 마이페이지용: 담당 민원 전체 조회 -->
+    <select id="selectComplaintListByAgencyNo" resultType="com.safeguard.dto.ComplaintDTO">
+        SELECT
+            c.complaint_no AS complaintNo,
+            c.title,
+            c.content,
+            c.category,
+            c.status,
+            c.created_date AS createdDate,
+            c.address,
+            c.is_public AS isPublic,
+            c.like_count AS likeCount,
+            ca.agency_no AS agencyNo
+        FROM complaint c
+        JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
+        WHERE ca.agency_no = #{agencyNo}
+        AND c.status != 'DELETED'
+        ORDER BY c.created_date DESC
+    </select>
+
     <!-- 전체 좋아요 삭제 (초기화용) -->
     <delete id="deleteAllLikes">
         DELETE FROM complaint_like

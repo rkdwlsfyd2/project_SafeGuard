@@ -205,8 +205,15 @@ function MyPage() {
             <div className="container" style={{ maxWidth: '1200px' }}>
                 {/* Header Section */}
                 <div style={{ marginBottom: '40px', textAlign: 'left' }}>
-                    <h2 style={{ color: '#1E293B', fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>마이페이지</h2>
-                    <p style={{ color: '#64748B', fontSize: '1.1rem' }}>내 활동 현황과 회원 정보를 관리할 수 있습니다. (목록 당 {ITEMS_PER_PAGE}개 표시)</p>
+                    <h2 style={{ color: '#1E293B', fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+                        {localStorage.getItem('role') === 'AGENCY' ? '관리자페이지' : '마이페이지'}
+                    </h2>
+                    <p style={{ color: '#64748B', fontSize: '1.1rem' }}>
+                        {localStorage.getItem('role') === 'AGENCY'
+                            ? `담당 민원 현황을 관리할 수 있습니다. (목록 당 ${ITEMS_PER_PAGE}개 표시)`
+                            : `내 활동 현황과 회원 정보를 관리할 수 있습니다. (목록 당 ${ITEMS_PER_PAGE}개 표시)`
+                        }
+                    </p>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px', alignItems: 'stretch' }}>
@@ -285,7 +292,9 @@ function MyPage() {
                             display: 'flex',
                             flexDirection: 'column'
                         }}>
-                            <h3 style={{ marginBottom: '20px', color: 'var(--primary-color)' }}>나의 민원 목록</h3>
+                            <h3 style={{ marginBottom: '20px', color: 'var(--primary-color)' }}>
+                                {localStorage.getItem('role') === 'AGENCY' ? '담당 민원 목록' : '나의 민원 목록'}
+                            </h3>
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>

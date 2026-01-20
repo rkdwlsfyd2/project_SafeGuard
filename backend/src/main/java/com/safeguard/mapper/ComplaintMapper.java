@@ -103,6 +103,14 @@ public interface ComplaintMapper {
          */
         List<ComplaintDTO> selectComplaintListByUserNo(Map<String, Object> params);
 
+        /**
+         * 관리자(기관) 담당 민원 목록 조회 (마이페이지용)
+         *
+         * @param params agencyNo 필수 포함
+         * @return ComplaintDTO 리스트
+         */
+        List<ComplaintDTO> selectComplaintListByAgencyNo(Map<String, Object> params);
+
         // =========================
         // Reaction (LIKE/DISLIKE) - feature/agency-admin-fix 채택
         // =========================

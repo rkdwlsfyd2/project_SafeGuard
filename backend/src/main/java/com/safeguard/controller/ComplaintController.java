@@ -311,12 +311,29 @@ public class ComplaintController {
     public ResponseEntity<List<ComplaintDTO>> getMyComplaints(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        Long userNo = (userDetails != null) ? userDetails.getUserNo() : 1L;
-        Map<String, Object> params = new HashMap<>();
-        params.put("userNo", userNo);
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
-        List<ComplaintDTO> myComplaints = complaintMapper.selectComplaintListByUserNo(params);
-        return ResponseEntity.ok(myComplaints);
+        UserDTO user = userMapper.findByUserId(userDetails.getUsername()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Map<String, Object> params = new HashMap<>();
+        List<ComplaintDTO> resultList;
+
+        if (user.getRole() == UserRole.AGENCY) {
+            // 관리자(기관)인 경우: 본인 기관에 배정된 민원 조회
+            params.put("agencyNo", user.getAgencyNo());
+            resultList = complaintMapper.selectComplaintListByAgencyNo(params);
+        } else {
+            // 일반 사용자인 경우: 내가 작성한 민원 조회
+            params.put("userNo", user.getUserNo());
+            resultList = complaintMapper.selectComplaintListByUserNo(params);
+        }
+
+        return ResponseEntity.ok(resultList);
     }
 
     /**

@@ -107,7 +107,7 @@ function App() {
             <div className="top-bar__links">
               {token ? (
                 <>
-                  <Link to="/mypage">마이페이지</Link>
+                  <Link to="/mypage">{isAdminUser ? '관리자페이지' : '마이페이지'}</Link>
                   <span>|</span>
                   <button
                     onClick={logout}
