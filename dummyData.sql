@@ -1,6 +1,6 @@
 /* =========================================================
    SafeGuard Dummy Data Script (Strict Consistency Edition)
-   - Total complaints: exactly 500
+   - Total complaints: exactly 540
    - Rule: created_date older than 5 days => COMPLETED
    - Only last 5 days can be UNPROCESSED / IN_PROGRESS
    - COMPLETED must have answer + completed_date + updated_date
@@ -289,7 +289,7 @@ tpl_misc AS (
 
 seq AS (
   SELECT gs AS idx
-  FROM generate_series(1, 500) gs
+  FROM generate_series(1, 540) gs
 ),
 
 created_plan AS (
@@ -302,19 +302,23 @@ created_plan AS (
         WHEN idx <= 370 THEN
           (NOW() - interval '5 years')
             + ((idx - 1)::double precision / 369.0)
-              * ((NOW() - interval '6 days') - (NOW() - interval '5 years'))
+              * ((NOW() - interval '7 days') - (NOW() - interval '5 years'))
 
-        -- 371~500: 기준일 기준 최근 5일 (절대 미래 없음)
+        -- 371~410: Overdue Section (Jan 10 ~ Jan 14) -> 기준일(Jan 20) 대비 6~10일 전
+        WHEN idx BETWEEN 371 AND 410 THEN
+          timestamp '2026-01-10 09:00:00' + (random() * interval '4 days')
+
+        -- 411~540: 기준일 기준 최근 데이터를 2026-01-18까지로 제한 (2026-01-19 전)
         ELSE
           CASE
-            WHEN idx BETWEEN 371 AND 400 THEN NOW() - interval '4 days'
-                 + (random() * interval '12 hours')
-            WHEN idx BETWEEN 401 AND 440 THEN NOW() - interval '2 days'
-                 + (random() * interval '18 hours')
-            WHEN idx BETWEEN 441 AND 480 THEN NOW() - interval '1 day'
-                 + (random() * interval '20 hours')
-            ELSE NOW()
-                 - (random() * interval '20 hours')
+            -- Jan 15 ~ Jan 16
+            WHEN idx BETWEEN 411 AND 440 THEN timestamp '2026-01-16 12:00:00' - (random() * interval '36 hours')
+            -- Jan 16 ~ Jan 17
+            WHEN idx BETWEEN 441 AND 480 THEN timestamp '2026-01-17 12:00:00' - (random() * interval '24 hours')
+            -- Jan 17 ~ Jan 18 Noon
+            WHEN idx BETWEEN 481 AND 520 THEN timestamp '2026-01-18 12:00:00' - (random() * interval '24 hours')
+            -- Jan 18 PM (Max 2026-01-18 23:59:59)
+            ELSE timestamp '2026-01-18 23:59:59' - (random() * interval '10 hours')
           END
       END
     ) AS created_date
@@ -352,9 +356,9 @@ category_plan AS (
   SELECT
     dp.*,
     CASE
-      WHEN dp.idx BETWEEN 401 AND 440 THEN (ARRAY['교통','도로','행정·안전','기타','도로'])[1+floor(random()*5)::int]
-      WHEN dp.idx BETWEEN 441 AND 480 THEN (ARRAY['교통','도로','환경','행정·안전','기타'])[1+floor(random()*5)::int]
-      WHEN dp.idx BETWEEN 481 AND 500 THEN (ARRAY['환경','환경','도로','교통','행정·안전'])[1+floor(random()*5)::int]
+      WHEN dp.idx BETWEEN 441 AND 480 THEN (ARRAY['교통','도로','행정·안전','기타','도로'])[1+floor(random()*5)::int]
+      WHEN dp.idx BETWEEN 481 AND 520 THEN (ARRAY['교통','도로','환경','행정·안전','기타'])[1+floor(random()*5)::int]
+      WHEN dp.idx BETWEEN 521 AND 540 THEN (ARRAY['환경','환경','도로','교통','행정·안전'])[1+floor(random()*5)::int]
       ELSE (ARRAY['교통','도로','환경','행정·안전','기타'])[1+floor(random()*5)::int]
     END AS category
   FROM district_plan dp
@@ -432,18 +436,28 @@ status_plan AS (
   SELECT
     tp.*,
     CASE
+      -- 1. Overdue Section (371~410): Force UNPROCESSED/IN_PROGRESS regardless of date
+      WHEN tp.idx BETWEEN 371 AND 410 THEN
+        CASE WHEN random() < 0.35 THEN 'IN_PROGRESS' ELSE 'UNPROCESSED' END
+
+      -- 2. General Rule: Older than 5 days => COMPLETED
       WHEN tp.created_date <= NOW() - interval '5 days' THEN 'COMPLETED'
+
+      -- 3. Recent Section (411~540)
       ELSE
-        CASE
-          WHEN tp.idx BETWEEN 371 AND 430 THEN
-            CASE WHEN random() < 0.35 THEN 'UNPROCESSED' ELSE 'IN_PROGRESS' END
-          ELSE
-            CASE
-              WHEN random() < 0.20 THEN 'UNPROCESSED'
-              WHEN random() < 0.75 THEN 'IN_PROGRESS'
-              ELSE 'COMPLETED'
-            END
-        END
+         CASE
+           -- Recent First Batch (411-470)
+           WHEN tp.idx BETWEEN 411 AND 470 THEN
+             CASE WHEN random() < 0.35 THEN 'UNPROCESSED' ELSE 'IN_PROGRESS' END
+             
+           -- Recent Second Batch (471-540)
+           ELSE
+             CASE
+               WHEN random() < 0.20 THEN 'UNPROCESSED'
+               WHEN random() < 0.75 THEN 'IN_PROGRESS'
+               ELSE 'COMPLETED'
+             END
+         END
     END AS status,
     floor(random()*41)::int AS like_count
   FROM text_plan tp
