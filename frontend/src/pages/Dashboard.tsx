@@ -108,10 +108,10 @@ const Dashboard = () => {
     return (
         <div className="dash-page">
             <style>{`
-            .dash-page { min-height: 100vh; background: #f3f4f6; overflow: auto; }
-            .dash-container { width: 100%; max-width: 1600px; margin: 0 auto; padding: 32px; }
-            .dash-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; }
-            .dash-title { font-size: 24px; font-weight: 800; color:#1f2937; }
+            .dash-page { min-height: 100vh; background: #f3f4f6; padding: 32px 0; }
+            
+            .dash-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; min-height: 60px; }
+            .dash-title { font-size: 24px; font-weight: 800; color:#1f2937; line-height: 1; margin: 0; display: flex; align-items: center; padding-top: 1px; /* Optical optical correction */ }
             .dash-actions { display:flex; gap: 8px; }
             .dash-btn { padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 8px; background:#fff; font-size: 13px; cursor:pointer; }
             .dash-btn:hover { background:#f9fafb; }
@@ -148,7 +148,7 @@ const Dashboard = () => {
             .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
             .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
           `}</style>
-            <div className="dash-container">
+            <div className="container">
                 {/* 상단 타이틀 및 필터 */}
                 <div className="dash-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>

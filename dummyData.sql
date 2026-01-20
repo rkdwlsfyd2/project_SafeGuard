@@ -689,4 +689,39 @@ WHERE a.agency_type='CENTRAL'
     (c.category='교통' AND NOT (a.agency_name LIKE '%경찰%' OR a.agency_name LIKE '%교통%'))
     OR
     (c.category='행정·안전' AND NOT (a.agency_name LIKE '%행정%' OR a.agency_name LIKE '%안전%' OR a.agency_name LIKE '%재난%'))
-  ); 
+  );
+ 
+ /* =========================================================
+   6-1) complaint_like dummy data (UNIQUE SAFE)
+   - complaint.like_count 와 정확히 일치
+   - (complaint_no, user_no) UNIQUE 위반 방지
+========================================================= */
+
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN
+    SELECT complaint_no, like_count
+    FROM complaint
+    WHERE like_count > 0
+  LOOP
+    /*
+      같은 complaint에 대해
+      서로 다른 USER를 like_count 수만큼 한 번에 선택
+    */
+    INSERT INTO complaint_like (complaint_no, user_no)
+    SELECT
+      r.complaint_no,
+      u.user_no
+    FROM (
+      SELECT user_no
+      FROM app_user
+      WHERE role = 'USER'
+      ORDER BY random()
+      LIMIT r.like_count
+    ) u;
+  END LOOP;
+END $$;
+
+

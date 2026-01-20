@@ -42,6 +42,15 @@ ul {
   padding: 0 20px;
 }
 
+/* Header-specific container fix */
+.header>.container {
+  display: flex;
+  height: 100%;
+  padding: 0 20px;
+  /* Keep horizontal padding */
+  /* Remove any potential vertical padding interference if container had it elsewhere */
+}
+
 /* Header Styles */
 .header {
   height: var(--header-height);
@@ -53,6 +62,9 @@ ul {
   top: 0;
   z-index: 1000;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  /* Ensure header flex items are vertically centered */
+  display: flex;
+  align-items: center;
 }
 
 .header__inner {
@@ -60,11 +72,16 @@ ul {
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  /* Ensure full height for centering */
 }
 
 .nav__list {
   display: flex;
+  align-items: center;
+  /* Enforce vertical centering for nav items */
   gap: 40px;
+  height: 100%;
+  /* Ensure full height */
 }
 
 .nav__item {
@@ -74,11 +91,38 @@ ul {
   transition: color 0.3s ease;
   cursor: pointer;
   position: relative;
+  display: flex;
+  /* Flex to center text if needed */
+  align-items: center;
+  height: 100%;
+  /* Match parent height */
   /* For dropdown positioning */
+}
+
+
+
+/* Fix anchor tags to be flex containers for vertical centering */
+.nav__item a {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  text-decoration: none;
+  line-height: 1;
+  /* Match h1 for consistent vertical centering */
+  margin: 0;
 }
 
 .nav__item:hover {
   color: var(--primary-color);
+}
+
+/* Fix h1 line-height in header */
+.logo h1 {
+  line-height: 1 !important;
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 /* Dropdown Styles */
@@ -295,6 +339,9 @@ ul {
 
 .admin-theme .logo h1 {
   color: var(--primary-dark) !important;
+  position: relative;
+  top: 1px;
+  /* Optical alignment: Corrects visual center vs metric center */
 }
 
 .admin-theme .nav__item:hover {
