@@ -281,10 +281,10 @@ function MapView() {
   // [추가] 총 페이지 수 계산
   const totalSidebarPages = Math.ceil(filteredLocations.length / ITEMS_PER_PAGE);
 
-  // [추가] 필터 변경 시 페이지 초기화
+  // [추가] 필터 및 데이터 변경 시 페이지 초기화
   useEffect(() => {
     setSidebarPage(1);
-  }, [sidebarCategory, sidebarStatus, sidebarSearch]);
+  }, [sidebarCategory, sidebarStatus, sidebarSearch, locations]);
 
   // ====== 마커 렌더링 ======
   const renderMarkers = () => {
