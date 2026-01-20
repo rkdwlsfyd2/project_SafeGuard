@@ -42,11 +42,11 @@ public class FileServiceImpl implements FileService {
 
             String fileName = UUID.randomUUID().toString() + extension;
 
-            // 로컬 개발 환경용 폴백 (Access Key가 "none"이거나 설정되지 않은 경우)
-            if ("none".equals(accessKey) || accessKey == null || accessKey.isEmpty()) {
-                log.info("[File Service] AWS 설정이 없어 로컬 저장소에 저장합니다: {}", fileName);
-                return storeLocally(file, fileName);
-            }
+            // 로컬 개발 환경용 폴백 (Access Key가 "none"이거나 설정되지 않은 경우) -> 제거됨 (IAM Role 지원 위해)
+            // if ("none".equals(accessKey) || accessKey == null || accessKey.isEmpty()) {
+            // log.info("[File Service] AWS 설정이 없어 로컬 저장소에 저장합니다: {}", fileName);
+            // return storeLocally(file, fileName);
+            // }
 
             try {
                 // S3 업로드 시도
@@ -69,8 +69,9 @@ public class FileServiceImpl implements FileService {
             java.nio.file.Files.createDirectories(uploadPath);
         }
         java.nio.file.Path targetLocation = uploadPath.resolve(fileName);
-        java.nio.file.Files.copy(file.getInputStream(), targetLocation, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        
+        java.nio.file.Files.copy(file.getInputStream(), targetLocation,
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
         // 프론트엔드에서 접근 가능한 상대 경로 반환
         return "/uploads/" + fileName;
     }
