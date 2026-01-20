@@ -40,6 +40,10 @@ const Dashboard = () => {
 
     const ITEMS_PER_PAGE = 5;
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedCategory, timeBasis]);
+
     // 자동 갱신 타이머 (Auto-refresh)
     // 30초 자동 갱신을 위한 타이머 및 키 상태 관리
     const [refreshKey, setRefreshKey] = useState(0);
@@ -332,16 +336,17 @@ const Dashboard = () => {
                 <section ref={overdueListRef} style={{ marginBottom: '60px' }}>
                     <div className="dash-card shadow-2xl" style={{ border: '1px solid #FECDD3', borderRadius: '16px', overflow: 'hidden', backgroundColor: 'white' }}>
                         <div style={{ backgroundColor: '#FFFFFF', padding: '24px 32px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3 className="font-bold flex items-center gap-3">
-                                <span style={{ fontSize: '22px', fontWeight: '950', color: '#9F1239' }}>지연 민원 상세 관리 (SLA Overdue)</span>
-                                <span style={{ backgroundColor: '#E11D48', color: 'white', padding: '2px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '900' }}>{stats.overdue} 개 민원</span>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 0 }}>
+                                <div style={{ width: '4px', height: '24px', backgroundColor: '#EF4444', borderRadius: '2px' }}></div>
+                                <span style={{ fontSize: '22px', fontWeight: '950', color: '#1E293B' }}>지연 민원 상세 관리 (SLA Overdue)</span>
+                                <span style={{ backgroundColor: '#F1F5F9', color: '#475569', padding: '2px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '900', border: '1px solid #E2E8F0' }}>{stats.overdue} 개 민원</span>
                             </h3>
 
                         </div>
                         <div style={{ padding: '0 32px 32px 32px' }}>
                             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 12px' }}>
                                 <thead>
-                                    <tr style={{ color: '#9F1239', fontSize: '13px', fontWeight: '900', textAlign: 'left' }}>
+                                    <tr style={{ color: '#1E293B', fontSize: '13px', fontWeight: '900', textAlign: 'left' }}>
                                         <th style={{ padding: '12px 16px' }}>분야</th>
                                         <th style={{ padding: '12px 16px' }}>민원 제목</th>
                                         <th style={{ padding: '12px 16px' }}>자치구</th>
@@ -352,18 +357,18 @@ const Dashboard = () => {
                                 </thead>
                                 <tbody>
                                     {currentOverdueList.map((item) => (
-                                        <tr key={item.id} style={{ backgroundColor: '#fff5f5', borderRadius: '12px', transition: 'transform 0.2s' }}>
-                                            <td style={{ padding: '20px 16px', borderTopLeftRadius: '12px', borderBottomLeftRadius: '12px', fontWeight: '900', color: '#BE123C' }}>{item.category}</td>
+                                        <tr key={item.id} style={{ backgroundColor: '#F8FAFC', borderRadius: '12px', transition: 'transform 0.2s' }}>
+                                            <td style={{ padding: '20px 16px', borderTopLeftRadius: '12px', borderBottomLeftRadius: '12px', fontWeight: '900', color: '#475569' }}>{item.category}</td>
                                             <td style={{ padding: '20px 16px', fontWeight: '700', color: '#1E293B' }}>{item.title}</td>
                                             <td style={{ padding: '20px 16px', color: '#64748B', fontWeight: '800' }}>{item.district}</td>
                                             <td style={{ padding: '20px 16px', color: '#1E293B', fontWeight: '800' }}>{item.agency}</td>
                                             <td style={{ padding: '20px 16px' }}>
-                                                <span style={{ color: '#E11D48', fontWeight: '950', backgroundColor: '#FFE4E6', padding: '4px 10px', borderRadius: '6px' }}>{item.overduetime}</span>
+                                                <span style={{ color: '#1E293B', fontWeight: '950', backgroundColor: '#F1F5F9', padding: '4px 10px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>{item.overduetime}</span>
                                             </td>
                                             <td style={{ padding: '20px 16px', borderTopRightRadius: '12px', borderBottomRightRadius: '12px', textAlign: 'center' }}>
                                                 <button
                                                     onClick={() => navigate('/reports/' + item.id)}
-                                                    style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '900', cursor: 'pointer' }}
+                                                    style={{ backgroundColor: '#EF4444', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '900', cursor: 'pointer' }}
                                                 >
                                                     즉시 점검
                                                 </button>
@@ -382,16 +387,16 @@ const Dashboard = () => {
                                         style={{
                                             padding: '8px 16px',
                                             borderRadius: '8px',
-                                            border: '1px solid #FECDD3',
-                                            backgroundColor: currentPage === 1 ? '#FFF5F5' : 'white',
-                                            color: currentPage === 1 ? '#FDA4AF' : '#E11D48',
+                                            border: '1px solid #E2E8F0',
+                                            backgroundColor: currentPage === 1 ? '#F8FAFC' : 'white',
+                                            color: currentPage === 1 ? '#94A3B8' : '#334155',
                                             cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                                             fontWeight: '700'
                                         }}
                                     >
                                         이전
                                     </button>
-                                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#9F1239' }}>
+                                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#475569' }}>
                                         {currentPage} / {totalPages}
                                     </span>
                                     <button
@@ -400,9 +405,9 @@ const Dashboard = () => {
                                         style={{
                                             padding: '8px 16px',
                                             borderRadius: '8px',
-                                            border: '1px solid #FECDD3',
-                                            backgroundColor: currentPage === totalPages ? '#FFF5F5' : 'white',
-                                            color: currentPage === totalPages ? '#FDA4AF' : '#E11D48',
+                                            border: '1px solid #E2E8F0',
+                                            backgroundColor: currentPage === totalPages ? '#F8FAFC' : 'white',
+                                            color: currentPage === totalPages ? '#94A3B8' : '#334155',
                                             cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                                             fontWeight: '700'
                                         }}

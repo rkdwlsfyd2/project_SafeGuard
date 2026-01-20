@@ -47,6 +47,9 @@ DECLARE
   categories TEXT[] := ARRAY['환경', '도로', '교통', '행정·안전'];
   regions TEXT[] := ARRAY['서울특별시', '부산광역시', '대구광역시', '인천광역시'];
   seoul_gu TEXT[] := ARRAY['강남구', '서초구', '송파구', '마포구', '영등포구'];
+  busan_gu TEXT[] := ARRAY['해운대구', '진구', '수영구', '동래구', '사하구'];
+  daegu_gu TEXT[] := ARRAY['수성구', '달서구', '중구', '남구', '북구'];
+  incheon_gu TEXT[] := ARRAY['부평구', '송도구', '미추홀구', '남동구', '계양구'];
   
   i INT;
 BEGIN
@@ -73,16 +76,22 @@ BEGIN
       v_content := admin_contents[1 + floor(random()*3)::int];
     END IF;
 
-    -- Status: Focus on RECEIVED and UNPROCESSED to test dashboard logic
-    IF (i % 3 = 0) THEN v_status := 'RECEIVED';
-    ELSIF (i % 3 = 1) THEN v_status := 'UNPROCESSED';
-    ELSE v_status := 'IN_PROGRESS';
+    -- Status: Align with backend Enum (UNPROCESSED, IN_PROGRESS)
+    -- RECEIVED is not in the Enum anymore, so we use UNPROCESSED (66%) and IN_PROGRESS (33%)
+    IF (i % 3 = 2) THEN v_status := 'IN_PROGRESS';
+    ELSE v_status := 'UNPROCESSED';
     END IF;
 
     -- Address
     v_region := regions[1 + floor(random()*array_length(regions, 1))::int];
-    IF v_region = '서울특별시' THEN v_district := seoul_gu[1 + floor(random()*5)::int];
-    ELSE v_district := '기타 구';
+    IF v_region = '서울특별시' THEN 
+      v_district := seoul_gu[1 + floor(random()*array_length(seoul_gu, 1))::int];
+    ELSIF v_region = '부산광역시' THEN
+      v_district := busan_gu[1 + floor(random()*array_length(busan_gu, 1))::int];
+    ELSIF v_region = '대구광역시' THEN
+      v_district := daegu_gu[1 + floor(random()*array_length(daegu_gu, 1))::int];
+    ELSE -- 인천광역시
+      v_district := incheon_gu[1 + floor(random()*array_length(incheon_gu, 1))::int];
     END IF;
 
     -- Random Coordinates (Approx Seoul)
