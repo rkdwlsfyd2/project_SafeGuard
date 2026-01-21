@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS complaint_agency CASCADE;
 DROP TABLE IF EXISTS complaint CASCADE;
 DROP TABLE IF EXISTS app_user CASCADE;
 DROP TABLE IF EXISTS agency CASCADE;
+DROP TABLE IF EXISTS notification CASCADE;
 
 -- 2. 테이블 재생성
 
@@ -145,3 +146,47 @@ INSERT INTO agency (agency_type, agency_name, region_code) VALUES
   ('CENTRAL', '기타', NULL);
 
 SELECT 'Reset Complete' as status;
+
+-- ================================
+-- Notification (알림)
+-- ================================
+
+CREATE TABLE notification (
+    notification_id BIGSERIAL PRIMARY KEY,
+
+    -- 알림 수신자 (민원 작성자)
+    user_no BIGINT NOT NULL
+        REFERENCES app_user(user_no)
+        ON DELETE CASCADE,
+
+    -- 관련 민원
+    complaint_no BIGINT NOT NULL
+        REFERENCES complaint(complaint_no)
+        ON DELETE CASCADE,
+
+    -- 알림 유형
+    -- ANSWER_CREATED, ANSWER_UPDATED, STATUS_CHANGED
+    type VARCHAR(30) NOT NULL,
+
+    -- 사용자에게 보여줄 메시지
+    message VARCHAR(500) NOT NULL,
+
+    -- 읽음 여부
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+
+    -- 읽은 시각
+    read_at TIMESTAMPTZ,
+
+    -- 알림 생성 시각
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 조회 성능을 위한 인덱스
+CREATE INDEX idx_notification_user_no
+    ON notification(user_no);
+
+CREATE INDEX idx_notification_user_no_is_read
+    ON notification(user_no, is_read);
+
+CREATE INDEX idx_notification_complaint_no
+    ON notification(complaint_no);

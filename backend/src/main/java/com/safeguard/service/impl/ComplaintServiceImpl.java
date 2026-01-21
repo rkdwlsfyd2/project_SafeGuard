@@ -373,6 +373,13 @@ public class ComplaintServiceImpl implements ComplaintService {
         log.info("민원 삭제 처리 완료 (Soft Delete) - ID: {}, User: {}, Agency: {}", complaintNo, userNo, agencyNo);
     }
 
+    private final com.safeguard.service.NotificationService notificationService;
+
+    // ... (Constructor injection handled by @RequiredArgsConstructor)
+
+    /**
+     * 민원 상태 변경 (AGENCY 권한 필수)
+     */
     @Override
     @Transactional
     public void updateComplaintStatus(Long complaintNo, Long userNo, String role, Long agencyNo, String status) {
@@ -397,6 +404,19 @@ public class ComplaintServiceImpl implements ComplaintService {
         // 4. Update
         complaintMapper.updateStatus(complaintNo, status);
         log.info("민원 상태 변경(Service) - ID: {}, Status: {}, By: {}", complaintNo, status, userNo);
+
+        // 5. Notification Trigger (Non-blocking)
+        if (c.getUserNo() != null) {
+            try {
+                notificationService.createNotification(
+                        c.getUserNo(),
+                        complaintNo,
+                        "STATUS_CHANGED",
+                        "STATUS_CHANGED: " + status);
+            } catch (Exception e) {
+                log.error("알림 생성 실패 (민원 상태 변경): {}", e.getMessage());
+            }
+        }
     }
 
     @Override
@@ -413,15 +433,33 @@ public class ComplaintServiceImpl implements ComplaintService {
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.NOT_FOUND, "Complaint not found"));
 
-        // 3. Permission Check (Java Logic)
+        // 3. Permission Check
         java.util.List<Long> assignedAgencyNos = c.getAssignedAgencyNos();
         if (agencyNo == null || !assignedAgencyNos.contains(agencyNo)) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.FORBIDDEN, "담당 민원이 아닙니다. (MyAgency=" + agencyNo + ")");
         }
 
+        // Check if create or update
+        boolean isUpdate = (c.getAnswer() != null && !c.getAnswer().isEmpty());
+        String notifType = isUpdate ? "ANSWER_UPDATED" : "ANSWER_CREATED";
+
         // 4. Update
         complaintMapper.updateAnswer(complaintNo, answer);
         log.info("민원 답변 등록(Service) - ID: {}, By: {}", complaintNo, userNo);
+
+        // 5. Notification Trigger (Non-blocking)
+        if (c.getUserNo() != null) {
+            try {
+                notificationService.createNotification(
+                        c.getUserNo(),
+                        complaintNo,
+                        notifType,
+                        notifType // Message is same as type key for this logic
+                );
+            } catch (Exception e) {
+                log.error("알림 생성 실패 (민원 답변 등록): {}", e.getMessage());
+            }
+        }
     }
 }
