@@ -296,14 +296,14 @@ function MyPage() {
                                 {localStorage.getItem('role') === 'AGENCY' ? '담당 민원 목록' : '나의 민원 목록'}
                             </h3>
                             <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                                     <thead>
                                         <tr style={{ backgroundColor: 'var(--primary-color)', color: 'white' }}>
-                                            <th style={{ padding: '15px', whiteSpace: 'nowrap' }}>접수번호</th>
-                                            <th style={{ padding: '15px', whiteSpace: 'nowrap' }}>제목</th>
-                                            <th style={{ padding: '15px', whiteSpace: 'nowrap' }}>지역</th>
-                                            <th style={{ padding: '15px', whiteSpace: 'nowrap' }}>신고일</th>
-                                            <th style={{ padding: '15px', whiteSpace: 'nowrap' }}>상태</th>
+                                            <th style={{ padding: '15px', whiteSpace: 'nowrap', width: '10%' }}>접수번호</th>
+                                            <th style={{ padding: '15px', whiteSpace: 'nowrap', width: '40%' }}>제목</th>
+                                            <th style={{ padding: '15px', whiteSpace: 'nowrap', width: '20%' }}>지역</th>
+                                            <th style={{ padding: '15px', whiteSpace: 'nowrap', width: '15%' }}>신고일</th>
+                                            <th style={{ padding: '15px', whiteSpace: 'nowrap', width: '15%' }}>상태</th>
                                         </tr>
                                     </thead>
                                     <tbody>
