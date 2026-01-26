@@ -163,6 +163,11 @@ function MapView() {
     const bounds = map.getBounds();
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
+
+    // 상태값 매핑 (UI용 한글 -> DB용 Enum)
+    const statusMap = { '미처리': 'UNPROCESSED', '처리중': 'IN_PROGRESS', '처리완료': 'COMPLETED' };
+    const backendStatus = sidebarStatus === '전체' ? null : statusMap[sidebarStatus];
+
     return {
       swLat: sw.getLat(),
       swLng: sw.getLng(),
@@ -170,7 +175,9 @@ function MapView() {
       neLng: ne.getLng(),
       zoom: map.getLevel(),
       agencyNo: (isAdmin && myAssignedOnly) ? userAgencyNo : null,
-      showCompleted: showCompleted, // [추가] 완료 민원 표시 여부 전달
+      category: sidebarCategory === '전체' ? null : sidebarCategory,
+      status: backendStatus,
+      showCompleted: showCompleted,
     };
   };
 
@@ -318,48 +325,46 @@ function MapView() {
       clustererRef.current.setMap(map);
     }
 
-    // 상태 필터링 및 이미지 설정
-    const markers = locations
-      .filter((loc) => loc.status !== 'DELETED' && (showCompleted ? true : loc.status !== 'COMPLETED'))
-      .map((loc) => {
-        const lat = Number(loc.lat);
-        const lng = Number(loc.lng);
+    // 상태 필터링 및 이미지 설정 (이미 filteredLocations에 반영되어 있으나 이미지 색상을 위해 map 수행)
+    const markers = filteredLocations.map((loc) => {
+      const lat = Number(loc.lat);
+      const lng = Number(loc.lng);
 
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-          console.warn("invalid coord", loc);
-          return null;
-        }
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        console.warn("invalid coord", loc);
+        return null;
+      }
 
-        // 상태별 마커 이미지 설정 (SVG 데이터 URI 활용)
-        const markerColor =
-          loc.status === 'COMPLETED' ? '#22c55e' : // 완료: 초록
-            loc.status === 'IN_PROGRESS' ? '#f59e0b' : // 처리중: 주황
-              '#ef4444'; // 미처리: 빨강
-        const markerImageSrc = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+      // 상태별 마커 이미지 설정 (SVG 데이터 URI 활용)
+      const markerColor =
+        loc.status === 'COMPLETED' ? '#22c55e' : // 완료: 초록
+          loc.status === 'IN_PROGRESS' ? '#f59e0b' : // 처리중: 주황
+            '#ef4444'; // 미처리: 빨강
+      const markerImageSrc = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
           <svg width="36" height="36" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
             <path d="M16 0C10.5 0 6 4.5 6 10c0 7.5 10 22 10 22s10-14.5 10-22c0-5.5-4.5-10-10-10z" fill="${markerColor}" stroke="white" stroke-width="1.5"/>
             <circle cx="16" cy="10" r="4" fill="white"/>
           </svg>
         `)}`;
 
-        const markerImage = new window.kakao.maps.MarkerImage(
-          markerImageSrc,
-          new window.kakao.maps.Size(36, 36),
-          { offset: new window.kakao.maps.Point(18, 36) }
-        );
+      const markerImage = new window.kakao.maps.MarkerImage(
+        markerImageSrc,
+        new window.kakao.maps.Size(36, 36),
+        { offset: new window.kakao.maps.Point(18, 36) }
+      );
 
-        const marker = new window.kakao.maps.Marker({
-          position: new window.kakao.maps.LatLng(lat, lng),
-          image: markerImage
-        });
+      const marker = new window.kakao.maps.Marker({
+        position: new window.kakao.maps.LatLng(lat, lng),
+        image: markerImage
+      });
 
-        window.kakao.maps.event.addListener(marker, "click", () => {
-          setSelectedHotspot(null);
-          showComplaintOverlay(loc);
-        });
+      window.kakao.maps.event.addListener(marker, "click", () => {
+        setSelectedHotspot(null);
+        showComplaintOverlay(loc);
+      });
 
-        return marker;
-      })
+      return marker;
+    })
       .filter(Boolean);
 
     // add 전에 clear 한번 더 (갱신 안정화)
@@ -626,9 +631,9 @@ function MapView() {
     polygonsRef.current = polygons;
   };
 
-  // [추가] locations가 바뀌면 마커를 다시 그림
   useEffect(() => {
-    // 뷰 모드 변경 시 모든 폴리곤을 먼저 지움 (persistence 방지)
+    // 뷰 모드 변경 시 모든 폴리곤 및 마커 초기화
+    clearMarkers();
     if (polygonsRef.current.length > 0) {
       polygonsRef.current.forEach(p => p.setMap(null));
       polygonsRef.current = [];
@@ -640,7 +645,7 @@ function MapView() {
       renderHotspotDistricts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, locations, globalDistrictStats, viewMode]); // districtCounts 의존성 제거
+  }, [mapReady, locations, filteredLocations, globalDistrictStats, viewMode, showCompleted, sidebarCategory, sidebarStatus]);
 
   // ====== Kakao SDK 로드 & 지도 생성 ======
   useEffect(() => {

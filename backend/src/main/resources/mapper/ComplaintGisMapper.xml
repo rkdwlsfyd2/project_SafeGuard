@@ -9,36 +9,45 @@
     <sql id="CommonConditions">
         <!-- bounds: Kakao 기준 sw/ne -->
         <if test="req.swLng != null and req.swLat != null and req.neLng != null and req.neLat != null">
+            AND sf.geom <![CDATA[ && ]]> ST_MakeEnvelope(#{req.swLng}, #{req.swLat}, #{req.neLng}, #{req.neLat}, 4326)
             AND ST_Intersects(
-            sf.geom,
-            ST_MakeEnvelope(#{req.swLng}, #{req.swLat}, #{req.neLng}, #{req.neLat}, 4326)
+                sf.geom,
+                ST_MakeEnvelope(#{req.swLng}, #{req.swLat}, #{req.neLng}, #{req.neLat}, 4326)
             )
         </if>
 
         <!-- category -->
-        <if test="req.category != null and req.category != ''">
+        <if test="req.category != null and req.category != '' and req.category != '전체'">
             AND c.category = #{req.category}
         </if>
 
-        <!-- status -->
-        <if test="req.status != null and req.status != ''">
-            AND c.status = #{req.status}
-        </if>
-        <if test="req.showCompleted != null and req.showCompleted == false">
-            AND c.status != 'COMPLETED'
-        </if>
+        <!-- status: showCompleted 토글과 status 필터링 동시 고려 -->
+        <choose>
+            <when test="req.status != null and req.status != '' and req.status != '전체'">
+                AND c.status = #{req.status}
+            </when>
+            <otherwise>
+                <!-- status가 '전체'일 때만 showCompleted 토글 적용 -->
+                <if test="req.showCompleted != null and req.showCompleted == false">
+                    AND c.status != 'COMPLETED'
+                </if>
+            </otherwise>
+        </choose>
 
-        <!-- date range: OffsetDateTime from/to -->
+        <!-- date range -->
         <if test="req.from != null">
             AND c.created_date <![CDATA[ >= ]]> #{req.from}
         </if>
         <if test="req.to != null">
             AND c.created_date <![CDATA[ <= ]]> #{req.to}
         </if>
+        
+        <!-- agency No -->
         <if test="req.agencyNo != null">
             AND ca.agency_no = #{req.agencyNo}
         </if>
-        <!-- [추가] 삭제된 민원 제외 -->
+
+        <!-- 삭제된 민원 제외 (상시) -->
         AND c.status != 'DELETED'
     </sql>
 
@@ -135,7 +144,6 @@
             LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
             <where>
                 <include refid="CommonConditions"/>
-                AND c.status != 'COMPLETED'
             </where>
             GROUP BY h.geom, h.i, h.j
             HAVING COUNT(DISTINCT c.complaint_no) > 0
