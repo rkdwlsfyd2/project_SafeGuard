@@ -6,7 +6,7 @@
 [![Milvus](https://img.shields.io/badge/VectorDB-Milvus-00B3A4)](#)
 [![PostgreSQL](https://img.shields.io/badge/DB-PostgreSQL%20%2B%20PostGIS-336791)](#)
 
-English Version : https://github.com/rkdwlsfyd2/project_SafeGuard/blob/main/README.en.md
+#English Version : https://github.com/rkdwlsfyd2/project_SafeGuard/blob/main/README.en.md
 
 멀티모달 AI 기반 민원 자동 분류 및 처리 플랫폼입니다.  
 텍스트, 음성, 이미지로 접수된 민원을 AI가 분석해 **담당 기관/민원 유형을 추천**하고, 백엔드와 GIS 대시보드로 **접수-배정-처리-알림** 흐름을 연결합니다.
