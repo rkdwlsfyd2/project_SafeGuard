@@ -832,19 +832,4 @@ docker compose up -d --build backend
 ## 21. License
 [TBD]
 
----
 
-## 22. How to verify
-
-면접관이 빠르게 검증할 수 있도록 체크리스트 형태로 정리합니다.
-
-- [ ] `docker compose up -d --build` 로 전체 서비스가 올라온다
-- [ ] `http://localhost:8001/health` 가 `{"status":"ok"}` 를 반환한다
-- [ ] `http://localhost:5001/health` 가 `{"status":"ok"}` 를 반환한다
-- [ ] `http://localhost:8080/actuator/health` 가 정상 응답한다
-- [ ] `POST /api/rag/analyze` 호출 시 기관/카테고리/source가 반환된다
-- [ ] `POST /api/yolo/analyze` 호출 시 이미지 기반 유형/기관이 반환된다
-- [ ] 민원을 등록하면 PostgreSQL과 GIS 데이터에 반영된다
-- [ ] 관리자 대시보드에서 상태별 건수, SLA, overdue 지표가 조회된다
-- [ ] 상태 변경/답변 후 `GET /api/notifications/subscribe` SSE 흐름으로 알림이 수신된다
-- [ ] RAG는 LangChain 없이 custom Milvus + BM25 파이프라인으로 동작한다
