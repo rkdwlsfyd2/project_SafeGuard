@@ -817,19 +817,5 @@ docker compose up -d --build backend
 
 ---
 
-## 20. Contributing
-현재 협업 방식은 [TBD]입니다.
-
-기여 시 권장 순서:
-1. 이슈 등록
-2. 재현 절차와 기대 동작 명시
-3. 기능 브랜치 생성
-4. 변경 후 API/화면/AI 동작 검증
-5. PR 제출
-
----
-
-## 21. License
-[TBD]
 
 
